@@ -89,8 +89,23 @@ def check(request):
 def pytest_runtest_makereport(item, call):
     """Fail the test at call-report time if check collector has failures,
     and store results in the session store."""
+    from checkllm.judge import JudgeConfigError
+
     outcome = yield
     report = outcome.get_result()
+
+    # Convert JudgeConfigError (missing API key) to a skip
+    if report.when == "call" and report.failed:
+        if call.excinfo and call.excinfo.errisinstance(JudgeConfigError):
+            report.outcome = "skipped"
+            report.wasxfail = ""
+            report.longrepr = (
+                str(item.fspath),
+                None,
+                f"SKIPPED: {call.excinfo.value}",
+            )
+            return
+
     if report.when == "call":
         collector = item.stash.get(_CHECKLLM_KEY, None)
         if collector is not None and collector.results:
@@ -107,9 +122,14 @@ def pytest_runtest_makereport(item, call):
 
 
 def pytest_configure(config: pytest.Config) -> None:
-    """Reset session store at the start of each session."""
+    """Reset session store and register markers."""
     global _store
     _store = _SessionStore()
+
+    config.addinivalue_line(
+        "markers",
+        "llm: mark test as requiring an LLM API key (deselect with '-m \"not llm\"')",
+    )
 
 
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
@@ -155,14 +175,15 @@ def _save_snapshot(results: dict[str, list[CheckResult]], path: Path) -> None:
 
     tests: dict[str, list[TestRunRecord]] = {}
     for node_id, checks in results.items():
-        runs = [
-            TestRunRecord(
-                metrics={
-                    c.metric_name: MetricRecord(score=c.score, passed=c.passed)
-                    for c in checks
-                }
-            )
-        ]
+        # Use indexed keys to avoid collisions when the same metric runs twice
+        metrics: dict[str, MetricRecord] = {}
+        name_counts: dict[str, int] = {}
+        for c in checks:
+            count = name_counts.get(c.metric_name, 0)
+            key = c.metric_name if count == 0 else f"{c.metric_name}_{count}"
+            metrics[key] = MetricRecord(score=c.score, passed=c.passed)
+            name_counts[c.metric_name] = count + 1
+        runs = [TestRunRecord(metrics=metrics)]
         tests[node_id] = runs
 
     snap = Snapshot(

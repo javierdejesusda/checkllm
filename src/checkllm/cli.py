@@ -148,11 +148,15 @@ def report(
 def eval_cmd(
     prompt: str = typer.Option(..., "--prompt", "-p", help="Prompt template with {input} placeholder"),
     dataset_path: str = typer.Option(..., "--dataset", "-d", help="Path to dataset YAML file"),
+    model: Optional[str] = typer.Option(None, "--model", "-M", help="Model to generate outputs (default: from config)"),
     metric: str = typer.Option("rubric", "--metric", "-m", help="Metric to evaluate (hallucination, relevance, toxicity, rubric)"),
     threshold: float = typer.Option(0.8, "--threshold", "-t", help="Pass/fail threshold"),
     output: Optional[str] = typer.Option(None, "--output", "-o", help="Save results as snapshot JSON"),
 ):
-    """Evaluate a prompt template against a dataset using LLM-as-judge."""
+    """Evaluate a prompt template against a dataset.
+
+    Sends each prompt to the LLM, then judges the output with the chosen metric.
+    """
     import asyncio
     from checkllm.datasets.loader import load_yaml_dataset
     from checkllm.check import CheckCollector
@@ -160,29 +164,39 @@ def eval_cmd(
 
     cases = load_yaml_dataset(Path(dataset_path))
     config = load_config()
+    gen_model = model or config.judge_model
     collector = CheckCollector(config=config)
 
-    console.print(f"[bold]Evaluating {len(cases)} cases with metric '{metric}'[/]")
-    console.print(f"[dim]Prompt template: {prompt}[/]")
+    console.print(f"[bold]Evaluating {len(cases)} cases[/]")
+    console.print(f"[dim]Generation model: {gen_model}[/]")
+    console.print(f"[dim]Judge metric: {metric} (threshold={threshold})[/]")
     console.print()
 
     for i, case in enumerate(cases):
         rendered_prompt = prompt.replace("{input}", case.input)
         if case.query:
             rendered_prompt = rendered_prompt.replace("{query}", case.query)
+        if case.context:
+            rendered_prompt = rendered_prompt.replace("{context}", case.context)
 
         console.print(f"  [dim]Case {i + 1}/{len(cases)}: {case.input[:60]}...[/]")
 
-        # For rubric, use criteria from case; for others, use appropriate fields
+        # Step 1: Call LLM to generate output
+        llm_output = _generate_output(rendered_prompt, gen_model, config)
+
+        console.print(f"    [dim]Output: {llm_output[:80]}...[/]")
+
+        # Step 2: Judge the LLM output
         if metric == "hallucination":
-            collector.hallucination(rendered_prompt, context=case.input, threshold=threshold)
+            context = case.context or case.input
+            collector.hallucination(llm_output, context=context, threshold=threshold)
         elif metric == "relevance":
-            collector.relevance(rendered_prompt, query=case.query or case.input, threshold=threshold)
+            collector.relevance(llm_output, query=case.query or case.input, threshold=threshold)
         elif metric == "toxicity":
-            collector.toxicity(rendered_prompt, threshold=threshold)
+            collector.toxicity(llm_output, threshold=threshold)
         elif metric == "rubric":
             criteria = case.criteria or "Output should be accurate, helpful, and concise."
-            collector.rubric(rendered_prompt, criteria=criteria, threshold=threshold)
+            collector.rubric(llm_output, criteria=criteria, threshold=threshold)
         else:
             console.print(f"[bold red]Unknown metric: {metric}[/]")
             raise typer.Exit(code=1)
@@ -197,12 +211,12 @@ def eval_cmd(
         from datetime import datetime, timezone
 
         tests = {
-            "eval": [
+            f"eval_case_{i}": [
                 TestRunRecord(
                     metrics={r.metric_name: MetricRecord(score=r.score, passed=r.passed)}
                 )
-                for r in collector.results
             ]
+            for i, r in enumerate(collector.results)
         }
         snap = Snapshot(
             version=1,
@@ -214,6 +228,43 @@ def eval_cmd(
 
     failed = [r for r in collector.results if not r.passed]
     raise typer.Exit(code=1 if failed else 0)
+
+
+def _generate_output(prompt: str, model: str, config) -> str:
+    """Call an LLM to generate output from a prompt."""
+    import asyncio
+
+    async def _call():
+        if config.judge_backend == "anthropic":
+            try:
+                from anthropic import AsyncAnthropic
+                client = AsyncAnthropic()
+                response = await client.messages.create(
+                    model=model, max_tokens=1024,
+                    messages=[{"role": "user", "content": prompt}],
+                )
+                return response.content[0].text if response.content else ""
+            except Exception as e:
+                return f"[Generation failed: {e}]"
+        else:
+            from openai import AsyncOpenAI
+            client = AsyncOpenAI()
+            response = await client.chat.completions.create(
+                model=model,
+                messages=[{"role": "user", "content": prompt}],
+                temperature=0.0,
+            )
+            return response.choices[0].message.content or ""
+
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+    if loop and loop.is_running():
+        import concurrent.futures
+        with concurrent.futures.ThreadPoolExecutor() as pool:
+            return pool.submit(asyncio.run, _call()).result()
+    return asyncio.run(_call())
 
 
 @app.command()

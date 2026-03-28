@@ -103,3 +103,37 @@ class DeterministicChecks:
             latency_ms=0,
             metric_name="regex",
         )
+
+    def exact_match(self, output: str, expected: str, ignore_case: bool = False) -> CheckResult:
+        a, b = (output.lower(), expected.lower()) if ignore_case else (output, expected)
+        passed = a.strip() == b.strip()
+        return CheckResult(
+            passed=passed,
+            score=1.0 if passed else 0.0,
+            reasoning=f"Output {'matches' if passed else 'does not match'} expected",
+            cost=0.0,
+            latency_ms=0,
+            metric_name="exact_match",
+        )
+
+    def starts_with(self, output: str, prefix: str) -> CheckResult:
+        passed = output.startswith(prefix)
+        return CheckResult(
+            passed=passed,
+            score=1.0 if passed else 0.0,
+            reasoning=f"Output {'starts' if passed else 'does not start'} with '{prefix}'",
+            cost=0.0,
+            latency_ms=0,
+            metric_name="starts_with",
+        )
+
+    def ends_with(self, output: str, suffix: str) -> CheckResult:
+        passed = output.endswith(suffix)
+        return CheckResult(
+            passed=passed,
+            score=1.0 if passed else 0.0,
+            reasoning=f"Output {'ends' if passed else 'does not end'} with '{suffix}'",
+            cost=0.0,
+            latency_ms=0,
+            metric_name="ends_with",
+        )

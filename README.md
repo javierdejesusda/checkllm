@@ -69,6 +69,10 @@ def test_deterministic(check):
 
     check.contains(output, "expected substring")
     check.not_contains(output, "forbidden text")
+    check.exact_match(output, "exact expected output")
+    check.exact_match(output, "EXPECTED", ignore_case=True)
+    check.starts_with(output, "Python")
+    check.ends_with(output, "language.")
     check.regex(output, pattern=r"\d{3}-\d{4}")
     check.max_tokens(output, limit=500)
     check.latency(response_time_ms, max_ms=2000)
@@ -202,6 +206,31 @@ async def test_async_quality(check):
     # Deterministic checks are always sync (instant, no I/O)
     check.contains(output, "Python")
 ```
+
+## Separating Fast and Slow Tests
+
+Mark LLM tests so you can skip them in fast CI runs:
+
+```python
+import pytest
+
+@pytest.mark.llm
+def test_with_llm(check):
+    check.hallucination(output, context=ctx)
+
+def test_fast(check):
+    check.contains(output, "Python")
+```
+
+```bash
+# Run only fast deterministic tests
+pytest -m "not llm"
+
+# Run only LLM tests
+pytest -m llm
+```
+
+If `OPENAI_API_KEY` is not set, LLM checks automatically skip instead of crashing.
 
 ## Regression Detection
 

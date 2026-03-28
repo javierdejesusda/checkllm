@@ -115,6 +115,21 @@ class CheckCollector:
         self.results.append(result)
         return result
 
+    def exact_match(self, output: str, expected: str, ignore_case: bool = False) -> CheckResult:
+        result = self._deterministic.exact_match(output, expected, ignore_case)
+        self.results.append(result)
+        return result
+
+    def starts_with(self, output: str, prefix: str) -> CheckResult:
+        result = self._deterministic.starts_with(output, prefix)
+        self.results.append(result)
+        return result
+
+    def ends_with(self, output: str, suffix: str) -> CheckResult:
+        result = self._deterministic.ends_with(output, suffix)
+        self.results.append(result)
+        return result
+
     # --- LLM-as-judge checks ---
 
     def hallucination(
