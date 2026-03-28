@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
@@ -43,6 +44,9 @@ def run(
     junit_xml: Optional[str] = typer.Option(None, "--junit-xml", help="Write JUnit XML to this path"),
     html_report: Optional[str] = typer.Option(None, "--html-report", help="Generate HTML report to this path"),
     snapshot: Optional[str] = typer.Option(None, "--snapshot", help="Save snapshot to this path"),
+    budget: Optional[float] = typer.Option(None, "--budget", help="Maximum USD to spend on judge calls"),
+    no_cache: bool = typer.Option(False, "--no-cache", help="Disable judge response caching"),
+    label: Optional[str] = typer.Option(None, "--label", "-l", help="Label for this run in history"),
 ):
     """Run LLM tests with rich terminal output."""
     cmd = [sys.executable, "-m", "pytest", test_path, "-v"]
@@ -53,10 +57,19 @@ def run(
     if snapshot:
         cmd.extend([f"--checkllm-snapshot={snapshot}"])
 
-    result = subprocess.run(cmd)
+    # Pass budget and cache settings via environment
+    import os
+    env = os.environ.copy()
+    if budget is not None:
+        env["CHECKLLM_BUDGET"] = str(budget)
+    if no_cache:
+        env["CHECKLLM_CACHE_ENABLED"] = "false"
+    if label:
+        env["CHECKLLM_RUN_LABEL"] = label
+
+    result = subprocess.run(cmd, env=env)
     exit_code = result.returncode
 
-    # If --compare, compare the just-saved snapshot against a baseline
     if compare and snapshot:
         _run_comparison(compare, snapshot, fail_on_regression)
 
@@ -102,7 +115,6 @@ def snapshot(
     snapshot_dir.mkdir(parents=True, exist_ok=True)
 
     if output is None:
-        from datetime import datetime
         ts = datetime.now().strftime("%Y%m%d_%H%M%S")
         output = str(snapshot_dir / f"snapshot_{ts}.json")
 
@@ -147,29 +159,36 @@ def report(
 @app.command(name="eval")
 def eval_cmd(
     prompt: str = typer.Option(..., "--prompt", "-p", help="Prompt template with {input} placeholder"),
-    dataset_path: str = typer.Option(..., "--dataset", "-d", help="Path to dataset YAML file"),
+    dataset_path: str = typer.Option(..., "--dataset", "-d", help="Path to dataset file (YAML, JSON, CSV)"),
     model: Optional[str] = typer.Option(None, "--model", "-M", help="Model to generate outputs (default: from config)"),
     metric: str = typer.Option("rubric", "--metric", "-m", help="Metric to evaluate (hallucination, relevance, toxicity, rubric)"),
     threshold: float = typer.Option(0.8, "--threshold", "-t", help="Pass/fail threshold"),
     output: Optional[str] = typer.Option(None, "--output", "-o", help="Save results as snapshot JSON"),
+    budget: Optional[float] = typer.Option(None, "--budget", help="Maximum USD to spend on judge calls"),
+    no_cache: bool = typer.Option(False, "--no-cache", help="Disable judge response caching"),
+    label: Optional[str] = typer.Option(None, "--label", "-l", help="Label for this run in history"),
 ):
-    """Evaluate a prompt template against a dataset.
-
-    Sends each prompt to the LLM, then judges the output with the chosen metric.
-    """
+    """Evaluate a prompt template against a dataset."""
     import asyncio
-    from checkllm.datasets.loader import load_yaml_dataset
+    from checkllm.datasets.loader import load_dataset
     from checkllm.check import CheckCollector
     from checkllm.reporting.terminal import render_results
+    from checkllm.history import RunHistory
 
-    cases = load_yaml_dataset(Path(dataset_path))
+    cases = load_dataset(Path(dataset_path))
     config = load_config()
+    if budget is not None:
+        config.budget = budget
+    if no_cache:
+        config.cache_enabled = False
     gen_model = model or config.judge_model
     collector = CheckCollector(config=config)
 
     console.print(f"[bold]Evaluating {len(cases)} cases[/]")
     console.print(f"[dim]Generation model: {gen_model}[/]")
     console.print(f"[dim]Judge metric: {metric} (threshold={threshold})[/]")
+    if config.budget is not None:
+        console.print(f"[dim]Budget: ${config.budget:.2f}[/]")
     console.print()
 
     for i, case in enumerate(cases):
@@ -181,12 +200,9 @@ def eval_cmd(
 
         console.print(f"  [dim]Case {i + 1}/{len(cases)}: {case.input[:60]}...[/]")
 
-        # Step 1: Call LLM to generate output
         llm_output = _generate_output(rendered_prompt, gen_model, config)
-
         console.print(f"    [dim]Output: {llm_output[:80]}...[/]")
 
-        # Step 2: Judge the LLM output
         if metric == "hallucination":
             context = case.context or case.input
             collector.hallucination(llm_output, context=context, threshold=threshold)
@@ -204,11 +220,27 @@ def eval_cmd(
     console.print()
     render_results(collector.results)
 
+    # Show cost summary
+    console.print(f"\n[dim]Total cost: ${collector.total_cost:.4f}[/]")
+    cache_stats = collector.cache_stats
+    if cache_stats.get("session_hits", 0):
+        console.print(
+            f"[dim]Cache: {cache_stats['session_hits']} hits, "
+            f"{cache_stats['session_misses']} misses, "
+            f"saved ${cache_stats['session_saved_cost']:.4f}[/]"
+        )
+
+    # Save to history
+    history = RunHistory()
+    results_dict = {f"eval_case_{i}": [r] for i, r in enumerate(collector.results)}
+    run_id = history.record_run(results_dict, label=label or "eval")
+    console.print(f"[dim]Saved as run #{run_id} in history[/]")
+    history.close()
+
     if output:
         from checkllm.regression.snapshot import (
             MetricRecord, Snapshot, TestRunRecord, save_snapshot,
         )
-        from datetime import datetime, timezone
 
         tests = {
             f"eval_case_{i}": [
@@ -309,6 +341,255 @@ def diff(
 
 
 @app.command()
+def history(
+    limit: int = typer.Option(20, "--limit", "-n", help="Number of runs to show"),
+    run_id: Optional[int] = typer.Option(None, "--run", "-r", help="Show details for a specific run"),
+    trend: Optional[str] = typer.Option(None, "--trend", help="Show score trend for test::metric (e.g. 'test_qa::hallucination')"),
+    compare_runs: Optional[str] = typer.Option(None, "--compare", help="Compare two runs: 'ID1,ID2'"),
+):
+    """View historical run data and trends."""
+    from rich.table import Table
+    from rich.text import Text
+    from checkllm.history import RunHistory
+
+    hist = RunHistory()
+
+    if trend:
+        parts = trend.split("::")
+        if len(parts) != 2:
+            console.print("[bold red]--trend format: 'test_name::metric_name'[/]")
+            raise typer.Exit(code=1)
+        test_name, metric_name = parts
+        data = hist.get_metric_trend(test_name, metric_name, limit=limit)
+        if not data:
+            console.print(f"[dim]No data found for {test_name}::{metric_name}[/]")
+            raise typer.Exit(code=0)
+
+        table = Table(title=f"Trend: {test_name} / {metric_name}")
+        table.add_column("Run", justify="right")
+        table.add_column("Time")
+        table.add_column("Label")
+        table.add_column("Commit")
+        table.add_column("Score", justify="right")
+        table.add_column("Status", width=6)
+
+        for point in data:
+            ts = datetime.fromtimestamp(point["timestamp"]).strftime("%Y-%m-%d %H:%M")
+            status = Text("PASS", style="bold green") if point["passed"] else Text("FAIL", style="bold red")
+            table.add_row(
+                str(point["run_id"]),
+                ts,
+                point["label"] or "",
+                point["git_commit"] or "",
+                f"{point['score']:.3f}",
+                status,
+            )
+        console.print(table)
+        hist.close()
+        raise typer.Exit(code=0)
+
+    if compare_runs:
+        parts = compare_runs.split(",")
+        if len(parts) != 2:
+            console.print("[bold red]--compare format: 'ID1,ID2'[/]")
+            raise typer.Exit(code=1)
+        id1, id2 = int(parts[0].strip()), int(parts[1].strip())
+        run1 = hist.get_run(id1)
+        run2 = hist.get_run(id2)
+        if not run1 or not run2:
+            console.print("[bold red]One or both runs not found[/]")
+            raise typer.Exit(code=1)
+        _render_run_comparison(run1, run2)
+        hist.close()
+        raise typer.Exit(code=0)
+
+    if run_id is not None:
+        record = hist.get_run(run_id)
+        if record is None:
+            console.print(f"[bold red]Run #{run_id} not found[/]")
+            raise typer.Exit(code=1)
+        _render_run_detail(record)
+        hist.close()
+        raise typer.Exit(code=0)
+
+    # Default: list runs
+    runs = hist.list_runs(limit=limit)
+    if not runs:
+        console.print("[dim]No runs recorded yet. Run tests with checkllm to start tracking.[/]")
+        raise typer.Exit(code=0)
+
+    table = Table(title="Run History")
+    table.add_column("ID", justify="right")
+    table.add_column("Time")
+    table.add_column("Label")
+    table.add_column("Commit")
+    table.add_column("Checks", justify="right")
+    table.add_column("Passed", justify="right")
+    table.add_column("Failed", justify="right")
+    table.add_column("Cost", justify="right")
+
+    for r in runs:
+        ts = datetime.fromtimestamp(r.timestamp).strftime("%Y-%m-%d %H:%M")
+        fail_style = "bold red" if r.failed_checks > 0 else "green"
+        table.add_row(
+            str(r.run_id),
+            ts,
+            r.label or "",
+            r.git_commit or "",
+            str(r.total_checks),
+            f"[green]{r.passed_checks}[/]",
+            f"[{fail_style}]{r.failed_checks}[/]",
+            f"${r.total_cost:.4f}",
+        )
+
+    console.print(table)
+    hist.close()
+
+
+def _render_run_detail(record) -> None:
+    """Render detailed view of a single run."""
+    from rich.table import Table
+    from rich.text import Text
+    from checkllm.models import CheckResult
+
+    ts = datetime.fromtimestamp(record.timestamp).strftime("%Y-%m-%d %H:%M:%S")
+    console.print(f"\n[bold]Run #{record.run_id}[/] — {ts}")
+    if record.label:
+        console.print(f"  Label: {record.label}")
+    if record.git_commit:
+        console.print(f"  Commit: {record.git_commit}")
+    console.print(
+        f"  Checks: {record.total_checks} "
+        f"([green]{record.passed_checks} passed[/], "
+        f"[red]{record.failed_checks} failed[/]) "
+        f"— ${record.total_cost:.4f}"
+    )
+
+    for test_name, checks in record.results.items():
+        table = Table(title=test_name, show_lines=True)
+        table.add_column("Status", width=6)
+        table.add_column("Metric")
+        table.add_column("Score", justify="right")
+        table.add_column("Reasoning")
+        table.add_column("Cost", justify="right")
+
+        for c in checks:
+            status = Text("PASS", style="bold green") if c["passed"] else Text("FAIL", style="bold red")
+            table.add_row(
+                status,
+                c.get("metric_name", ""),
+                f"{c.get('score', 0):.2f}",
+                (c.get("reasoning", ""))[:80],
+                f"${c.get('cost', 0):.4f}",
+            )
+        console.print(table)
+
+
+def _render_run_comparison(run1, run2) -> None:
+    """Render side-by-side comparison of two runs."""
+    from rich.table import Table
+    from rich.text import Text
+
+    ts1 = datetime.fromtimestamp(run1.timestamp).strftime("%m-%d %H:%M")
+    ts2 = datetime.fromtimestamp(run2.timestamp).strftime("%m-%d %H:%M")
+
+    console.print(f"\n[bold]Comparing Run #{run1.run_id} vs Run #{run2.run_id}[/]")
+    console.print(f"  Run #{run1.run_id}: {ts1} {run1.label or ''} ({run1.git_commit or 'no commit'})")
+    console.print(f"  Run #{run2.run_id}: {ts2} {run2.label or ''} ({run2.git_commit or 'no commit'})")
+
+    # Build lookup of test->metric->score for each run
+    def _build_scores(results):
+        scores = {}
+        for test_name, checks in results.items():
+            for c in checks:
+                key = f"{test_name}::{c.get('metric_name', '')}"
+                scores[key] = c
+        return scores
+
+    scores1 = _build_scores(run1.results)
+    scores2 = _build_scores(run2.results)
+    all_keys = sorted(set(scores1.keys()) | set(scores2.keys()))
+
+    table = Table(title="Score Comparison", show_lines=True)
+    table.add_column("Test :: Metric")
+    table.add_column(f"#{run1.run_id}", justify="right")
+    table.add_column(f"#{run2.run_id}", justify="right")
+    table.add_column("Delta", justify="right")
+    table.add_column("Status", width=10)
+
+    for key in all_keys:
+        c1 = scores1.get(key)
+        c2 = scores2.get(key)
+        s1 = c1["score"] if c1 else None
+        s2 = c2["score"] if c2 else None
+
+        s1_str = f"{s1:.3f}" if s1 is not None else "—"
+        s2_str = f"{s2:.3f}" if s2 is not None else "—"
+
+        if s1 is not None and s2 is not None:
+            delta = s2 - s1
+            delta_str = f"{delta:+.3f}"
+            if delta > 0.01:
+                status = Text("IMPROVED", style="bold green")
+            elif delta < -0.01:
+                status = Text("REGRESSED", style="bold red")
+            else:
+                status = Text("SAME", style="dim")
+        elif s1 is None:
+            delta_str = "new"
+            status = Text("NEW", style="bold cyan")
+        else:
+            delta_str = "removed"
+            status = Text("REMOVED", style="bold yellow")
+
+        table.add_row(key, s1_str, s2_str, delta_str, status)
+
+    console.print(table)
+
+    # Summary
+    cost_delta = run2.total_cost - run1.total_cost
+    pass_delta = run2.passed_checks - run1.passed_checks
+    console.print(
+        f"\n  Cost: ${run1.total_cost:.4f} -> ${run2.total_cost:.4f} ({cost_delta:+.4f})"
+    )
+    console.print(
+        f"  Pass rate: {run1.passed_checks}/{run1.total_checks} -> "
+        f"{run2.passed_checks}/{run2.total_checks} ({pass_delta:+d})"
+    )
+
+
+@app.command()
+def cache(
+    clear: bool = typer.Option(False, "--clear", help="Clear the entire cache"),
+    stats: bool = typer.Option(False, "--stats", help="Show cache statistics"),
+):
+    """Manage the judge response cache."""
+    from checkllm.cache import JudgeCache
+
+    config = load_config()
+    cache_obj = JudgeCache(
+        db_path=Path(config.cache_dir) / "cache.db",
+        ttl_seconds=config.cache_ttl_seconds,
+        enabled=config.cache_enabled,
+    )
+
+    if clear:
+        count = cache_obj.clear()
+        console.print(f"[bold green]Cleared {count} cached entries.[/]")
+    elif stats:
+        s = cache_obj.stats()
+        console.print("[bold]Cache Statistics[/]")
+        console.print(f"  Enabled: {s['enabled']}")
+        console.print(f"  Entries: {s['entries']}")
+        console.print(f"  Size: {s['size_bytes'] / 1024:.1f} KB")
+        console.print(f"  Total cached cost: ${s.get('total_cached_cost', 0):.4f}")
+    else:
+        console.print("[dim]Use --stats to view cache info, --clear to clear it.[/]")
+
+    cache_obj.close()
+
+
+@app.command()
 def init(
     path: str = typer.Argument(".", help="Directory to initialize"),
 ):
@@ -316,7 +597,6 @@ def init(
     target = Path(path)
     target.mkdir(parents=True, exist_ok=True)
 
-    # Add [tool.checkllm] to pyproject.toml if it exists
     pyproject = target / "pyproject.toml"
     checkllm_config = (
         '\n[tool.checkllm]\n'
@@ -324,6 +604,8 @@ def init(
         'default_threshold = 0.8\n'
         'runs_per_test = 1\n'
         'snapshot_dir = ".checkllm/snapshots"\n'
+        'cache_enabled = true\n'
+        'max_concurrency = 10\n'
     )
     if pyproject.exists():
         content = pyproject.read_text()
@@ -352,7 +634,6 @@ def init(
         pyproject.write_text(full_pyproject)
         console.print(f"[green]Created {pyproject}[/]")
 
-    # Create tests directory and conftest
     tests_dir = target / "tests"
     tests_dir.mkdir(exist_ok=True)
     conftest = tests_dir / "conftest.py"
@@ -382,7 +663,6 @@ def init(
     else:
         console.print(f"[dim]{conftest} already exists[/]")
 
-    # Create sample test file
     sample_test = tests_dir / "test_llm_example.py"
     if not sample_test.exists():
         sample_test.write_text(
@@ -421,7 +701,6 @@ def init(
     else:
         console.print(f"[dim]{sample_test} already exists[/]")
 
-    # Create sample dataset
     fixtures_dir = tests_dir / "fixtures"
     fixtures_dir.mkdir(exist_ok=True)
     sample_dataset = fixtures_dir / "cases.yaml"
@@ -442,7 +721,6 @@ def init(
     else:
         console.print(f"[dim]{sample_dataset} already exists[/]")
 
-    # Create .checkllm directory
     checkllm_dir = target / ".checkllm" / "snapshots"
     checkllm_dir.mkdir(parents=True, exist_ok=True)
     gitkeep = checkllm_dir / ".gitkeep"
@@ -454,6 +732,8 @@ def init(
         f"  Run tests:     [cyan]checkllm run tests/[/]\n"
         f"  Save baseline: [cyan]checkllm snapshot tests/[/]\n"
         f"  HTML report:   [cyan]checkllm report tests/[/]\n"
+        f"  View history:  [cyan]checkllm history[/]\n"
+        f"  Cache stats:   [cyan]checkllm cache --stats[/]\n"
     )
 
 

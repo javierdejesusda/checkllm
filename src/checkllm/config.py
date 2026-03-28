@@ -22,6 +22,20 @@ class CheckllmConfig(BaseModel):
     confidence_level: float = Field(default=0.95, ge=0.0, le=1.0)
     p_value_threshold: float = Field(default=0.05, ge=0.0, le=1.0)
 
+    # Caching
+    cache_enabled: bool = True
+    cache_dir: str = ".checkllm"
+    cache_ttl_seconds: int = Field(default=7 * 24 * 3600, ge=0)
+
+    # Parallelism
+    max_concurrency: int = Field(default=10, ge=1)
+
+    # Cost budget (None = unlimited)
+    budget: float | None = Field(default=None, ge=0.0)
+
+    # Logging
+    log_level: str = "WARNING"
+
     @field_validator("runs_per_test")
     @classmethod
     def validate_runs(cls, v: int) -> int:
@@ -52,6 +66,12 @@ def load_config(project_dir: Path | None = None) -> CheckllmConfig:
         "CHECKLLM_SNAPSHOT_DIR": "snapshot_dir",
         "CHECKLLM_CONFIDENCE_LEVEL": "confidence_level",
         "CHECKLLM_P_VALUE_THRESHOLD": "p_value_threshold",
+        "CHECKLLM_CACHE_ENABLED": "cache_enabled",
+        "CHECKLLM_CACHE_DIR": "cache_dir",
+        "CHECKLLM_CACHE_TTL": "cache_ttl_seconds",
+        "CHECKLLM_MAX_CONCURRENCY": "max_concurrency",
+        "CHECKLLM_BUDGET": "budget",
+        "CHECKLLM_LOG_LEVEL": "log_level",
     }
     for env_key, config_key in env_map.items():
         value = os.environ.get(env_key)

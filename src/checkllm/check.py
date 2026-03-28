@@ -1,19 +1,25 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import statistics
+from pathlib import Path
 from typing import Any, Type
 
 from pydantic import BaseModel
 
+from checkllm.cache import JudgeCache, _cache_key
 from checkllm.config import CheckllmConfig
 from checkllm.deterministic import DeterministicChecks
 from checkllm.judge import JudgeBackend, JudgeConfigError, OpenAIJudge
+from checkllm.logging_config import setup_logging
 from checkllm.metrics.hallucination import HallucinationMetric
 from checkllm.metrics.relevance import RelevanceMetric
 from checkllm.metrics.rubric import RubricMetric
 from checkllm.metrics.toxicity import ToxicityMetric
 from checkllm.models import CheckFailedError, CheckResult
+
+logger = logging.getLogger("checkllm.check")
 
 
 class CheckCollector:
@@ -31,6 +37,22 @@ class CheckCollector:
         self.results: list[CheckResult] = []
         self._deterministic = DeterministicChecks()
         self._judge = judge
+        self._accumulated_cost: float = 0.0
+        self._skipped_budget: int = 0
+
+        # Logging
+        setup_logging(config.log_level)
+
+        # Cache
+        cache_path = Path(config.cache_dir) / "cache.db"
+        self._cache = JudgeCache(
+            db_path=cache_path,
+            ttl_seconds=config.cache_ttl_seconds,
+            enabled=config.cache_enabled,
+        )
+
+        # Concurrency semaphore for parallel judge calls
+        self._semaphore = asyncio.Semaphore(config.max_concurrency)
 
     def _get_judge(self) -> JudgeBackend:
         if self._judge is None:
@@ -40,6 +62,30 @@ class CheckCollector:
             else:
                 self._judge = OpenAIJudge(model=self.config.judge_model)
         return self._judge
+
+    def _check_budget(self) -> bool:
+        """Return True if we are within budget, False if budget exceeded."""
+        if self.config.budget is None:
+            return True
+        return self._accumulated_cost < self.config.budget
+
+    def _make_budget_skip_result(self, metric_name: str) -> CheckResult:
+        """Create a skipped result when budget is exceeded."""
+        self._skipped_budget += 1
+        logger.warning(
+            "Budget $%.2f exceeded (spent $%.4f) — skipping %s",
+            self.config.budget,
+            self._accumulated_cost,
+            metric_name,
+        )
+        return CheckResult(
+            passed=True,
+            score=0.0,
+            reasoning=f"Skipped: budget ${self.config.budget:.2f} exceeded (spent ${self._accumulated_cost:.4f})",
+            cost=0.0,
+            latency_ms=0,
+            metric_name=metric_name,
+        )
 
     def _run_async(self, coro):
         """Run an async coroutine synchronously."""
@@ -77,6 +123,17 @@ class CheckCollector:
             latency_ms=total_latency,
             metric_name=results[0].metric_name,
         )
+
+    def _track_cost(self, result: CheckResult) -> None:
+        """Update the accumulated cost counter."""
+        self._accumulated_cost += result.cost
+        if result.cost > 0:
+            logger.debug(
+                "%s cost=$%.4f, total=$%.4f",
+                result.metric_name,
+                result.cost,
+                self._accumulated_cost,
+            )
 
     # --- Deterministic checks ---
 
@@ -130,66 +187,145 @@ class CheckCollector:
         self.results.append(result)
         return result
 
-    # --- LLM-as-judge checks ---
+    # --- LLM-as-judge checks (with caching + budget) ---
+
+    def _cached_judge_check(
+        self,
+        metric_name: str,
+        metric_factory,
+        coro_factory,
+        cache_kwargs: dict,
+        runs: int | None = None,
+    ) -> CheckResult:
+        """Run an LLM judge check with caching and budget enforcement."""
+        # Budget gate
+        if not self._check_budget():
+            result = self._make_budget_skip_result(metric_name)
+            self.results.append(result)
+            return result
+
+        # Cache lookup
+        judge = self._get_judge()
+        model = getattr(judge, "model", "unknown")
+        key = _cache_key(metric_name, model, **cache_kwargs)
+        cached = self._cache.get(key)
+        if cached is not None:
+            logger.info("Using cached result for %s", metric_name)
+            self.results.append(cached)
+            return cached
+
+        # Execute
+        result = self._run_with_repeats(coro_factory, runs)
+        self._track_cost(result)
+
+        # Store in cache
+        self._cache.put(key, metric_name, model, result)
+
+        self.results.append(result)
+        return result
 
     def hallucination(
-        self, output: str, context: str, threshold: float | None = None, runs: int | None = None,
+        self,
+        output: str,
+        context: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
     ) -> CheckResult:
         t = threshold if threshold is not None else self.config.default_threshold
         metric = HallucinationMetric(judge=self._get_judge(), threshold=t)
-        result = self._run_with_repeats(
-            lambda: metric.evaluate(output=output, context=context), runs
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="hallucination",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output, context=context),
+            cache_kwargs={"output": output, "context": context, "threshold": str(t)},
+            runs=runs,
         )
-        self.results.append(result)
-        return result
 
     def relevance(
-        self, output: str, query: str, threshold: float | None = None, runs: int | None = None,
+        self,
+        output: str,
+        query: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
     ) -> CheckResult:
         t = threshold if threshold is not None else self.config.default_threshold
         metric = RelevanceMetric(judge=self._get_judge(), threshold=t)
-        result = self._run_with_repeats(
-            lambda: metric.evaluate(output=output, query=query), runs
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="relevance",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output, query=query),
+            cache_kwargs={"output": output, "query": query, "threshold": str(t)},
+            runs=runs,
         )
-        self.results.append(result)
-        return result
 
     def toxicity(
-        self, output: str, threshold: float | None = None, runs: int | None = None,
+        self,
+        output: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
     ) -> CheckResult:
         t = threshold if threshold is not None else self.config.default_threshold
         metric = ToxicityMetric(judge=self._get_judge(), threshold=t)
-        result = self._run_with_repeats(
-            lambda: metric.evaluate(output=output), runs
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="toxicity",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output),
+            cache_kwargs={"output": output, "threshold": str(t)},
+            runs=runs,
         )
-        self.results.append(result)
-        return result
 
     def rubric(
-        self, output: str, criteria: str, threshold: float | None = None, runs: int | None = None,
+        self,
+        output: str,
+        criteria: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
     ) -> CheckResult:
         t = threshold if threshold is not None else self.config.default_threshold
         metric = RubricMetric(judge=self._get_judge())
-        result = self._run_with_repeats(
-            lambda: metric.evaluate(output=output, criteria=criteria, threshold=t), runs
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="rubric",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output, criteria=criteria, threshold=t),
+            cache_kwargs={"output": output, "criteria": criteria, "threshold": str(t)},
+            runs=runs,
         )
-        self.results.append(result)
-        return result
+
+    # --- Parallel batch execution ---
+
+    async def _run_judge_async(self, coro) -> CheckResult:
+        """Run a single judge call with semaphore limiting."""
+        async with self._semaphore:
+            return await coro
+
+    async def aflush(self, tasks: list) -> list[CheckResult]:
+        """Run multiple judge coroutines in parallel (up to max_concurrency).
+
+        Usage::
+
+            results = await check.aflush([
+                check.ahallucination(output, context=ctx),
+                check.arelevance(output, query=q),
+            ])
+        """
+        return await asyncio.gather(*tasks)
 
     # --- Custom metric support ---
 
     def run_metric(self, name: str, output: str, **kwargs: Any) -> CheckResult:
-        """Run a custom registered metric by name.
-
-        Usage::
-
-            @checkllm.metric("my_metric")
-            def my_metric(output: str, **kwargs) -> CheckResult:
-                ...
-
-            def test_it(check):
-                check.run_metric("my_metric", output="hello", custom_arg="value")
-        """
+        """Run a custom registered metric by name."""
         from checkllm.metrics import _global_registry
 
         if name not in _global_registry.metrics:
@@ -206,41 +342,114 @@ class CheckCollector:
 
     async def ahallucination(
         self, output: str, context: str, threshold: float | None = None,
+        system_prompt: str | None = None,
     ) -> CheckResult:
-        """Async version of hallucination check."""
         t = threshold if threshold is not None else self.config.default_threshold
         metric = HallucinationMetric(judge=self._get_judge(), threshold=t)
-        result = await metric.evaluate(output=output, context=context)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+
+        # Cache check
+        model = getattr(self._get_judge(), "model", "unknown")
+        key = _cache_key("hallucination", model, output=output, context=context, threshold=str(t))
+        cached = self._cache.get(key)
+        if cached is not None:
+            self.results.append(cached)
+            return cached
+
+        if not self._check_budget():
+            result = self._make_budget_skip_result("hallucination")
+            self.results.append(result)
+            return result
+
+        async with self._semaphore:
+            result = await metric.evaluate(output=output, context=context)
+        self._track_cost(result)
+        self._cache.put(key, "hallucination", model, result)
         self.results.append(result)
         return result
 
     async def arelevance(
         self, output: str, query: str, threshold: float | None = None,
+        system_prompt: str | None = None,
     ) -> CheckResult:
-        """Async version of relevance check."""
         t = threshold if threshold is not None else self.config.default_threshold
         metric = RelevanceMetric(judge=self._get_judge(), threshold=t)
-        result = await metric.evaluate(output=output, query=query)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+
+        model = getattr(self._get_judge(), "model", "unknown")
+        key = _cache_key("relevance", model, output=output, query=query, threshold=str(t))
+        cached = self._cache.get(key)
+        if cached is not None:
+            self.results.append(cached)
+            return cached
+
+        if not self._check_budget():
+            result = self._make_budget_skip_result("relevance")
+            self.results.append(result)
+            return result
+
+        async with self._semaphore:
+            result = await metric.evaluate(output=output, query=query)
+        self._track_cost(result)
+        self._cache.put(key, "relevance", model, result)
         self.results.append(result)
         return result
 
     async def atoxicity(
         self, output: str, threshold: float | None = None,
+        system_prompt: str | None = None,
     ) -> CheckResult:
-        """Async version of toxicity check."""
         t = threshold if threshold is not None else self.config.default_threshold
         metric = ToxicityMetric(judge=self._get_judge(), threshold=t)
-        result = await metric.evaluate(output=output)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+
+        model = getattr(self._get_judge(), "model", "unknown")
+        key = _cache_key("toxicity", model, output=output, threshold=str(t))
+        cached = self._cache.get(key)
+        if cached is not None:
+            self.results.append(cached)
+            return cached
+
+        if not self._check_budget():
+            result = self._make_budget_skip_result("toxicity")
+            self.results.append(result)
+            return result
+
+        async with self._semaphore:
+            result = await metric.evaluate(output=output)
+        self._track_cost(result)
+        self._cache.put(key, "toxicity", model, result)
         self.results.append(result)
         return result
 
     async def arubric(
         self, output: str, criteria: str, threshold: float | None = None,
+        system_prompt: str | None = None,
     ) -> CheckResult:
-        """Async version of rubric check."""
         t = threshold if threshold is not None else self.config.default_threshold
         metric = RubricMetric(judge=self._get_judge())
-        result = await metric.evaluate(output=output, criteria=criteria, threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+
+        model = getattr(self._get_judge(), "model", "unknown")
+        key = _cache_key("rubric", model, output=output, criteria=criteria, threshold=str(t))
+        cached = self._cache.get(key)
+        if cached is not None:
+            self.results.append(cached)
+            return cached
+
+        if not self._check_budget():
+            result = self._make_budget_skip_result("rubric")
+            self.results.append(result)
+            return result
+
+        async with self._semaphore:
+            result = await metric.evaluate(output=output, criteria=criteria, threshold=t)
+        self._track_cost(result)
+        self._cache.put(key, "rubric", model, result)
         self.results.append(result)
         return result
 
@@ -248,9 +457,42 @@ class CheckCollector:
 
     def teardown(self) -> None:
         """Raise CheckFailedError if any checks failed."""
+        # Log session summary
+        cache_stats = self._cache.stats()
+        if cache_stats.get("session_hits", 0) or cache_stats.get("session_misses", 0):
+            logger.info(
+                "Cache: %d hits, %d misses, saved $%.4f",
+                cache_stats["session_hits"],
+                cache_stats["session_misses"],
+                cache_stats["session_saved_cost"],
+            )
+        if self._accumulated_cost > 0:
+            logger.info("Total cost: $%.4f", self._accumulated_cost)
+        if self._skipped_budget > 0:
+            logger.warning(
+                "Budget: %d judge call(s) skipped (budget=$%.2f, spent=$%.4f)",
+                self._skipped_budget,
+                self.config.budget,
+                self._accumulated_cost,
+            )
+
+        self._cache.close()
+
         failed = [r for r in self.results if not r.passed]
         if failed:
             raise CheckFailedError(self.results)
+
+    # --- Properties ---
+
+    @property
+    def total_cost(self) -> float:
+        """Total cost accumulated across all judge calls this session."""
+        return self._accumulated_cost
+
+    @property
+    def cache_stats(self) -> dict:
+        """Return cache hit/miss statistics."""
+        return self._cache.stats()
 
     # --- Repr ---
 

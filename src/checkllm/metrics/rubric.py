@@ -20,6 +20,7 @@ class RubricMetric:
 
     def __init__(self, judge: JudgeBackend) -> None:
         self.judge = judge
+        self.system_prompt: str = RUBRIC_SYSTEM_PROMPT
 
     async def evaluate(
         self, output: str, criteria: str, threshold: float = 0.8
@@ -31,7 +32,7 @@ class RubricMetric:
         )
         start = time.perf_counter_ns()
         response = await self.judge.evaluate(
-            prompt=prompt, system_prompt=RUBRIC_SYSTEM_PROMPT
+            prompt=prompt, system_prompt=self.system_prompt
         )
         elapsed_ms = (time.perf_counter_ns() - start) // 1_000_000
 

@@ -21,6 +21,7 @@ class HallucinationMetric:
     def __init__(self, judge: JudgeBackend, threshold: float = 0.8) -> None:
         self.judge = judge
         self.threshold = threshold
+        self.system_prompt: str = HALLUCINATION_SYSTEM_PROMPT
 
     async def evaluate(self, output: str, context: str) -> CheckResult:
         prompt = (
@@ -30,7 +31,7 @@ class HallucinationMetric:
         )
         start = time.perf_counter_ns()
         response = await self.judge.evaluate(
-            prompt=prompt, system_prompt=HALLUCINATION_SYSTEM_PROMPT
+            prompt=prompt, system_prompt=self.system_prompt
         )
         elapsed_ms = (time.perf_counter_ns() - start) // 1_000_000
 

@@ -133,7 +133,7 @@ def pytest_configure(config: pytest.Config) -> None:
 
 
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
-    """After all tests, generate snapshots and reports if requested."""
+    """After all tests, generate snapshots, reports, and record history."""
     config = session.config
     results = _store.results
 
@@ -163,6 +163,18 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
         except Exception as exc:
             import sys
             print(f"checkllm: failed to save JUnit report: {exc}", file=sys.stderr)
+
+    # Record in history
+    try:
+        import os
+        from checkllm.history import RunHistory
+        label = os.environ.get("CHECKLLM_RUN_LABEL", "pytest")
+        history = RunHistory()
+        history.record_run(results, label=label)
+        history.close()
+    except Exception as exc:
+        import sys
+        print(f"checkllm: failed to record history: {exc}", file=sys.stderr)
 
 
 def _save_snapshot(results: dict[str, list[CheckResult]], path: Path) -> None:

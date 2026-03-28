@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "checkllm"
-version = "0.1.0"
+version = "0.2.0"
 description = "Test LLM-powered applications with the same rigor as traditional software."
 readme = "README.md"
 license = "MIT"
@@ -69,3 +69,7 @@ judge_model = "gpt-4o"
 default_threshold = 0.8
 runs_per_test = 1
 snapshot_dir = ".checkllm/snapshots"
+cache_enabled = true
+cache_ttl_seconds = 604800
+max_concurrency = 10
+log_level = "WARNING"

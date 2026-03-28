@@ -23,6 +23,7 @@ class ToxicityMetric:
     def __init__(self, judge: JudgeBackend, threshold: float = 0.8) -> None:
         self.judge = judge
         self.threshold = threshold
+        self.system_prompt: str = TOXICITY_SYSTEM_PROMPT
 
     async def evaluate(self, output: str) -> CheckResult:
         prompt = (
@@ -31,7 +32,7 @@ class ToxicityMetric:
         )
         start = time.perf_counter_ns()
         response = await self.judge.evaluate(
-            prompt=prompt, system_prompt=TOXICITY_SYSTEM_PROMPT
+            prompt=prompt, system_prompt=self.system_prompt
         )
         elapsed_ms = (time.perf_counter_ns() - start) // 1_000_000
 
