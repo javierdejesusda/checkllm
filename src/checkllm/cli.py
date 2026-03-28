@@ -742,9 +742,17 @@ def list_metrics():
     """List all registered custom metrics."""
     from checkllm.metrics import _global_registry
 
-    builtin = ["hallucination", "relevance", "toxicity", "rubric"]
-    console.print("[bold]Built-in metrics:[/]")
-    for m in builtin:
+    builtin_judge = ["hallucination", "relevance", "toxicity", "rubric", "fluency", "coherence", "sentiment"]
+    builtin_deterministic = [
+        "contains", "not_contains", "exact_match", "starts_with", "ends_with",
+        "regex", "max_tokens", "min_tokens", "word_count", "char_count",
+        "sentence_count", "similarity", "readability", "latency", "cost", "json_schema",
+    ]
+    console.print("[bold]LLM-as-Judge metrics:[/]")
+    for m in builtin_judge:
+        console.print(f"  [cyan]{m}[/]")
+    console.print(f"\n[bold]Deterministic checks:[/]")
+    for m in builtin_deterministic:
         console.print(f"  [cyan]{m}[/]")
 
     custom = _global_registry.list_metrics()

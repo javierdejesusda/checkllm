@@ -13,9 +13,12 @@ from checkllm.config import CheckllmConfig
 from checkllm.deterministic import DeterministicChecks
 from checkllm.judge import JudgeBackend, JudgeConfigError, OpenAIJudge
 from checkllm.logging_config import setup_logging
+from checkllm.metrics.coherence import CoherenceMetric
+from checkllm.metrics.fluency import FluencyMetric
 from checkllm.metrics.hallucination import HallucinationMetric
 from checkllm.metrics.relevance import RelevanceMetric
 from checkllm.metrics.rubric import RubricMetric
+from checkllm.metrics.sentiment import SentimentMetric
 from checkllm.metrics.toxicity import ToxicityMetric
 from checkllm.models import CheckFailedError, CheckResult
 
@@ -187,6 +190,36 @@ class CheckCollector:
         self.results.append(result)
         return result
 
+    def min_tokens(self, output: str, minimum: int) -> CheckResult:
+        result = self._deterministic.min_tokens(output, minimum)
+        self.results.append(result)
+        return result
+
+    def word_count(self, output: str, min_words: int | None = None, max_words: int | None = None) -> CheckResult:
+        result = self._deterministic.word_count(output, min_words, max_words)
+        self.results.append(result)
+        return result
+
+    def char_count(self, output: str, min_chars: int | None = None, max_chars: int | None = None) -> CheckResult:
+        result = self._deterministic.char_count(output, min_chars, max_chars)
+        self.results.append(result)
+        return result
+
+    def similarity(self, output: str, expected: str, threshold: float = 0.8, ignore_case: bool = False) -> CheckResult:
+        result = self._deterministic.similarity(output, expected, threshold, ignore_case)
+        self.results.append(result)
+        return result
+
+    def readability(self, output: str, max_grade: float | None = None, min_grade: float | None = None) -> CheckResult:
+        result = self._deterministic.readability(output, max_grade, min_grade)
+        self.results.append(result)
+        return result
+
+    def sentence_count(self, output: str, min_sentences: int | None = None, max_sentences: int | None = None) -> CheckResult:
+        result = self._deterministic.sentence_count(output, min_sentences, max_sentences)
+        self.results.append(result)
+        return result
+
     # --- LLM-as-judge checks (with caching + budget) ---
 
     def _cached_judge_check(
@@ -300,6 +333,63 @@ class CheckCollector:
             metric_factory=lambda: metric,
             coro_factory=lambda: metric.evaluate(output=output, criteria=criteria, threshold=t),
             cache_kwargs={"output": output, "criteria": criteria, "threshold": str(t)},
+            runs=runs,
+        )
+
+    def fluency(
+        self,
+        output: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = FluencyMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="fluency",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output),
+            cache_kwargs={"output": output, "threshold": str(t)},
+            runs=runs,
+        )
+
+    def coherence(
+        self,
+        output: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = CoherenceMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="coherence",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output),
+            cache_kwargs={"output": output, "threshold": str(t)},
+            runs=runs,
+        )
+
+    def sentiment(
+        self,
+        output: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        t = threshold if threshold is not None else 0.5  # neutral default
+        metric = SentimentMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="sentiment",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output),
+            cache_kwargs={"output": output, "threshold": str(t)},
             runs=runs,
         )
 
@@ -450,6 +540,90 @@ class CheckCollector:
             result = await metric.evaluate(output=output, criteria=criteria, threshold=t)
         self._track_cost(result)
         self._cache.put(key, "rubric", model, result)
+        self.results.append(result)
+        return result
+
+    async def afluency(
+        self, output: str, threshold: float | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = FluencyMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+
+        model = getattr(self._get_judge(), "model", "unknown")
+        key = _cache_key("fluency", model, output=output, threshold=str(t))
+        cached = self._cache.get(key)
+        if cached is not None:
+            self.results.append(cached)
+            return cached
+
+        if not self._check_budget():
+            result = self._make_budget_skip_result("fluency")
+            self.results.append(result)
+            return result
+
+        async with self._semaphore:
+            result = await metric.evaluate(output=output)
+        self._track_cost(result)
+        self._cache.put(key, "fluency", model, result)
+        self.results.append(result)
+        return result
+
+    async def acoherence(
+        self, output: str, threshold: float | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = CoherenceMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+
+        model = getattr(self._get_judge(), "model", "unknown")
+        key = _cache_key("coherence", model, output=output, threshold=str(t))
+        cached = self._cache.get(key)
+        if cached is not None:
+            self.results.append(cached)
+            return cached
+
+        if not self._check_budget():
+            result = self._make_budget_skip_result("coherence")
+            self.results.append(result)
+            return result
+
+        async with self._semaphore:
+            result = await metric.evaluate(output=output)
+        self._track_cost(result)
+        self._cache.put(key, "coherence", model, result)
+        self.results.append(result)
+        return result
+
+    async def asentiment(
+        self, output: str, threshold: float | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        t = threshold if threshold is not None else 0.5
+        metric = SentimentMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+
+        model = getattr(self._get_judge(), "model", "unknown")
+        key = _cache_key("sentiment", model, output=output, threshold=str(t))
+        cached = self._cache.get(key)
+        if cached is not None:
+            self.results.append(cached)
+            return cached
+
+        if not self._check_budget():
+            result = self._make_budget_skip_result("sentiment")
+            self.results.append(result)
+            return result
+
+        async with self._semaphore:
+            result = await metric.evaluate(output=output)
+        self._track_cost(result)
+        self._cache.put(key, "sentiment", model, result)
         self.results.append(result)
         return result
 

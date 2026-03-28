@@ -5,50 +5,158 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>checkllm Report</title>
 <style>
+  :root {
+    --green: #16a34a;
+    --red: #dc2626;
+    --blue: #2563eb;
+    --orange: #ea580c;
+    --gray-50: #f9fafb;
+    --gray-100: #f3f4f6;
+    --gray-200: #e5e7eb;
+    --gray-300: #d1d5db;
+    --gray-500: #6b7280;
+    --gray-700: #374151;
+    --gray-900: #111827;
+  }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f5f5f5; color: #333; padding: 2rem; }
-  .container { max-width: 960px; margin: 0 auto; }
-  h1 { margin-bottom: 1rem; }
-  .summary { display: flex; gap: 1rem; margin-bottom: 2rem; }
-  .card { background: white; border-radius: 8px; padding: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); flex: 1; text-align: center; }
-  .card .number { font-size: 2rem; font-weight: bold; }
-  .card.passed .number { color: #16a34a; }
-  .card.failed .number { color: #dc2626; }
-  .card.cost .number { color: #2563eb; }
-  table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 2rem; }
-  th, td { padding: 0.75rem 1rem; text-align: left; border-bottom: 1px solid #e5e7eb; }
-  th { background: #f9fafb; font-weight: 600; }
-  .pass { color: #16a34a; font-weight: bold; }
-  .fail { color: #dc2626; font-weight: bold; }
-  .reasoning { max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: var(--gray-50); color: var(--gray-900); }
+
+  /* Header */
+  .header { background: var(--gray-900); color: white; padding: 1.5rem 2rem; }
+  .header h1 { font-size: 1.5rem; font-weight: 600; }
+  .header .subtitle { color: var(--gray-500); font-size: 0.875rem; margin-top: 0.25rem; }
+
+  /* Container */
+  .container { max-width: 1100px; margin: 0 auto; padding: 1.5rem; }
+
+  /* Summary cards */
+  .summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+  .card {
+    background: white; border-radius: 12px; padding: 1.25rem;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08); text-align: center;
+    border-top: 3px solid var(--gray-200);
+  }
+  .card .number { font-size: 2rem; font-weight: 700; line-height: 1.2; }
+  .card .label { font-size: 0.8rem; color: var(--gray-500); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.25rem; }
+  .card.passed { border-top-color: var(--green); }
+  .card.passed .number { color: var(--green); }
+  .card.failed { border-top-color: var(--red); }
+  .card.failed .number { color: var(--red); }
+  .card.cost { border-top-color: var(--blue); }
+  .card.cost .number { color: var(--blue); }
+  .card.total { border-top-color: var(--gray-500); }
+  .card.total .number { color: var(--gray-700); }
+  .card.rate { border-top-color: var(--orange); }
+  .card.rate .number { color: var(--orange); }
+
+  /* Pass rate bar */
+  .pass-bar-container { height: 6px; background: var(--gray-200); border-radius: 3px; margin: 1.5rem 0; overflow: hidden; }
+  .pass-bar { height: 100%; background: linear-gradient(90deg, var(--green), #22c55e); border-radius: 3px; transition: width 0.3s; }
+
+  /* Test sections */
+  .test-section { background: white; border-radius: 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.08); margin-bottom: 1.25rem; overflow: hidden; }
+  .test-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 1rem 1.25rem; cursor: pointer; user-select: none;
+    border-bottom: 1px solid var(--gray-100);
+  }
+  .test-header:hover { background: var(--gray-50); }
+  .test-header h2 { font-size: 0.95rem; font-weight: 600; word-break: break-all; }
+  .test-badge { font-size: 0.75rem; padding: 0.2rem 0.6rem; border-radius: 9999px; font-weight: 600; white-space: nowrap; }
+  .test-badge.all-pass { background: #dcfce7; color: var(--green); }
+  .test-badge.has-fail { background: #fee2e2; color: var(--red); }
+  .test-body { display: none; }
+  .test-section.open .test-body { display: block; }
+  .test-section.open .test-header .chevron { transform: rotate(90deg); }
+  .chevron { transition: transform 0.2s; color: var(--gray-500); font-size: 0.8rem; margin-right: 0.75rem; }
+
+  /* Table */
+  table { width: 100%; border-collapse: collapse; }
+  th { background: var(--gray-50); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--gray-500); }
+  th, td { padding: 0.65rem 1rem; text-align: left; border-bottom: 1px solid var(--gray-100); }
+  td { font-size: 0.875rem; }
+  .status-pass { color: var(--green); font-weight: 700; }
+  .status-fail { color: var(--red); font-weight: 700; }
+  .score-cell { font-family: "SF Mono", "Fira Code", monospace; }
+  .reasoning-cell { max-width: 400px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--gray-700); }
+  .reasoning-cell:hover { white-space: normal; word-break: break-word; }
+  .cost-cell, .latency-cell { font-family: "SF Mono", "Fira Code", monospace; font-size: 0.8rem; color: var(--gray-500); }
+
+  /* Score bar */
+  .score-bar-container { display: inline-block; width: 50px; height: 6px; background: var(--gray-200); border-radius: 3px; vertical-align: middle; margin-left: 0.5rem; }
+  .score-bar { height: 100%; border-radius: 3px; }
+  .score-bar.high { background: var(--green); }
+  .score-bar.mid { background: var(--orange); }
+  .score-bar.low { background: var(--red); }
+
+  /* Footer */
+  .footer { text-align: center; padding: 2rem; color: var(--gray-500); font-size: 0.8rem; }
+
+  /* Responsive */
+  @media (max-width: 640px) {
+    .container { padding: 1rem; }
+    .summary { grid-template-columns: repeat(2, 1fr); }
+    .reasoning-cell { max-width: 200px; }
+  }
 </style>
 </head>
 <body>
-<div class="container">
+<div class="header">
   <h1>checkllm Report</h1>
+  <div class="subtitle">{{ results|length }} test(s) &middot; {{ passed_count + failed_count }} check(s) &middot; ${{ "%.4f"|format(total_cost) }} total cost</div>
+</div>
+<div class="container">
   <div class="summary">
-    <div class="card passed"><div class="number">{{ passed_count }}</div><div>Passed</div></div>
-    <div class="card failed"><div class="number">{{ failed_count }}</div><div>Failed</div></div>
-    <div class="card cost"><div class="number">${{ "%.4f"|format(total_cost) }}</div><div>Total Cost</div></div>
+    <div class="card total"><div class="number">{{ passed_count + failed_count }}</div><div class="label">Total Checks</div></div>
+    <div class="card passed"><div class="number">{{ passed_count }}</div><div class="label">Passed</div></div>
+    <div class="card failed"><div class="number">{{ failed_count }}</div><div class="label">Failed</div></div>
+    <div class="card rate"><div class="number">{% if passed_count + failed_count > 0 %}{{ "%.0f"|format(passed_count / (passed_count + failed_count) * 100) }}%{% else %}—{% endif %}</div><div class="label">Pass Rate</div></div>
+    <div class="card cost"><div class="number">${{ "%.4f"|format(total_cost) }}</div><div class="label">Total Cost</div></div>
   </div>
+
+  {% if passed_count + failed_count > 0 %}
+  <div class="pass-bar-container">
+    <div class="pass-bar" style="width: {{ (passed_count / (passed_count + failed_count) * 100)|round }}%"></div>
+  </div>
+  {% endif %}
+
   {% for test_name, checks in results.items() %}
-  <h2>{{ test_name }}</h2>
-  <table>
-    <thead><tr><th>Status</th><th>Metric</th><th>Score</th><th>Reasoning</th><th>Cost</th><th>Latency</th></tr></thead>
-    <tbody>
-    {% for c in checks %}
-    <tr>
-      <td class="{{ 'pass' if c.passed else 'fail' }}">{{ "PASS" if c.passed else "FAIL" }}</td>
-      <td>{{ c.metric_name }}</td>
-      <td>{{ "%.2f"|format(c.score) }}</td>
-      <td class="reasoning" title="{{ c.reasoning }}">{{ c.reasoning }}</td>
-      <td>${{ "%.4f"|format(c.cost) }}</td>
-      <td>{{ c.latency_ms }}ms</td>
-    </tr>
-    {% endfor %}
-    </tbody>
-  </table>
+  {% set test_failed = checks|selectattr("passed", "equalto", false)|list|length %}
+  <div class="test-section{% if test_failed %} open{% endif %}">
+    <div class="test-header" onclick="this.parentElement.classList.toggle('open')">
+      <div style="display: flex; align-items: center;">
+        <span class="chevron">&#9654;</span>
+        <h2>{{ test_name }}</h2>
+      </div>
+      <span class="test-badge {% if test_failed %}has-fail{% else %}all-pass{% endif %}">
+        {% if test_failed %}{{ test_failed }} failed{% else %}all passed{% endif %}
+      </span>
+    </div>
+    <div class="test-body">
+      <table>
+        <thead><tr><th>Status</th><th>Metric</th><th>Score</th><th>Reasoning</th><th>Cost</th><th>Latency</th></tr></thead>
+        <tbody>
+        {% for c in checks %}
+        <tr>
+          <td class="{{ 'status-pass' if c.passed else 'status-fail' }}">{{ "PASS" if c.passed else "FAIL" }}</td>
+          <td>{{ c.metric_name }}</td>
+          <td class="score-cell">
+            {{ "%.2f"|format(c.score) }}
+            <div class="score-bar-container">
+              <div class="score-bar {% if c.score >= 0.8 %}high{% elif c.score >= 0.5 %}mid{% else %}low{% endif %}" style="width: {{ (c.score * 100)|round }}%"></div>
+            </div>
+          </td>
+          <td class="reasoning-cell" title="{{ c.reasoning }}">{{ c.reasoning }}</td>
+          <td class="cost-cell">${{ "%.4f"|format(c.cost) }}</td>
+          <td class="latency-cell">{{ c.latency_ms }}ms</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
   {% endfor %}
 </div>
+<div class="footer">Generated by checkllm</div>
 </body>
 </html>

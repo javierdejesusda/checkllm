@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 import re
 from typing import Any, Type
 
@@ -8,6 +9,63 @@ import tiktoken
 from pydantic import BaseModel, ValidationError
 
 from checkllm.models import CheckResult
+
+
+def _levenshtein_ratio(s1: str, s2: str) -> float:
+    """Compute Levenshtein similarity ratio (0.0 = completely different, 1.0 = identical)."""
+    if s1 == s2:
+        return 1.0
+    len1, len2 = len(s1), len(s2)
+    if len1 == 0 or len2 == 0:
+        return 0.0
+    # Wagner-Fischer algorithm
+    prev = list(range(len2 + 1))
+    for i in range(1, len1 + 1):
+        curr = [i] + [0] * len2
+        for j in range(1, len2 + 1):
+            cost = 0 if s1[i - 1] == s2[j - 1] else 1
+            curr[j] = min(curr[j - 1] + 1, prev[j] + 1, prev[j - 1] + cost)
+        prev = curr
+    distance = prev[len2]
+    max_len = max(len1, len2)
+    return 1.0 - (distance / max_len)
+
+
+def _flesch_kincaid_grade(text: str) -> float:
+    """Compute approximate Flesch-Kincaid Grade Level."""
+    sentences = re.split(r'[.!?]+', text)
+    sentences = [s.strip() for s in sentences if s.strip()]
+    if not sentences:
+        return 0.0
+    words = text.split()
+    if not words:
+        return 0.0
+    syllable_count = sum(_count_syllables(w) for w in words)
+    num_sentences = len(sentences)
+    num_words = len(words)
+    return (
+        0.39 * (num_words / num_sentences)
+        + 11.8 * (syllable_count / num_words)
+        - 15.59
+    )
+
+
+def _count_syllables(word: str) -> int:
+    """Rough syllable count for English words."""
+    word = word.lower().strip(".,!?;:\"'()-")
+    if not word:
+        return 0
+    count = 0
+    vowels = "aeiouy"
+    prev_vowel = False
+    for char in word:
+        is_vowel = char in vowels
+        if is_vowel and not prev_vowel:
+            count += 1
+        prev_vowel = is_vowel
+    if word.endswith("e") and count > 1:
+        count -= 1
+    return max(count, 1)
 
 
 class DeterministicChecks:
@@ -46,6 +104,83 @@ class DeterministicChecks:
             cost=0.0,
             latency_ms=0,
             metric_name="max_tokens",
+        )
+
+    def min_tokens(self, output: str, minimum: int) -> CheckResult:
+        enc = tiktoken.get_encoding("cl100k_base")
+        token_count = len(enc.encode(output))
+        passed = token_count >= minimum
+        return CheckResult(
+            passed=passed,
+            score=min(1.0, token_count / max(minimum, 1)),
+            reasoning=f"Token count: {token_count}, minimum: {minimum}",
+            cost=0.0,
+            latency_ms=0,
+            metric_name="min_tokens",
+        )
+
+    def word_count(self, output: str, min_words: int | None = None, max_words: int | None = None) -> CheckResult:
+        count = len(output.split())
+        passed = True
+        reasons = [f"Word count: {count}"]
+        if min_words is not None:
+            if count < min_words:
+                passed = False
+            reasons.append(f"min: {min_words}")
+        if max_words is not None:
+            if count > max_words:
+                passed = False
+            reasons.append(f"max: {max_words}")
+
+        if min_words is not None and max_words is not None:
+            target = (min_words + max_words) / 2
+            score = max(0.0, 1.0 - abs(count - target) / max(target, 1))
+        elif max_words is not None:
+            score = min(1.0, max_words / max(count, 1))
+        elif min_words is not None:
+            score = min(1.0, count / max(min_words, 1))
+        else:
+            score = 1.0
+
+        return CheckResult(
+            passed=passed,
+            score=score,
+            reasoning=", ".join(reasons),
+            cost=0.0,
+            latency_ms=0,
+            metric_name="word_count",
+        )
+
+    def char_count(self, output: str, min_chars: int | None = None, max_chars: int | None = None) -> CheckResult:
+        count = len(output)
+        passed = True
+        reasons = [f"Char count: {count}"]
+        if min_chars is not None:
+            if count < min_chars:
+                passed = False
+            reasons.append(f"min: {min_chars}")
+        if max_chars is not None:
+            if count > max_chars:
+                passed = False
+            reasons.append(f"max: {max_chars}")
+
+        if min_chars is not None and max_chars is not None:
+            target = (min_chars + max_chars) / 2
+            score = max(0.0, 1.0 - abs(count - target) / max(target, 1))
+        elif max_chars is not None:
+            score = min(1.0, max_chars / max(count, 1))
+        elif min_chars is not None:
+            score = min(1.0, count / max(min_chars, 1))
+        else:
+            score = 1.0
+
+        return CheckResult(
+            passed=passed,
+            score=score,
+            reasoning=", ".join(reasons),
+            cost=0.0,
+            latency_ms=0,
+            metric_name="char_count",
         )
 
     def latency(self, actual_ms: int | float, max_ms: int | float) -> CheckResult:
@@ -136,4 +271,91 @@ class DeterministicChecks:
             cost=0.0,
             latency_ms=0,
             metric_name="ends_with",
+        )
+
+    def similarity(self, output: str, expected: str, threshold: float = 0.8, ignore_case: bool = False) -> CheckResult:
+        """Lexical similarity using Levenshtein ratio."""
+        a, b = (output.lower(), expected.lower()) if ignore_case else (output, expected)
+        ratio = _levenshtein_ratio(a, b)
+        passed = ratio >= threshold
+        return CheckResult(
+            passed=passed,
+            score=ratio,
+            reasoning=f"Levenshtein similarity: {ratio:.3f} (threshold: {threshold})",
+            cost=0.0,
+            latency_ms=0,
+            metric_name="similarity",
+        )
+
+    def readability(self, output: str, max_grade: float | None = None, min_grade: float | None = None) -> CheckResult:
+        """Flesch-Kincaid Grade Level check."""
+        grade = _flesch_kincaid_grade(output)
+        passed = True
+        reasons = [f"Flesch-Kincaid grade: {grade:.1f}"]
+        if max_grade is not None:
+            if grade > max_grade:
+                passed = False
+            reasons.append(f"max: {max_grade}")
+        if min_grade is not None:
+            if grade < min_grade:
+                passed = False
+            reasons.append(f"min: {min_grade}")
+
+        # Score: 1.0 if within range, lower as it deviates
+        if max_grade is not None and min_grade is not None:
+            if min_grade <= grade <= max_grade:
+                score = 1.0
+            else:
+                dist = min(abs(grade - min_grade), abs(grade - max_grade))
+                score = max(0.0, 1.0 - dist / 10.0)
+        elif max_grade is not None:
+            score = min(1.0, max_grade / max(grade, 0.1)) if grade > max_grade else 1.0
+        elif min_grade is not None:
+            score = min(1.0, grade / max(min_grade, 0.1)) if grade < min_grade else 1.0
+        else:
+            score = 1.0
+            passed = True
+
+        return CheckResult(
+            passed=passed,
+            score=max(0.0, min(1.0, score)),
+            reasoning=", ".join(reasons),
+            cost=0.0,
+            latency_ms=0,
+            metric_name="readability",
+        )
+
+    def sentence_count(self, output: str, min_sentences: int | None = None, max_sentences: int | None = None) -> CheckResult:
+        """Count sentences and check against bounds."""
+        sentences = re.split(r'[.!?]+', output)
+        sentences = [s.strip() for s in sentences if s.strip()]
+        count = len(sentences)
+        passed = True
+        reasons = [f"Sentence count: {count}"]
+        if min_sentences is not None:
+            if count < min_sentences:
+                passed = False
+            reasons.append(f"min: {min_sentences}")
+        if max_sentences is not None:
+            if count > max_sentences:
+                passed = False
+            reasons.append(f"max: {max_sentences}")
+
+        if min_sentences is not None and max_sentences is not None:
+            target = (min_sentences + max_sentences) / 2
+            score = max(0.0, 1.0 - abs(count - target) / max(target, 1))
+        elif max_sentences is not None:
+            score = min(1.0, max_sentences / max(count, 1))
+        elif min_sentences is not None:
+            score = min(1.0, count / max(min_sentences, 1))
+        else:
+            score = 1.0
+
+        return CheckResult(
+            passed=passed,
+            score=score,
+            reasoning=", ".join(reasons),
+            cost=0.0,
+            latency_ms=0,
+            metric_name="sentence_count",
         )
