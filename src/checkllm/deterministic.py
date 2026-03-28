@@ -359,3 +359,90 @@ class DeterministicChecks:
             latency_ms=0,
             metric_name="sentence_count",
         )
+
+    # --- Compound checks ---
+
+    def all_of(self, output: str, substrings: list[str]) -> CheckResult:
+        """Check that ALL substrings are present in the output."""
+        found = [s for s in substrings if s in output]
+        missing = [s for s in substrings if s not in output]
+        passed = len(missing) == 0
+        score = len(found) / max(len(substrings), 1)
+        if missing:
+            reasoning = f"Missing: {', '.join(repr(s) for s in missing)}"
+        else:
+            reasoning = f"All {len(substrings)} substrings found"
+        return CheckResult(
+            passed=passed, score=score, reasoning=reasoning,
+            cost=0.0, latency_ms=0, metric_name="all_of",
+        )
+
+    def any_of(self, output: str, substrings: list[str]) -> CheckResult:
+        """Check that at least ONE substring is present in the output."""
+        found = [s for s in substrings if s in output]
+        passed = len(found) > 0
+        score = min(1.0, len(found) / max(len(substrings), 1))
+        if found:
+            reasoning = f"Found: {', '.join(repr(s) for s in found)}"
+        else:
+            reasoning = f"None of {len(substrings)} substrings found"
+        return CheckResult(
+            passed=passed, score=score, reasoning=reasoning,
+            cost=0.0, latency_ms=0, metric_name="any_of",
+        )
+
+    def none_of(self, output: str, substrings: list[str]) -> CheckResult:
+        """Check that NONE of the substrings are present in the output."""
+        found = [s for s in substrings if s in output]
+        passed = len(found) == 0
+        score = 1.0 - (len(found) / max(len(substrings), 1))
+        if found:
+            reasoning = f"Unexpectedly found: {', '.join(repr(s) for s in found)}"
+        else:
+            reasoning = f"None of {len(substrings)} substrings found (good)"
+        return CheckResult(
+            passed=passed, score=score, reasoning=reasoning,
+            cost=0.0, latency_ms=0, metric_name="none_of",
+        )
+
+    # --- Code / structure validation ---
+
+    def is_json(self, output: str) -> CheckResult:
+        """Check that the output is valid JSON (without requiring a schema)."""
+        try:
+            json.loads(output)
+            return CheckResult(
+                passed=True, score=1.0, reasoning="Valid JSON",
+                cost=0.0, latency_ms=0, metric_name="is_json",
+            )
+        except json.JSONDecodeError as e:
+            return CheckResult(
+                passed=False, score=0.0,
+                reasoning=f"Invalid JSON: {e}",
+                cost=0.0, latency_ms=0, metric_name="is_json",
+            )
+
+    def is_valid_python(self, output: str) -> CheckResult:
+        """Check that the output is syntactically valid Python code."""
+        # Strip common markdown code fences
+        code = output.strip()
+        if code.startswith("```python"):
+            code = code[len("```python"):]
+        elif code.startswith("```"):
+            code = code[3:]
+        if code.endswith("```"):
+            code = code[:-3]
+        code = code.strip()
+
+        try:
+            compile(code, "<checkllm>", "exec")
+            return CheckResult(
+                passed=True, score=1.0, reasoning="Valid Python syntax",
+                cost=0.0, latency_ms=0, metric_name="is_valid_python",
+            )
+        except SyntaxError as e:
+            return CheckResult(
+                passed=False, score=0.0,
+                reasoning=f"Syntax error: {e.msg} (line {e.lineno})",
+                cost=0.0, latency_ms=0, metric_name="is_valid_python",
+            )

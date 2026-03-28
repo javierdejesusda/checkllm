@@ -14,6 +14,7 @@ from checkllm.deterministic import DeterministicChecks
 from checkllm.judge import JudgeBackend, JudgeConfigError, OpenAIJudge
 from checkllm.logging_config import setup_logging
 from checkllm.metrics.coherence import CoherenceMetric
+from checkllm.metrics.correctness import CorrectnessMetric
 from checkllm.metrics.fluency import FluencyMetric
 from checkllm.metrics.hallucination import HallucinationMetric
 from checkllm.metrics.relevance import RelevanceMetric
@@ -220,6 +221,31 @@ class CheckCollector:
         self.results.append(result)
         return result
 
+    def all_of(self, output: str, substrings: list[str]) -> CheckResult:
+        result = self._deterministic.all_of(output, substrings)
+        self.results.append(result)
+        return result
+
+    def any_of(self, output: str, substrings: list[str]) -> CheckResult:
+        result = self._deterministic.any_of(output, substrings)
+        self.results.append(result)
+        return result
+
+    def none_of(self, output: str, substrings: list[str]) -> CheckResult:
+        result = self._deterministic.none_of(output, substrings)
+        self.results.append(result)
+        return result
+
+    def is_json(self, output: str) -> CheckResult:
+        result = self._deterministic.is_json(output)
+        self.results.append(result)
+        return result
+
+    def is_valid_python(self, output: str) -> CheckResult:
+        result = self._deterministic.is_valid_python(output)
+        self.results.append(result)
+        return result
+
     # --- LLM-as-judge checks (with caching + budget) ---
 
     def _cached_judge_check(
@@ -390,6 +416,26 @@ class CheckCollector:
             metric_factory=lambda: metric,
             coro_factory=lambda: metric.evaluate(output=output),
             cache_kwargs={"output": output, "threshold": str(t)},
+            runs=runs,
+        )
+
+    def correctness(
+        self,
+        output: str,
+        expected: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = CorrectnessMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="correctness",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output, expected=expected),
+            cache_kwargs={"output": output, "expected": expected, "threshold": str(t)},
             runs=runs,
         )
 
@@ -624,6 +670,34 @@ class CheckCollector:
             result = await metric.evaluate(output=output)
         self._track_cost(result)
         self._cache.put(key, "sentiment", model, result)
+        self.results.append(result)
+        return result
+
+    async def acorrectness(
+        self, output: str, expected: str, threshold: float | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = CorrectnessMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+
+        model = getattr(self._get_judge(), "model", "unknown")
+        key = _cache_key("correctness", model, output=output, expected=expected, threshold=str(t))
+        cached = self._cache.get(key)
+        if cached is not None:
+            self.results.append(cached)
+            return cached
+
+        if not self._check_budget():
+            result = self._make_budget_skip_result("correctness")
+            self.results.append(result)
+            return result
+
+        async with self._semaphore:
+            result = await metric.evaluate(output=output, expected=expected)
+        self._track_cost(result)
+        self._cache.put(key, "correctness", model, result)
         self.results.append(result)
         return result
 

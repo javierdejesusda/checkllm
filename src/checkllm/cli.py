@@ -191,31 +191,54 @@ def eval_cmd(
         console.print(f"[dim]Budget: ${config.budget:.2f}[/]")
     console.print()
 
-    for i, case in enumerate(cases):
-        rendered_prompt = prompt.replace("{input}", case.input)
-        if case.query:
-            rendered_prompt = rendered_prompt.replace("{query}", case.query)
-        if case.context:
-            rendered_prompt = rendered_prompt.replace("{context}", case.context)
+    valid_metrics = {"hallucination", "relevance", "toxicity", "rubric", "fluency", "coherence", "sentiment", "correctness"}
+    if metric not in valid_metrics:
+        console.print(f"[bold red]Unknown metric: {metric}. Valid: {', '.join(sorted(valid_metrics))}[/]")
+        raise typer.Exit(code=1)
 
-        console.print(f"  [dim]Case {i + 1}/{len(cases)}: {case.input[:60]}...[/]")
+    from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, MofNCompleteColumn
 
-        llm_output = _generate_output(rendered_prompt, gen_model, config)
-        console.print(f"    [dim]Output: {llm_output[:80]}...[/]")
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        MofNCompleteColumn(),
+        console=console,
+    ) as progress:
+        task = progress.add_task("Evaluating", total=len(cases))
 
-        if metric == "hallucination":
-            context = case.context or case.input
-            collector.hallucination(llm_output, context=context, threshold=threshold)
-        elif metric == "relevance":
-            collector.relevance(llm_output, query=case.query or case.input, threshold=threshold)
-        elif metric == "toxicity":
-            collector.toxicity(llm_output, threshold=threshold)
-        elif metric == "rubric":
-            criteria = case.criteria or "Output should be accurate, helpful, and concise."
-            collector.rubric(llm_output, criteria=criteria, threshold=threshold)
-        else:
-            console.print(f"[bold red]Unknown metric: {metric}[/]")
-            raise typer.Exit(code=1)
+        for i, case in enumerate(cases):
+            rendered_prompt = prompt.replace("{input}", case.input)
+            if case.query:
+                rendered_prompt = rendered_prompt.replace("{query}", case.query)
+            if case.context:
+                rendered_prompt = rendered_prompt.replace("{context}", case.context)
+
+            progress.update(task, description=f"Case {i + 1}: {case.input[:40]}...")
+
+            llm_output = _generate_output(rendered_prompt, gen_model, config)
+
+            if metric == "hallucination":
+                context = case.context or case.input
+                collector.hallucination(llm_output, context=context, threshold=threshold)
+            elif metric == "relevance":
+                collector.relevance(llm_output, query=case.query or case.input, threshold=threshold)
+            elif metric == "toxicity":
+                collector.toxicity(llm_output, threshold=threshold)
+            elif metric == "rubric":
+                criteria = case.criteria or "Output should be accurate, helpful, and concise."
+                collector.rubric(llm_output, criteria=criteria, threshold=threshold)
+            elif metric == "fluency":
+                collector.fluency(llm_output, threshold=threshold)
+            elif metric == "coherence":
+                collector.coherence(llm_output, threshold=threshold)
+            elif metric == "sentiment":
+                collector.sentiment(llm_output, threshold=threshold)
+            elif metric == "correctness":
+                expected = case.expected or case.input
+                collector.correctness(llm_output, expected=expected, threshold=threshold)
+
+            progress.advance(task)
 
     console.print()
     render_results(collector.results)
@@ -742,11 +765,13 @@ def list_metrics():
     """List all registered custom metrics."""
     from checkllm.metrics import _global_registry
 
-    builtin_judge = ["hallucination", "relevance", "toxicity", "rubric", "fluency", "coherence", "sentiment"]
+    builtin_judge = ["hallucination", "relevance", "toxicity", "rubric", "fluency", "coherence", "sentiment", "correctness"]
     builtin_deterministic = [
         "contains", "not_contains", "exact_match", "starts_with", "ends_with",
         "regex", "max_tokens", "min_tokens", "word_count", "char_count",
-        "sentence_count", "similarity", "readability", "latency", "cost", "json_schema",
+        "sentence_count", "similarity", "readability", "latency", "cost",
+        "json_schema", "is_json", "is_valid_python",
+        "all_of", "any_of", "none_of",
     ]
     console.print("[bold]LLM-as-Judge metrics:[/]")
     for m in builtin_judge:
