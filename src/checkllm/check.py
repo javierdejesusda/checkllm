@@ -263,6 +263,31 @@ class CheckCollector:
         self.results.append(result)
         return result
 
+    def no_pii(self, output: str, patterns: list[str] | None = None) -> CheckResult:
+        result = self._deterministic.no_pii(output, patterns)
+        self.results.append(result)
+        return result
+
+    def language(self, output: str, expected: str) -> CheckResult:
+        result = self._deterministic.language(output, expected)
+        self.results.append(result)
+        return result
+
+    def greater_than(self, output: str, threshold: float) -> CheckResult:
+        result = self._deterministic.greater_than(output, threshold)
+        self.results.append(result)
+        return result
+
+    def less_than(self, output: str, threshold: float) -> CheckResult:
+        result = self._deterministic.less_than(output, threshold)
+        self.results.append(result)
+        return result
+
+    def between(self, output: str, low: float, high: float) -> CheckResult:
+        result = self._deterministic.between(output, low, high)
+        self.results.append(result)
+        return result
+
     # --- LLM-as-judge checks (with caching + budget) ---
 
     def _cached_judge_check(

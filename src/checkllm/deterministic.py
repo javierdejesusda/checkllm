@@ -446,3 +446,157 @@ class DeterministicChecks:
                 reasoning=f"Syntax error: {e.msg} (line {e.lineno})",
                 cost=0.0, latency_ms=0, metric_name="is_valid_python",
             )
+
+    # --- PII detection ---
+
+    _PII_PATTERNS: list[tuple[str, str]] = [
+        ("email", r"[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}"),
+        ("phone_us", r"\b(?:\+?1[-.\s]?)?\(?\d{3}\)?[-.\s]?\d{3}[-.\s]?\d{4}\b"),
+        ("ssn", r"\b\d{3}-\d{2}-\d{4}\b"),
+        ("credit_card", r"\b(?:\d{4}[-\s]?){3}\d{4}\b"),
+        ("ip_address", r"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b"),
+    ]
+
+    def no_pii(self, output: str, patterns: list[str] | None = None) -> CheckResult:
+        """Check that the output contains no personally identifiable information.
+
+        By default checks for: email, phone, SSN, credit card, IP address.
+        Pass ``patterns`` to check only specific types.
+        """
+        checks = self._PII_PATTERNS
+        if patterns:
+            checks = [(name, pat) for name, pat in checks if name in patterns]
+
+        found: list[str] = []
+        for name, pattern in checks:
+            matches = re.findall(pattern, output)
+            if matches:
+                found.append(f"{name} ({len(matches)})")
+
+        passed = len(found) == 0
+        if found:
+            reasoning = f"PII detected: {', '.join(found)}"
+        else:
+            reasoning = f"No PII detected (checked {len(checks)} patterns)"
+
+        return CheckResult(
+            passed=passed,
+            score=1.0 if passed else 0.0,
+            reasoning=reasoning,
+            cost=0.0,
+            latency_ms=0,
+            metric_name="no_pii",
+        )
+
+    # --- Language detection (heuristic) ---
+
+    _COMMON_WORDS: dict[str, set[str]] = {
+        "en": {"the", "is", "and", "of", "to", "in", "a", "that", "it", "for", "was", "with", "as", "are", "be", "this", "have", "from", "not", "but"},
+        "es": {"el", "la", "de", "en", "y", "que", "es", "un", "los", "del", "las", "por", "con", "una", "para", "no", "se", "su", "al", "lo"},
+        "fr": {"le", "la", "de", "et", "en", "un", "une", "est", "que", "les", "des", "du", "dans", "qui", "pour", "pas", "sur", "ce", "par", "avec"},
+        "de": {"der", "die", "und", "in", "den", "von", "zu", "das", "mit", "sich", "des", "auf", "ist", "ein", "eine", "dem", "nicht", "auch", "es", "ich"},
+        "pt": {"de", "a", "o", "que", "e", "do", "da", "em", "um", "para", "com", "uma", "os", "no", "se", "na", "por", "mais", "as", "dos"},
+    }
+
+    def language(self, output: str, expected: str) -> CheckResult:
+        """Check that the output appears to be in the expected language.
+
+        Uses word-frequency heuristics. Supports: en, es, fr, de, pt.
+        """
+        expected = expected.lower()
+        if expected not in self._COMMON_WORDS:
+            return CheckResult(
+                passed=False, score=0.0,
+                reasoning=f"Unsupported language '{expected}'. Supported: {', '.join(sorted(self._COMMON_WORDS))}",
+                cost=0.0, latency_ms=0, metric_name="language",
+            )
+
+        words = set(re.findall(r"\b[a-zA-ZÀ-ÿ]+\b", output.lower()))
+        if not words:
+            return CheckResult(
+                passed=False, score=0.0, reasoning="No words found in output",
+                cost=0.0, latency_ms=0, metric_name="language",
+            )
+
+        scores: dict[str, float] = {}
+        for lang, common in self._COMMON_WORDS.items():
+            overlap = len(words & common)
+            scores[lang] = overlap / len(common)
+
+        detected = max(scores, key=scores.get)  # type: ignore[arg-type]
+        confidence = scores[expected]
+        passed = detected == expected
+
+        return CheckResult(
+            passed=passed,
+            score=min(1.0, confidence * 5),  # Scale so ~20% overlap = 1.0
+            reasoning=f"Detected: {detected} (confidence: {scores[detected]:.2f}), expected: {expected}",
+            cost=0.0,
+            latency_ms=0,
+            metric_name="language",
+        )
+
+    # --- Numeric comparison ---
+
+    def _extract_number(self, text: str) -> float | None:
+        """Extract the first number from text."""
+        match = re.search(r"-?\d+(?:\.\d+)?", text)
+        if match:
+            return float(match.group())
+        return None
+
+    def greater_than(self, output: str, threshold: float) -> CheckResult:
+        """Check that the first number in the output is greater than threshold."""
+        value = self._extract_number(output)
+        if value is None:
+            return CheckResult(
+                passed=False, score=0.0,
+                reasoning=f"No number found in output",
+                cost=0.0, latency_ms=0, metric_name="greater_than",
+            )
+        passed = value > threshold
+        score = min(1.0, value / max(abs(threshold), 0.001)) if passed else max(0.0, value / max(abs(threshold), 0.001))
+        return CheckResult(
+            passed=passed, score=min(1.0, max(0.0, score)),
+            reasoning=f"Value: {value}, must be > {threshold}",
+            cost=0.0, latency_ms=0, metric_name="greater_than",
+        )
+
+    def less_than(self, output: str, threshold: float) -> CheckResult:
+        """Check that the first number in the output is less than threshold."""
+        value = self._extract_number(output)
+        if value is None:
+            return CheckResult(
+                passed=False, score=0.0,
+                reasoning=f"No number found in output",
+                cost=0.0, latency_ms=0, metric_name="less_than",
+            )
+        passed = value < threshold
+        score = min(1.0, threshold / max(abs(value), 0.001)) if passed else max(0.0, threshold / max(abs(value), 0.001))
+        return CheckResult(
+            passed=passed, score=min(1.0, max(0.0, score)),
+            reasoning=f"Value: {value}, must be < {threshold}",
+            cost=0.0, latency_ms=0, metric_name="less_than",
+        )
+
+    def between(self, output: str, low: float, high: float) -> CheckResult:
+        """Check that the first number in the output is between low and high (inclusive)."""
+        value = self._extract_number(output)
+        if value is None:
+            return CheckResult(
+                passed=False, score=0.0,
+                reasoning=f"No number found in output",
+                cost=0.0, latency_ms=0, metric_name="between",
+            )
+        passed = low <= value <= high
+        if passed:
+            score = 1.0
+        else:
+            dist = min(abs(value - low), abs(value - high))
+            span = high - low if high > low else 1.0
+            score = max(0.0, 1.0 - dist / span)
+        return CheckResult(
+            passed=passed, score=score,
+            reasoning=f"Value: {value}, must be in [{low}, {high}]",
+            cost=0.0, latency_ms=0, metric_name="between",
+        )

@@ -66,6 +66,20 @@ def pytest_addoption(parser: pytest.Parser) -> None:
         metavar="PATH",
         help="Generate a checkllm JUnit XML report to PATH after the session.",
     )
+    group.addoption(
+        "--checkllm-markdown",
+        action="store",
+        default=None,
+        metavar="PATH",
+        help="Generate a checkllm Markdown report to PATH after the session.",
+    )
+    group.addoption(
+        "--checkllm-jsonl",
+        action="store",
+        default=None,
+        metavar="PATH",
+        help="Export checkllm results as JSONL to PATH after the session.",
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -163,6 +177,24 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
         except Exception as exc:
             import sys
             print(f"checkllm: failed to save JUnit report: {exc}", file=sys.stderr)
+
+    markdown_path = config.getoption("--checkllm-markdown", default=None)
+    if markdown_path:
+        try:
+            from checkllm.reporting.markdown import generate_markdown_report
+            generate_markdown_report(results, Path(markdown_path))
+        except Exception as exc:
+            import sys
+            print(f"checkllm: failed to save Markdown report: {exc}", file=sys.stderr)
+
+    jsonl_path = config.getoption("--checkllm-jsonl", default=None)
+    if jsonl_path:
+        try:
+            from checkllm.reporting.jsonl import export_jsonl
+            export_jsonl(results, Path(jsonl_path))
+        except Exception as exc:
+            import sys
+            print(f"checkllm: failed to save JSONL export: {exc}", file=sys.stderr)
 
     # Record in history
     try:
