@@ -333,12 +333,56 @@ def init(
         else:
             console.print(f"[dim]{pyproject} already has [tool.checkllm] section[/]")
     else:
-        pyproject.write_text(checkllm_config)
+        full_pyproject = (
+            '[project]\n'
+            'name = "my-project"\n'
+            'version = "0.1.0"\n'
+            'dependencies = []\n'
+            '\n'
+            '[project.optional-dependencies]\n'
+            'dev = [\n'
+            '    "checkllm",\n'
+            '    "pytest",\n'
+            ']\n'
+            '\n'
+            '[tool.pytest.ini_options]\n'
+            'testpaths = ["tests"]\n'
+            + checkllm_config
+        )
+        pyproject.write_text(full_pyproject)
         console.print(f"[green]Created {pyproject}[/]")
 
-    # Create sample test file
+    # Create tests directory and conftest
     tests_dir = target / "tests"
     tests_dir.mkdir(exist_ok=True)
+    conftest = tests_dir / "conftest.py"
+    if not conftest.exists():
+        conftest.write_text(
+            '"""checkllm configuration for this project.\n'
+            '\n'
+            'The check fixture is auto-discovered by the checkllm pytest plugin.\n'
+            'Customize the judge backend here if needed.\n'
+            '"""\n'
+            '# To use a custom judge backend, uncomment and modify:\n'
+            '#\n'
+            '# import pytest\n'
+            '# from checkllm.check import CheckCollector\n'
+            '# from checkllm.config import load_config\n'
+            '# from checkllm.judge import OpenAIJudge\n'
+            '#\n'
+            '# @pytest.fixture\n'
+            '# def check(request):\n'
+            '#     config = load_config()\n'
+            '#     judge = OpenAIJudge(model="gpt-4o-mini")  # cheaper model\n'
+            '#     collector = CheckCollector(config=config, judge=judge)\n'
+            '#     request.node.stash[pytest.StashKey[CheckCollector]()] = collector\n'
+            '#     return collector\n'
+        )
+        console.print(f"[green]Created {conftest}[/]")
+    else:
+        console.print(f"[dim]{conftest} already exists[/]")
+
+    # Create sample test file
     sample_test = tests_dir / "test_llm_example.py"
     if not sample_test.exists():
         sample_test.write_text(

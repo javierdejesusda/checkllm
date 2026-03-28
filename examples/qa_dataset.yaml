@@ -1,0 +1,9 @@
+- input: "What is Python?"
+  expected: "Python"
+  query: "Explain Python"
+  criteria: "mentions Python, accurate"
+
+- input: "Explain machine learning"
+  expected: "Machine learning"
+  query: "ML explanation"
+  criteria: "accurate, mentions AI or data"

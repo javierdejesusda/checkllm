@@ -4,6 +4,15 @@ Test LLM-powered applications with the same rigor as traditional software.
 
 checkllm is a pytest plugin and CLI that lets you write assertions for LLM outputs using deterministic checks, LLM-as-judge evaluation, and statistical regression detection.
 
+## Why checkllm?
+
+- **Works with pytest** - no new test runner to learn, just add a `check` fixture
+- **Free deterministic checks** run instantly with zero API calls
+- **LLM-as-judge** for subjective quality (hallucination, relevance, toxicity, custom rubrics)
+- **Statistical regression detection** using Welch's t-test, not just "did it change?"
+- **Multiple judge backends** - OpenAI and Anthropic, or bring your own
+- **One command** to snapshot, report, or diff your test results
+
 ## Installation
 
 ```bash
@@ -314,13 +323,44 @@ config = CheckllmConfig()
 collector = CheckCollector(config=config, judge=MyJudge())
 ```
 
+## Configuring the Judge in conftest.py
+
+To use a cheaper model or a custom backend for all tests:
+
+```python
+# tests/conftest.py
+import pytest
+from checkllm.check import CheckCollector
+from checkllm.config import load_config
+from checkllm.judge import OpenAIJudge
+from checkllm.pytest_plugin import _CHECKLLM_KEY
+
+@pytest.fixture
+def check(request):
+    config = load_config()
+    judge = OpenAIJudge(model="gpt-4o-mini")  # cheaper model for dev
+    collector = CheckCollector(config=config, judge=judge)
+    request.node.stash[_CHECKLLM_KEY] = collector
+    return collector
+```
+
 ## Project Setup
 
 ```bash
 checkllm init
 ```
 
-Creates `pyproject.toml` config, sample test file, sample dataset, and `.checkllm/snapshots/` directory.
+Creates `pyproject.toml`, `tests/conftest.py`, sample test file, sample dataset, and `.checkllm/snapshots/` directory.
+
+## Examples
+
+See the [examples/](examples/) directory for working code:
+
+- [test_basic.py](examples/test_basic.py) - Deterministic checks (no API key needed)
+- [test_dataset_driven.py](examples/test_dataset_driven.py) - YAML and generator datasets
+- [test_custom_metrics.py](examples/test_custom_metrics.py) - Register domain-specific metrics
+- [test_llm_judge.py](examples/test_llm_judge.py) - LLM-as-judge evaluation
+- [test_regression_workflow.py](examples/test_regression_workflow.py) - Snapshot and regression detection
 
 ## License
 
