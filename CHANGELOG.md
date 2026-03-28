@@ -2,6 +2,29 @@
 
 ## 0.2.0 (2026-03-28)
 
+### New Checks (Deterministic)
+
+- **similarity** — Levenshtein ratio for fuzzy string comparison
+- **readability** — Flesch-Kincaid Grade Level with min/max bounds
+- **min_tokens**, **word_count**, **char_count**, **sentence_count** — text length checks with flexible bounds
+- **all_of**, **any_of**, **none_of** — compound substring checks
+- **is_json** — validate parseable JSON without requiring a schema
+- **is_valid_python** — validate Python syntax (auto-strips markdown code fences)
+
+### New Metrics (LLM-as-Judge)
+
+- **fluency** — writing quality and naturalness
+- **coherence** — logical structure and consistency
+- **sentiment** — tone/mood assessment (0=negative, 1=positive)
+- **correctness** — semantic comparison against expected/reference answers
+
+### Developer Experience
+
+- **Soft assertions** (`check.expect.*`) — same API as `check` but never fails the test. Soft checks are recorded with `[soft]` prefix for monitoring during prompt iteration.
+- **py.typed** — PEP 561 marker for type checking support
+- **Rich progress bar** in `checkllm eval` command
+- **Enhanced HTML report** — modern design with score bars, collapsible test sections, pass rate visualization
+
 ### Features
 
 - **Judge response caching**: SQLite-backed content-addressable cache for LLM judge responses. Cache hits return instantly at zero cost. Configurable TTL (default 7 days). CLI commands: `checkllm cache --stats`, `checkllm cache --clear`. Disable with `--no-cache` or `CHECKLLM_CACHE_ENABLED=false`.

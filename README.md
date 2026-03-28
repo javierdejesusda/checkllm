@@ -98,6 +98,20 @@ def test_deterministic(check):
         confidence: float
 
     check.json_schema(output, schema=Response)
+
+    # Compound checks
+    check.all_of(output, ["Python", "programming", "language"])
+    check.any_of(output, ["Python", "Java", "Rust"])
+    check.none_of(output, ["error", "undefined", "null"])
+
+    # Code validation
+    check.is_json('{"key": "value"}')
+    check.is_valid_python("def hello():\n    return 42")
+
+    # Text analysis
+    check.similarity(output, expected_output, threshold=0.8)
+    check.readability(output, max_grade=8.0)
+    check.sentence_count(output, min_sentences=2, max_sentences=5)
 ```
 
 ## LLM-as-Judge Metrics
@@ -113,6 +127,10 @@ def test_llm_quality(check):
     check.relevance(output, query="Summarize the article")
     check.toxicity(output)
     check.rubric(output, criteria="concise, under 3 sentences, mentions key findings")
+    check.fluency(output)
+    check.coherence(output)
+    check.sentiment(output, threshold=0.6)
+    check.correctness(output, expected="Climate change is causing...")
 ```
 
 Each check records a score (0.0-1.0), pass/fail status, reasoning, cost, and latency.
@@ -276,6 +294,26 @@ def test_generated(check, case):
     output = my_agent(case.input)
     check.rubric(output, criteria=case.criteria)
 ```
+
+## Soft Assertions (check.expect)
+
+Use `check.expect` for monitoring-style checks that are recorded in reports but never fail the test. Perfect for tracking quality metrics during prompt iteration without blocking CI:
+
+```python
+def test_with_soft_checks(check):
+    output = my_agent("Explain quantum physics")
+
+    # Hard checks — must pass
+    check.contains(output, "quantum")
+    check.max_tokens(output, limit=500)
+
+    # Soft checks — recorded but won't fail the test
+    check.expect.word_count(output, max_words=100)
+    check.expect.readability(output, max_grade=10.0)
+    check.expect.similarity(output, ideal_output, threshold=0.9)
+```
+
+Soft check results appear in reports with `[soft]` prefix and preserve their actual scores, so you can track trends without blocking deployments.
 
 ## Custom Metrics
 
