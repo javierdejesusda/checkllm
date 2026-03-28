@@ -1,5 +1,30 @@
 # Changelog
 
+## 0.3.0 (2026-03-29)
+
+### Testing Helpers (`checkllm.testing`)
+
+- **MockJudge** — fake judge backend with configurable scores, queued per-metric responses, and call tracking assertions
+- **make_collector()** — factory with test-friendly defaults (cache disabled, MockJudge)
+- **assert_all_passed()**, **assert_score_above()** — assertion helpers
+
+### New Deterministic Checks
+
+- **no_pii** — regex-based PII detection (email, phone, SSN, credit card, IP address)
+- **language** — heuristic word-frequency language detection (en, es, fr, de, pt)
+- **greater_than**, **less_than**, **between** — numeric extraction and comparison
+
+### New Report Formats
+
+- **Markdown report** (`--checkllm-markdown`) — ideal for PR comments and GitHub Actions
+- **JSONL export** (`--checkllm-jsonl`) — one JSON record per line for data pipelines
+- Both available as pytest flags and programmatic API
+
+### Other
+
+- **py.typed** marker for PEP 561 type checking
+- Exported `MockJudge`, `make_collector`, `assert_all_passed`, `assert_score_above` from top-level package
+
 ## 0.2.0 (2026-03-28)
 
 ### New Checks (Deterministic)

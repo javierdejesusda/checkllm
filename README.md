@@ -315,6 +315,65 @@ def test_with_soft_checks(check):
 
 Soft check results appear in reports with `[soft]` prefix and preserve their actual scores, so you can track trends without blocking deployments.
 
+## Safety & Compliance Checks
+
+```python
+def test_safety(check):
+    output = my_agent("...")
+
+    # PII detection (email, phone, SSN, credit card, IP)
+    check.no_pii(output)
+    check.no_pii(output, patterns=["email", "phone"])  # check specific types
+
+    # Language detection (en, es, fr, de, pt)
+    check.language(output, expected="en")
+
+    # Numeric extraction and comparison
+    check.greater_than("Score: 85", threshold=70)
+    check.less_than("Latency: 120ms", threshold=200)
+    check.between("Confidence: 0.87", low=0.0, high=1.0)
+```
+
+## Testing Without API Keys (MockJudge)
+
+Use `MockJudge` to test LLM-powered code without calling real APIs:
+
+```python
+from checkllm.testing import MockJudge, make_collector, assert_all_passed
+
+def test_my_pipeline():
+    judge = MockJudge(default_score=0.9)
+    judge.add_response("hallucination", score=0.95, reasoning="Well grounded")
+
+    collector = make_collector(judge=judge)
+    collector.hallucination("output text", context="source text")
+
+    assert_all_passed(collector)
+    judge.assert_called("hallucination")
+    judge.assert_call_count(1)
+```
+
+`MockJudge` supports queued per-metric responses, call tracking, and assertion helpers.
+
+## Report Formats
+
+```bash
+# HTML report (interactive, visual)
+pytest tests/ --checkllm-report=report.html
+
+# Markdown report (for PR comments)
+pytest tests/ --checkllm-markdown=report.md
+
+# JSONL export (for data pipelines)
+pytest tests/ --checkllm-jsonl=results.jsonl
+
+# JUnit XML (for CI/CD)
+pytest tests/ --checkllm-junit=results.xml
+
+# Combine any of the above
+pytest tests/ --checkllm-report=r.html --checkllm-markdown=r.md --checkllm-jsonl=r.jsonl
+```
+
 ## Custom Metrics
 
 ```python
