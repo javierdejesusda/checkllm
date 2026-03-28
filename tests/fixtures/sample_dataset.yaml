@@ -1,0 +1,7 @@
+- input: "The Earth orbits the Sun in approximately 365.25 days."
+  query: "How long does Earth take to orbit the Sun?"
+  criteria: "mentions 365 days, is concise"
+
+- input: "Python was created by Guido van Rossum in 1991."
+  query: "Who created Python?"
+  criteria: "mentions Guido van Rossum"
