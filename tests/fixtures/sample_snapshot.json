@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "timestamp": "2026-03-28T12:00:00Z",
+  "tests": {
+    "test_summarizer_quality": [
+      {
+        "metrics": {
+          "hallucination": {"score": 0.92, "passed": true},
+          "relevance": {"score": 0.88, "passed": true}
+        }
+      },
+      {
+        "metrics": {
+          "hallucination": {"score": 0.90, "passed": true},
+          "relevance": {"score": 0.85, "passed": true}
+        }
+      }
+    ]
+  }
+}
