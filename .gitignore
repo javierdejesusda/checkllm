@@ -1,0 +1,9 @@
+.worktrees/
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+build/
+.checkllm/
+*.egg
+.venv/
