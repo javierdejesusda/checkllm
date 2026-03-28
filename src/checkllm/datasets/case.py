@@ -9,7 +9,9 @@ class Case(BaseModel):
     """A single test case for dataset-driven evaluation."""
 
     input: str
+    expected: str | None = None
     query: str | None = None
+    context: str | None = None
     criteria: str | None = None
     metadata: dict[str, Any] = Field(default_factory=dict)
 

@@ -81,3 +81,42 @@ class TestCheckCollectorMultipleChecks:
         collector.regex("abc123", pattern=r"\d+")
         assert len(collector.results) == 3
         assert all(r.passed for r in collector.results)
+
+
+class TestCheckCollectorRepr:
+    def test_repr_shows_stats(self):
+        collector = CheckCollector(config=CheckllmConfig())
+        collector.contains("hello", "hello")
+        collector.contains("hello", "bye")
+        r = repr(collector)
+        assert "checks=2" in r
+        assert "passed=1" in r
+        assert "failed=1" in r
+
+
+class TestCheckCollectorCustomMetric:
+    def test_run_metric_with_registered_metric(self):
+        from checkllm.metrics import _global_registry
+        from checkllm.models import CheckResult
+
+        @_global_registry.register("test_custom_check")
+        def custom_check(output: str, **kwargs) -> CheckResult:
+            return CheckResult(
+                passed="good" in output,
+                score=1.0 if "good" in output else 0.0,
+                reasoning="custom check",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="test_custom_check",
+            )
+
+        collector = CheckCollector(config=CheckllmConfig())
+        result = collector.run_metric("test_custom_check", output="this is good")
+        assert result.passed is True
+        assert result.metric_name == "test_custom_check"
+        assert len(collector.results) == 1
+
+    def test_run_metric_unknown_raises(self):
+        collector = CheckCollector(config=CheckllmConfig())
+        with pytest.raises(ValueError, match="not registered"):
+            collector.run_metric("nonexistent_metric", output="test")

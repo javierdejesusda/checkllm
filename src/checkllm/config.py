@@ -14,6 +14,7 @@ except ModuleNotFoundError:
 class CheckllmConfig(BaseModel):
     """Configuration for checkllm, loaded from pyproject.toml."""
 
+    judge_backend: str = "openai"  # "openai" or "anthropic"
     judge_model: str = "gpt-4o"
     default_threshold: float = Field(default=0.8, ge=0.0, le=1.0)
     runs_per_test: int = Field(default=1, ge=1)
@@ -44,6 +45,7 @@ def load_config(project_dir: Path | None = None) -> CheckllmConfig:
 
     env_overrides: dict = {}
     env_map = {
+        "CHECKLLM_JUDGE_BACKEND": "judge_backend",
         "CHECKLLM_JUDGE_MODEL": "judge_model",
         "CHECKLLM_DEFAULT_THRESHOLD": "default_threshold",
         "CHECKLLM_RUNS_PER_TEST": "runs_per_test",

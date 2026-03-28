@@ -33,13 +33,20 @@ dependencies = [
     "jinja2>=3.1.0",
     "pyyaml>=6.0.0",
     "tiktoken>=0.5.0",
+    "tenacity>=8.0.0",
 ]
 
 [project.optional-dependencies]
+anthropic = [
+    "anthropic>=0.20.0",
+]
 dev = [
     "pytest>=7.0.0",
     "pytest-asyncio>=0.21.0",
     "coverage>=7.0.0",
+]
+all = [
+    "checkllm[anthropic]",
 ]
 
 [project.entry-points.pytest11]

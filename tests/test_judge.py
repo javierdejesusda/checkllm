@@ -5,7 +5,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from checkllm.judge import JudgeBackend, OpenAIJudge
+from checkllm.judge import JudgeBackend, JudgeConfigError, OpenAIJudge, estimate_cost
 from checkllm.models import JudgeResponse
 
 
@@ -81,3 +81,26 @@ class TestOpenAIJudge:
             response = await judge.evaluate("test prompt")
         assert response.score == 0.0
         assert "parse" in response.reasoning.lower() or "failed" in response.reasoning.lower()
+
+
+class TestJudgeConfigError:
+    def test_missing_api_key_raises_clear_error(self, monkeypatch):
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+        with pytest.raises(JudgeConfigError, match="OPENAI_API_KEY"):
+            OpenAIJudge(model="gpt-4o")
+
+    def test_cost_tracking(self):
+        judge = OpenAIJudge(model="gpt-4o", api_key="test-key")
+        assert judge.total_cost == 0.0
+        assert repr(judge) == "OpenAIJudge(model='gpt-4o', total_cost=$0.0000)"
+
+
+class TestEstimateCost:
+    def test_known_model(self):
+        cost = estimate_cost("gpt-4o", prompt_tokens=1000, completion_tokens=500)
+        expected = 1000 * 2.50 / 1_000_000 + 500 * 10.00 / 1_000_000
+        assert abs(cost - expected) < 1e-10
+
+    def test_unknown_model_uses_default(self):
+        cost = estimate_cost("unknown-model", prompt_tokens=100, completion_tokens=50)
+        assert cost > 0

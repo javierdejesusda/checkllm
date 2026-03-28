@@ -139,6 +139,32 @@ class TestCliVersion:
         assert "0.1.0" in result.output
 
 
+class TestCliInit:
+    def test_init_creates_sample_files(self, tmp_path):
+        result = runner.invoke(app, ["init", str(tmp_path)])
+        assert result.exit_code == 0
+        assert (tmp_path / "pyproject.toml").exists()
+        assert (tmp_path / "tests" / "test_llm_example.py").exists()
+        assert (tmp_path / "tests" / "fixtures" / "cases.yaml").exists()
+        assert (tmp_path / ".checkllm" / "snapshots" / ".gitkeep").exists()
+
+    def test_init_idempotent(self, tmp_path):
+        runner.invoke(app, ["init", str(tmp_path)])
+        result = runner.invoke(app, ["init", str(tmp_path)])
+        assert result.exit_code == 0
+        assert "already exists" in result.output or "already has" in result.output
+
+
+class TestCliListMetrics:
+    def test_lists_builtin_metrics(self):
+        result = runner.invoke(app, ["list-metrics"])
+        assert result.exit_code == 0
+        assert "hallucination" in result.output
+        assert "relevance" in result.output
+        assert "toxicity" in result.output
+        assert "rubric" in result.output
+
+
 class TestJudgeCostTracking:
     def test_estimate_cost(self):
         from checkllm.judge import estimate_cost

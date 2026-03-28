@@ -26,6 +26,15 @@ class TestCase:
         assert case.criteria is None
         assert case.metadata == {}
 
+    def test_case_with_expected_and_context(self):
+        case = Case(
+            input="What is 2+2?",
+            expected="4",
+            context="Math problem",
+        )
+        assert case.expected == "4"
+        assert case.context == "Math problem"
+
     def test_case_expected_criteria_alias(self):
         case = Case(input="test", criteria="must be concise")
         assert case.expected_criteria == "must be concise"

@@ -255,3 +255,127 @@ def diff(
         console.print("\n[bold green]No regressions detected.[/]")
 
     raise typer.Exit(code=0)
+
+
+@app.command()
+def init(
+    path: str = typer.Argument(".", help="Directory to initialize"),
+):
+    """Scaffold a new checkllm project with sample files."""
+    target = Path(path)
+    target.mkdir(parents=True, exist_ok=True)
+
+    # Add [tool.checkllm] to pyproject.toml if it exists
+    pyproject = target / "pyproject.toml"
+    checkllm_config = (
+        '\n[tool.checkllm]\n'
+        'judge_model = "gpt-4o"\n'
+        'default_threshold = 0.8\n'
+        'runs_per_test = 1\n'
+        'snapshot_dir = ".checkllm/snapshots"\n'
+    )
+    if pyproject.exists():
+        content = pyproject.read_text()
+        if "[tool.checkllm]" not in content:
+            pyproject.write_text(content + checkllm_config)
+            console.print(f"[green]Updated {pyproject} with [tool.checkllm] config[/]")
+        else:
+            console.print(f"[dim]{pyproject} already has [tool.checkllm] section[/]")
+    else:
+        pyproject.write_text(checkllm_config)
+        console.print(f"[green]Created {pyproject}[/]")
+
+    # Create sample test file
+    tests_dir = target / "tests"
+    tests_dir.mkdir(exist_ok=True)
+    sample_test = tests_dir / "test_llm_example.py"
+    if not sample_test.exists():
+        sample_test.write_text(
+            '"""Sample checkllm test file."""\n'
+            '\n'
+            '\n'
+            'def test_output_quality(check):\n'
+            '    """Example: check an LLM output with deterministic checks."""\n'
+            '    output = "Python is a high-level programming language."\n'
+            '\n'
+            '    check.contains(output, "Python")\n'
+            '    check.not_contains(output, "JavaScript")\n'
+            '    check.max_tokens(output, limit=50)\n'
+            '    check.regex(output, pattern=r"[A-Z][a-z]+")\n'
+            '\n'
+            '\n'
+            'def test_json_output(check):\n'
+            '    """Example: validate JSON structure."""\n'
+            '    from pydantic import BaseModel\n'
+            '\n'
+            '    class Response(BaseModel):\n'
+            '        answer: str\n'
+            '        confidence: float\n'
+            '\n'
+            '    output = \'{"answer": "42", "confidence": 0.95}\'\n'
+            '    check.json_schema(output, schema=Response)\n'
+            '\n'
+            '\n'
+            '# Uncomment below to test with LLM-as-judge (requires OPENAI_API_KEY)\n'
+            '# def test_hallucination(check):\n'
+            '#     output = "The sky is blue due to Rayleigh scattering."\n'
+            '#     context = "Rayleigh scattering causes the sky to appear blue."\n'
+            '#     check.hallucination(output, context=context)\n'
+        )
+        console.print(f"[green]Created {sample_test}[/]")
+    else:
+        console.print(f"[dim]{sample_test} already exists[/]")
+
+    # Create sample dataset
+    fixtures_dir = tests_dir / "fixtures"
+    fixtures_dir.mkdir(exist_ok=True)
+    sample_dataset = fixtures_dir / "cases.yaml"
+    if not sample_dataset.exists():
+        sample_dataset.write_text(
+            '# Sample dataset for checkllm\n'
+            '- input: "What is Python?"\n'
+            '  expected: "Python is a programming language"\n'
+            '  query: "Explain Python"\n'
+            '  criteria: "accurate, concise"\n'
+            '\n'
+            '- input: "What is 2+2?"\n'
+            '  expected: "4"\n'
+            '  query: "Simple math"\n'
+            '  criteria: "correct answer"\n'
+        )
+        console.print(f"[green]Created {sample_dataset}[/]")
+    else:
+        console.print(f"[dim]{sample_dataset} already exists[/]")
+
+    # Create .checkllm directory
+    checkllm_dir = target / ".checkllm" / "snapshots"
+    checkllm_dir.mkdir(parents=True, exist_ok=True)
+    gitkeep = checkllm_dir / ".gitkeep"
+    if not gitkeep.exists():
+        gitkeep.touch()
+
+    console.print(
+        f"\n[bold green]checkllm initialized![/]\n\n"
+        f"  Run tests:     [cyan]checkllm run tests/[/]\n"
+        f"  Save baseline: [cyan]checkllm snapshot tests/[/]\n"
+        f"  HTML report:   [cyan]checkllm report tests/[/]\n"
+    )
+
+
+@app.command(name="list-metrics")
+def list_metrics():
+    """List all registered custom metrics."""
+    from checkllm.metrics import _global_registry
+
+    builtin = ["hallucination", "relevance", "toxicity", "rubric"]
+    console.print("[bold]Built-in metrics:[/]")
+    for m in builtin:
+        console.print(f"  [cyan]{m}[/]")
+
+    custom = _global_registry.list_metrics()
+    if custom:
+        console.print(f"\n[bold]Custom registered metrics:[/]")
+        for m in custom:
+            console.print(f"  [cyan]{m}[/]")
+    else:
+        console.print(f"\n[dim]No custom metrics registered.[/]")
