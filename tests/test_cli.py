@@ -20,13 +20,20 @@ class TestCliRun:
             cmd = mock_run.call_args[0][0]
             assert "pytest" in cmd[0] or "pytest" in str(cmd)
 
-    def test_run_with_junit_xml(self):
+    def test_run_with_snapshot_and_report(self):
         with patch("checkllm.cli.subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(returncode=0)
-            result = runner.invoke(app, ["run", "tests/", "--junit-xml", "out.xml"])
+            result = runner.invoke(app, [
+                "run", "tests/",
+                "--snapshot", "snap.json",
+                "--html-report", "report.html",
+                "--junit-xml", "results.xml",
+            ])
             assert result.exit_code == 0
             cmd = mock_run.call_args[0][0]
-            assert any("junit" in str(a).lower() for a in cmd)
+            assert any("--checkllm-snapshot" in str(a) for a in cmd)
+            assert any("--checkllm-report" in str(a) for a in cmd)
+            assert any("--checkllm-junit" in str(a) for a in cmd)
 
 
 class TestCliSnapshot:

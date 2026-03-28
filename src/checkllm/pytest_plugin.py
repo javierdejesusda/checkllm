@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import functools
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Callable
 
@@ -10,9 +11,66 @@ from checkllm.check import CheckCollector
 from checkllm.config import load_config
 from checkllm.datasets.case import Case
 from checkllm.datasets.loader import load_dataset
+from checkllm.models import CheckResult
 
 _CHECKLLM_KEY = pytest.StashKey[CheckCollector]()
 
+
+# ---------------------------------------------------------------------------
+# Session-level result store
+# ---------------------------------------------------------------------------
+
+class _SessionStore:
+    """Collects per-test CheckResults across the entire pytest session."""
+
+    def __init__(self) -> None:
+        self.results: dict[str, list[CheckResult]] = {}
+
+    def record(self, node_id: str, results: list[CheckResult]) -> None:
+        if results:
+            self.results[node_id] = list(results)
+
+
+_store = _SessionStore()
+
+
+def get_session_results() -> dict[str, list[CheckResult]]:
+    """Public accessor for session-wide results (used by CLI)."""
+    return _store.results
+
+
+# ---------------------------------------------------------------------------
+# pytest command-line options
+# ---------------------------------------------------------------------------
+
+def pytest_addoption(parser: pytest.Parser) -> None:
+    group = parser.getgroup("checkllm", "checkllm LLM testing options")
+    group.addoption(
+        "--checkllm-snapshot",
+        action="store",
+        default=None,
+        metavar="PATH",
+        help="Save a checkllm snapshot to PATH after the session.",
+    )
+    group.addoption(
+        "--checkllm-report",
+        action="store",
+        default=None,
+        metavar="PATH",
+        help="Generate a checkllm HTML report to PATH after the session.",
+    )
+    group.addoption(
+        "--checkllm-junit",
+        action="store",
+        default=None,
+        metavar="PATH",
+        help="Generate a checkllm JUnit XML report to PATH after the session.",
+    )
+
+
+# ---------------------------------------------------------------------------
+# Fixtures
+# ---------------------------------------------------------------------------
 
 @pytest.fixture
 def check(request):
@@ -23,21 +81,113 @@ def check(request):
     return collector
 
 
+# ---------------------------------------------------------------------------
+# Hooks
+# ---------------------------------------------------------------------------
+
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_makereport(item, call):
-    """Fail the test at call-report time if check collector has failures."""
+    """Fail the test at call-report time if check collector has failures,
+    and store results in the session store."""
     outcome = yield
     report = outcome.get_result()
-    if report.when == "call" and report.passed:
+    if report.when == "call":
         collector = item.stash.get(_CHECKLLM_KEY, None)
-        if collector is not None:
-            failed = [r for r in collector.results if not r.passed]
-            if failed:
-                count = len(failed)
-                names = ", ".join(r.metric_name for r in failed)
-                report.outcome = "failed"
-                report.longrepr = f"{count} check(s) failed: {names}"
+        if collector is not None and collector.results:
+            # Record results in session store
+            _store.record(item.nodeid, collector.results)
+            # Fail the test if any checks failed
+            if report.passed:
+                failed = [r for r in collector.results if not r.passed]
+                if failed:
+                    count = len(failed)
+                    names = ", ".join(r.metric_name for r in failed)
+                    report.outcome = "failed"
+                    report.longrepr = f"{count} check(s) failed: {names}"
 
+
+def pytest_configure(config: pytest.Config) -> None:
+    """Reset session store at the start of each session."""
+    global _store
+    _store = _SessionStore()
+
+
+def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
+    """After all tests, generate snapshots and reports if requested."""
+    config = session.config
+    results = _store.results
+
+    if not results:
+        return
+
+    snapshot_path = config.getoption("--checkllm-snapshot", default=None)
+    if snapshot_path:
+        try:
+            _save_snapshot(results, Path(snapshot_path))
+        except Exception as exc:
+            import sys
+            print(f"checkllm: failed to save snapshot: {exc}", file=sys.stderr)
+
+    report_path = config.getoption("--checkllm-report", default=None)
+    if report_path:
+        try:
+            _save_html_report(results, Path(report_path))
+        except Exception as exc:
+            import sys
+            print(f"checkllm: failed to save HTML report: {exc}", file=sys.stderr)
+
+    junit_path = config.getoption("--checkllm-junit", default=None)
+    if junit_path:
+        try:
+            _save_junit_report(results, Path(junit_path))
+        except Exception as exc:
+            import sys
+            print(f"checkllm: failed to save JUnit report: {exc}", file=sys.stderr)
+
+
+def _save_snapshot(results: dict[str, list[CheckResult]], path: Path) -> None:
+    from checkllm.regression.snapshot import (
+        MetricRecord,
+        Snapshot,
+        TestRunRecord,
+        save_snapshot,
+    )
+
+    tests: dict[str, list[TestRunRecord]] = {}
+    for node_id, checks in results.items():
+        runs = [
+            TestRunRecord(
+                metrics={
+                    c.metric_name: MetricRecord(score=c.score, passed=c.passed)
+                    for c in checks
+                }
+            )
+        ]
+        tests[node_id] = runs
+
+    snap = Snapshot(
+        version=1,
+        timestamp=datetime.now(timezone.utc).isoformat(),
+        tests=tests,
+    )
+    save_snapshot(snap, path)
+
+
+def _save_html_report(results: dict[str, list[CheckResult]], path: Path) -> None:
+    from checkllm.reporting.html import generate_html_report
+
+    generate_html_report(results, path)
+
+
+def _save_junit_report(results: dict[str, list[CheckResult]], path: Path) -> None:
+    from checkllm.reporting.junit import generate_junit_xml
+
+    generate_junit_xml(results, path)
+
+
+# ---------------------------------------------------------------------------
+# Dataset decorator
+# ---------------------------------------------------------------------------
 
 def dataset(source: str | Path | Callable) -> Callable:
     """Decorator that parametrizes a test function over a dataset.

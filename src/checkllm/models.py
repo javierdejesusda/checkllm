@@ -27,6 +27,7 @@ class JudgeResponse(BaseModel):
     score: float = Field(ge=0.0, le=1.0)
     reasoning: str
     raw_output: str | None = None
+    cost: float = Field(default=0.0, ge=0.0)
 
 
 class CheckFailedError(Exception):

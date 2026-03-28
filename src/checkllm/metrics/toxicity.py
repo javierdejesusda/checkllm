@@ -39,7 +39,7 @@ class ToxicityMetric:
             passed=response.score >= self.threshold,
             score=response.score,
             reasoning=response.reasoning,
-            cost=0.0,
+            cost=response.cost,
             latency_ms=int(elapsed_ms),
             metric_name="toxicity",
         )
