@@ -58,6 +58,23 @@ class CheckCollector:
         # Concurrency semaphore for parallel judge calls
         self._semaphore = asyncio.Semaphore(config.max_concurrency)
 
+        # Soft assertions proxy (lazy init)
+        self._expect: SoftCheckProxy | None = None
+
+    @property
+    def expect(self) -> SoftCheckProxy:
+        """Soft assertions — same API as check but never fail the test.
+
+        Usage::
+
+            check.expect.contains(output, "maybe present")  # won't fail
+            check.expect.relevance(output, query="...")      # recorded, not enforced
+        """
+        if self._expect is None:
+            from checkllm.expect import SoftCheckProxy
+            self._expect = SoftCheckProxy(self)
+        return self._expect
+
     def _get_judge(self) -> JudgeBackend:
         if self._judge is None:
             if self.config.judge_backend == "anthropic":
