@@ -13,13 +13,21 @@ from checkllm.config import CheckllmConfig
 from checkllm.deterministic import DeterministicChecks
 from checkllm.judge import JudgeBackend, JudgeConfigError, OpenAIJudge
 from checkllm.logging_config import setup_logging
+from checkllm.metrics.answer_completeness import AnswerCompletenessMetric
+from checkllm.metrics.bias import BiasMetric
 from checkllm.metrics.coherence import CoherenceMetric
+from checkllm.metrics.consistency import ConsistencyMetric
+from checkllm.metrics.context_relevance import ContextRelevanceMetric
 from checkllm.metrics.correctness import CorrectnessMetric
+from checkllm.metrics.faithfulness import FaithfulnessMetric
 from checkllm.metrics.fluency import FluencyMetric
+from checkllm.metrics.groundedness import GroundednessMetric
 from checkllm.metrics.hallucination import HallucinationMetric
+from checkllm.metrics.instruction_following import InstructionFollowingMetric
 from checkllm.metrics.relevance import RelevanceMetric
 from checkllm.metrics.rubric import RubricMetric
 from checkllm.metrics.sentiment import SentimentMetric
+from checkllm.metrics.summarization import SummarizationMetric
 from checkllm.metrics.toxicity import ToxicityMetric
 from checkllm.models import CheckFailedError, CheckResult
 
@@ -478,6 +486,174 @@ class CheckCollector:
             metric_factory=lambda: metric,
             coro_factory=lambda: metric.evaluate(output=output, expected=expected),
             cache_kwargs={"output": output, "expected": expected, "threshold": str(t)},
+            runs=runs,
+        )
+
+    # --- New v1.0 LLM-as-judge checks ---
+
+    def faithfulness(
+        self,
+        output: str,
+        context: str,
+        query: str | None = None,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = FaithfulnessMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        cache_kw = {"output": output, "context": context, "threshold": str(t)}
+        if query:
+            cache_kw["query"] = query
+        return self._cached_judge_check(
+            metric_name="faithfulness",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output, context=context, query=query),
+            cache_kwargs=cache_kw,
+            runs=runs,
+        )
+
+    def context_relevance(
+        self,
+        context: str,
+        query: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = ContextRelevanceMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="context_relevance",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(context=context, query=query),
+            cache_kwargs={"context": context, "query": query, "threshold": str(t)},
+            runs=runs,
+        )
+
+    def answer_completeness(
+        self,
+        output: str,
+        query: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = AnswerCompletenessMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="answer_completeness",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output, query=query),
+            cache_kwargs={"output": output, "query": query, "threshold": str(t)},
+            runs=runs,
+        )
+
+    def instruction_following(
+        self,
+        output: str,
+        instructions: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = InstructionFollowingMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="instruction_following",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output, instructions=instructions),
+            cache_kwargs={"output": output, "instructions": instructions, "threshold": str(t)},
+            runs=runs,
+        )
+
+    def summarization(
+        self,
+        output: str,
+        source: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = SummarizationMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="summarization",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output, source=source),
+            cache_kwargs={"output": output, "source": source, "threshold": str(t)},
+            runs=runs,
+        )
+
+    def bias(
+        self,
+        output: str,
+        categories: list[str] | None = None,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = BiasMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        cache_kw = {"output": output, "threshold": str(t)}
+        if categories:
+            cache_kw["categories"] = ",".join(categories)
+        return self._cached_judge_check(
+            metric_name="bias",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output, categories=categories),
+            cache_kwargs=cache_kw,
+            runs=runs,
+        )
+
+    def consistency(
+        self,
+        outputs: list[str],
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = ConsistencyMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="consistency",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(outputs=outputs),
+            cache_kwargs={"outputs": "|".join(outputs), "threshold": str(t)},
+            runs=runs,
+        )
+
+    def groundedness(
+        self,
+        output: str,
+        sources: list[str],
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = GroundednessMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="groundedness",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output, sources=sources),
+            cache_kwargs={"output": output, "sources": "|".join(sources), "threshold": str(t)},
             runs=runs,
         )
 

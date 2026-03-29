@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "checkllm"
-version = "0.3.0"
+version = "1.0.0"
 description = "Test LLM-powered applications with the same rigor as traditional software."
 readme = "README.md"
 license = "MIT"
@@ -13,7 +13,7 @@ authors = [
     { name = "checkllm contributors" },
 ]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Framework :: Pytest",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
@@ -23,6 +23,7 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: Software Development :: Testing",
+    "Topic :: Software Development :: Quality Assurance",
 ]
 dependencies = [
     "openai>=1.0.0",
@@ -40,13 +41,23 @@ dependencies = [
 anthropic = [
     "anthropic>=0.20.0",
 ]
+gemini = [
+    "google-generativeai>=0.5.0",
+]
+litellm = [
+    "litellm>=1.0.0",
+]
+embeddings = [
+    "sentence-transformers>=2.0.0",
+]
+all = [
+    "checkllm[anthropic,gemini,litellm,embeddings]",
+]
 dev = [
     "pytest>=7.0.0",
     "pytest-asyncio>=0.21.0",
     "coverage>=7.0.0",
-]
-all = [
-    "checkllm[anthropic]",
+    "httpx>=0.24.0",
 ]
 
 [project.entry-points.pytest11]
@@ -72,4 +83,16 @@ snapshot_dir = ".checkllm/snapshots"
 cache_enabled = true
 cache_ttl_seconds = 604800
 max_concurrency = 10
+engine = "auto"
 log_level = "WARNING"
+
+[tool.checkllm.profiles.dev]
+judge_model = "gpt-4o-mini"
+budget = 1.0
+log_level = "DEBUG"
+
+[tool.checkllm.profiles.ci]
+cache_enabled = false
+budget = 10.0
+log_level = "WARNING"
+engine = "async"

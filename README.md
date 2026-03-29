@@ -2,19 +2,25 @@
 
 Test LLM-powered applications with the same rigor as traditional software.
 
-checkllm is a pytest plugin and CLI that lets you write assertions for LLM outputs using deterministic checks, LLM-as-judge evaluation, and statistical regression detection.
+checkllm is a pytest plugin, CLI, and runtime guardrails library that lets you write assertions for LLM outputs using deterministic checks, LLM-as-judge evaluation, statistical regression detection, and multi-provider consensus judging.
 
 ## Why checkllm?
 
-- **Works with pytest** - no new test runner to learn, just add a `check` fixture
+- **Works with pytest** — no new test runner, just add a `check` fixture
 - **Free deterministic checks** run instantly with zero API calls
-- **LLM-as-judge** for subjective quality (hallucination, relevance, toxicity, custom rubrics)
-- **Statistical regression detection** using Welch's t-test, not just "did it change?"
-- **Multiple judge backends** - OpenAI and Anthropic, or bring your own
-- **Judge response caching** - skip redundant API calls, save time and money
-- **Cost budgets** - set a spending limit per run to avoid surprise bills
-- **Historical run tracking** - see quality trends across prompt iterations
-- **One command** to snapshot, report, diff, or compare your test results
+- **16 LLM-as-judge metrics** — hallucination, relevance, faithfulness, bias, and more
+- **7 judge backends** — OpenAI, Anthropic, Gemini, Azure, Ollama (local), LiteLLM (100+ models), custom HTTP
+- **Consensus judging** — run multiple judges and aggregate with 7 strategies
+- **Parallel evaluation engines** — async, threaded, process-based, or hybrid
+- **Embedding-based semantic similarity** — OpenAI or local sentence-transformers
+- **Runtime guardrails** — validate LLM outputs in production with Guard, middleware, and decorators
+- **Rate limiting & circuit breaker** — resilient production judge calls with fallback
+- **Statistical regression detection** using Welch's t-test
+- **Cost budgets & caching** — control spend, cache judge responses
+- **Rich reporting** — HTML, Markdown, JUnit XML, JSONL, CSV, A/B comparison, trend charts, GitHub PR comments
+- **Config profiles** — dev/ci/prod with environment-based switching
+- **Watch mode** — re-run tests on file changes
+- **Programmatic API** — use outside pytest with `evaluate()`, `check_output()`, or `Evaluator` builder
 
 ## Installation
 
@@ -22,10 +28,14 @@ checkllm is a pytest plugin and CLI that lets you write assertions for LLM outpu
 pip install checkllm
 ```
 
-For Anthropic Claude support:
+With optional providers:
 
 ```bash
-pip install checkllm[anthropic]
+pip install checkllm[anthropic]     # Anthropic Claude
+pip install checkllm[gemini]        # Google Gemini
+pip install checkllm[litellm]       # 100+ models via LiteLLM
+pip install checkllm[embeddings]    # Local sentence-transformers
+pip install checkllm[all]           # Everything
 ```
 
 ## Quick Start
@@ -33,8 +43,6 @@ pip install checkllm[anthropic]
 ### 1. Write a test
 
 ```python
-# tests/test_my_agent.py
-
 def test_output_quality(check):
     output = my_agent("What is Python?")
 
@@ -43,7 +51,7 @@ def test_output_quality(check):
     check.not_contains(output, "JavaScript")
     check.max_tokens(output, limit=200)
 
-    # LLM-as-judge checks (requires OPENAI_API_KEY)
+    # LLM-as-judge checks (requires API key)
     check.hallucination(output, context="Python is a high-level programming language.")
     check.relevance(output, query="What is Python?")
     check.toxicity(output)
@@ -53,22 +61,19 @@ def test_output_quality(check):
 
 ```bash
 export OPENAI_API_KEY=sk-...
-
-pytest tests/test_my_agent.py -v
+pytest tests/ -v
 
 # Or use the CLI
-checkllm run tests/test_my_agent.py
+checkllm run tests/
 ```
 
 ### 3. Track regressions
 
 ```bash
-checkllm snapshot tests/ --output .checkllm/snapshots/baseline.json
-
-# After changes, compare
-checkllm snapshot tests/ --output .checkllm/snapshots/current.json
-checkllm diff --baseline .checkllm/snapshots/baseline.json \
-              --current .checkllm/snapshots/current.json
+checkllm snapshot tests/ --output baseline.json
+# ... make changes ...
+checkllm snapshot tests/ --output current.json
+checkllm diff --baseline baseline.json --current current.json
 ```
 
 ## Deterministic Checks
@@ -79,200 +84,402 @@ Zero-cost, zero-latency checks that run locally:
 def test_deterministic(check):
     output = my_agent("...")
 
+    # String checks
     check.contains(output, "expected substring")
     check.not_contains(output, "forbidden text")
     check.exact_match(output, "exact expected output")
-    check.exact_match(output, "EXPECTED", ignore_case=True)
     check.starts_with(output, "Python")
     check.ends_with(output, "language.")
     check.regex(output, pattern=r"\d{3}-\d{4}")
+
+    # Length checks
     check.max_tokens(output, limit=500)
-    check.latency(response_time_ms, max_ms=2000)
-    check.cost(api_cost_usd, max_usd=0.05)
+    check.min_tokens(output, minimum=10)
+    check.word_count(output, min_words=5, max_words=100)
+    check.char_count(output, min_chars=20)
+    check.sentence_count(output, min_sentences=2, max_sentences=5)
 
-    # Validate JSON structure
-    from pydantic import BaseModel
+    # Structure checks
+    check.is_json('{"key": "value"}')
+    check.is_valid_python("def hello():\n    return 42")
+    check.json_schema(output, schema=MyPydanticModel)
 
-    class Response(BaseModel):
-        answer: str
-        confidence: float
-
-    check.json_schema(output, schema=Response)
+    # Similarity & readability
+    check.similarity(output, expected, threshold=0.8)
+    check.readability(output, max_grade=8.0)
 
     # Compound checks
     check.all_of(output, ["Python", "programming", "language"])
     check.any_of(output, ["Python", "Java", "Rust"])
     check.none_of(output, ["error", "undefined", "null"])
 
-    # Code validation
-    check.is_json('{"key": "value"}')
-    check.is_valid_python("def hello():\n    return 42")
+    # Safety & compliance
+    check.no_pii(output)
+    check.language(output, expected="en")
 
-    # Text analysis
-    check.similarity(output, expected_output, threshold=0.8)
-    check.readability(output, max_grade=8.0)
-    check.sentence_count(output, min_sentences=2, max_sentences=5)
+    # Numeric extraction
+    check.greater_than("Score: 85", threshold=70)
+    check.less_than("Latency: 120ms", threshold=200)
+    check.between("Confidence: 0.87", low=0.0, high=1.0)
+
+    # Performance
+    check.latency(response_time_ms, max_ms=2000)
+    check.cost(api_cost_usd, max_usd=0.05)
 ```
 
-## LLM-as-Judge Metrics
-
-Use GPT-4o (or Claude) as an automated judge:
+## LLM-as-Judge Metrics (16 built-in)
 
 ```python
 def test_llm_quality(check):
     output = my_agent("Summarize this article about climate change.")
     article = "..."
 
+    # Core quality
     check.hallucination(output, context=article)
     check.relevance(output, query="Summarize the article")
     check.toxicity(output)
-    check.rubric(output, criteria="concise, under 3 sentences, mentions key findings")
     check.fluency(output)
     check.coherence(output)
+    check.correctness(output, expected="Climate change is...")
+    check.rubric(output, criteria="concise, mentions key findings")
+
+    # RAG-specific
+    check.faithfulness(output, context=article)
+    check.context_relevance(context=article, query="climate change summary")
+    check.answer_completeness(output, query="Summarize all key findings")
+    check.groundedness(output, sources=[article, supplementary])
+
+    # Instruction & format
+    check.instruction_following(output, instructions="Respond in bullet points under 100 words")
+    check.summarization(output, source=article)
+
+    # Safety & bias
+    check.bias(output)
     check.sentiment(output, threshold=0.6)
-    check.correctness(output, expected="Climate change is causing...")
+
+    # Multi-output consistency
+    check.consistency([output1, output2, output3])
 ```
 
-Each check records a score (0.0-1.0), pass/fail status, reasoning, cost, and latency.
-
-### Custom Thresholds
+## Multi-Provider Judge Backends
 
 ```python
-check.hallucination(output, context=ctx, threshold=0.9)  # stricter
-check.relevance(output, query=q, threshold=0.6)           # more lenient
-```
-
-### Custom Judge Prompts
-
-Override the default system prompt for any metric:
-
-```python
-check.hallucination(
-    output, context=ctx,
-    system_prompt="You are a medical accuracy reviewer. Score strictly."
+from checkllm import (
+    OpenAIJudge, AnthropicJudge, GeminiJudge,
+    AzureOpenAIJudge, OllamaJudge, LiteLLMJudge,
+    CustomHTTPJudge, create_judge,
 )
-check.rubric(
-    output, criteria="must include citations",
-    system_prompt="You are an academic writing evaluator."
-)
+
+# Factory function
+judge = create_judge("gemini", model="gemini-2.0-flash")
+judge = create_judge("ollama", model="llama3.1")  # Free, local
+judge = create_judge("litellm", model="claude-sonnet-4-6")  # 100+ models
+judge = create_judge("azure", deployment="my-gpt4")
+
+# Or use directly
+judge = OllamaJudge(model="llama3.1")  # No API key needed
+judge = CustomHTTPJudge(url="https://my-server/evaluate")
 ```
 
-### Multiple Runs
+Configure in `pyproject.toml`:
+
+```toml
+[tool.checkllm]
+judge_backend = "gemini"
+judge_model = "gemini-2.0-flash"
+```
+
+## Consensus Judging
+
+Run the same check across multiple judges and aggregate:
 
 ```python
-check.hallucination(output, context=ctx, runs=5)
+from checkllm import ConsensusJudge, OpenAIJudge, AnthropicJudge, OllamaJudge, consensus
+
+# Create a consensus judge
+judges = [
+    ("gpt4o", OpenAIJudge(model="gpt-4o")),
+    ("claude", AnthropicJudge(model="claude-sonnet-4-6")),
+    ("llama", OllamaJudge(model="llama3.1")),
+]
+
+# 7 strategies: majority, unanimous, mean, weighted, median, min, max
+cj = ConsensusJudge(judges=judges, strategy="mean", threshold=0.8)
+
+# Use as a regular judge
+result = await consensus(
+    output="The sky is blue.",
+    metric_name="hallucination",
+    judges=judges,
+    strategy="majority",
+    context="Light scatters in the atmosphere, making the sky appear blue."
+)
+print(result.agreement_ratio)  # 1.0 if all judges agree
+print(result.votes)  # Individual judge results
 ```
 
-Or set globally:
+## Parallel Evaluation Engines
+
+```python
+from checkllm import AsyncEngine, ThreadPoolEngine, HybridEngine, create_engine
+
+# AsyncEngine — best for I/O-bound judge calls
+async with AsyncEngine(max_concurrency=20) as engine:
+    tasks = [engine.submit(some_coro()) for _ in range(100)]
+    results = await engine.gather(tasks)
+
+# ThreadPoolEngine — for sync code calling async judges
+async with ThreadPoolEngine(max_workers=8) as engine:
+    tasks = [engine.submit(some_coro()) for _ in range(50)]
+    results = await engine.gather(tasks)
+
+# HybridEngine — auto-routes judges to async, deterministic to threads
+async with HybridEngine() as engine:
+    io_task = await engine.submit_io(judge_coro())
+    cpu_task = await engine.submit_cpu(heavy_check())
+    results = await engine.gather([io_task, cpu_task])
+
+# Auto-select best engine
+engine = create_engine("auto")  # Picks based on CPU count
+```
+
+Configure in `pyproject.toml`:
 
 ```toml
 [tool.checkllm]
-runs_per_test = 3
+engine = "auto"   # "async", "thread", "process", "hybrid", "auto"
 ```
 
-## Judge Response Caching
+## Embedding-based Semantic Similarity
 
-Judge calls are cached automatically in `.checkllm/cache.db` (SQLite). When you re-run tests with the same output+metric+model combination, cached results are returned instantly at zero cost.
+```python
+from checkllm import OpenAIEmbeddings, semantic_similarity, batch_semantic_similarity
 
-```bash
-# View cache statistics
-checkllm cache --stats
+backend = OpenAIEmbeddings(model="text-embedding-3-small")
 
-# Clear the cache
-checkllm cache --clear
+# Single comparison
+result = await semantic_similarity(
+    "Python is a programming language",
+    "Python is a coding language",
+    backend=backend,
+    threshold=0.85,
+)
+print(result.score)  # ~0.95
 
-# Disable caching for a run
-checkllm run tests/ --no-cache
+# Batch comparison (deduplicates texts automatically)
+pairs = [("output1", "expected1"), ("output2", "expected2")]
+results = await batch_semantic_similarity(pairs, backend=backend)
 ```
 
-Configure caching in `pyproject.toml`:
+Local embeddings (free, no API key):
+
+```python
+from checkllm.embeddings import SentenceTransformerEmbeddings
+
+backend = SentenceTransformerEmbeddings(model="all-MiniLM-L6-v2")
+```
+
+## Guardrails (Runtime Validation)
+
+Use checkllm checks in production, not just tests:
+
+```python
+from checkllm import Guard, CheckSpec
+
+# Define your guard
+guard = Guard(checks=[
+    CheckSpec(check_type="no_pii"),
+    CheckSpec(check_type="max_tokens", params={"limit": 500}),
+    CheckSpec(check_type="toxicity", params={"threshold": 0.9}),
+])
+
+# Validate output
+result = guard.validate(llm_output)
+if not result.valid:
+    print(result.summary())
+    result.raise_on_failure()  # Raises GuardrailError
+
+# Or use as a callable
+safe_output = guard(llm_output)  # Raises if invalid
+
+# Predefined guards
+from checkllm.guardrails import safety_guard, quality_guard, rag_guard
+result = safety_guard.validate(output)
+```
+
+### FastAPI Middleware
+
+```python
+from fastapi import FastAPI
+from checkllm import Guard, CheckSpec, GuardrailMiddleware
+
+app = FastAPI()
+guard = Guard(checks=[CheckSpec(check_type="no_pii"), CheckSpec(check_type="toxicity")])
+app.add_middleware(GuardrailMiddleware, guard=guard, response_field="output")
+```
+
+### Function Decorator
+
+```python
+from checkllm import guardrail, CheckSpec
+
+@guardrail(checks=[CheckSpec(check_type="no_pii"), CheckSpec(check_type="max_tokens", params={"limit": 200})])
+def generate_response(prompt: str) -> str:
+    return my_llm(prompt)  # Output is validated automatically
+```
+
+## Rate Limiting & Circuit Breaker
+
+```python
+from checkllm import (
+    TokenBucketRateLimiter, CircuitBreaker, ResilientJudge,
+    OpenAIJudge, OllamaJudge,
+)
+
+# Wrap a judge with resilience
+resilient = ResilientJudge(
+    judge=OpenAIJudge(model="gpt-4o"),
+    rate_limiter=TokenBucketRateLimiter(rate=10.0, burst=20),
+    circuit_breaker=CircuitBreaker(failure_threshold=5, recovery_timeout=60),
+    fallback=OllamaJudge(model="llama3.1"),  # Free local fallback
+    timeout=30.0,
+)
+
+# Use like any judge — rate limiting, circuit breaking, and fallback are automatic
+result = await resilient.evaluate(prompt="...", system_prompt="...")
+```
+
+## Programmatic API
+
+Use checkllm outside of pytest:
+
+```python
+from checkllm import check_output, evaluate, Evaluator
+
+# One-liner
+result = check_output("LLM output here", checks=["no_pii", "max_tokens:200"])
+
+# Async with full control
+result = await evaluate(
+    output="The answer is 42.",
+    checks=[
+        {"type": "contains", "params": {"substring": "42"}},
+        {"type": "hallucination", "params": {"context": "The answer to everything is 42."}},
+    ],
+)
+
+# Builder pattern
+evaluator = (
+    Evaluator()
+    .with_judge("openai", model="gpt-4o-mini")
+    .with_threshold(0.8)
+    .with_budget(5.0)
+    .add_check("contains", substring="expected")
+    .add_check("no_pii")
+    .add_check("hallucination", context="source text")
+)
+result = evaluator.run("LLM output here")
+
+# Batch evaluation
+results = await evaluator.batch_run(["output1", "output2", "output3"])
+```
+
+## Configuration Profiles
 
 ```toml
 [tool.checkllm]
-cache_enabled = true
-cache_ttl_seconds = 604800   # 7 days (default)
+judge_model = "gpt-4o"
+default_threshold = 0.8
+engine = "auto"
+
+[tool.checkllm.profiles.dev]
+judge_model = "gpt-4o-mini"
+budget = 1.0
+log_level = "DEBUG"
+
+[tool.checkllm.profiles.ci]
+cache_enabled = false
+budget = 10.0
+engine = "async"
+
+[tool.checkllm.profiles.prod]
+judge_model = "gpt-4o"
+default_threshold = 0.9
+max_concurrency = 20
 ```
 
-Or via environment variables: `CHECKLLM_CACHE_ENABLED=false`, `CHECKLLM_NO_CACHE=1`.
-
-## Cost Budgets
-
-Set a maximum USD spend per run to avoid accidental bills:
+Activate a profile:
 
 ```bash
-checkllm run tests/ --budget 5.00
-checkllm eval --prompt "..." --dataset cases.yaml --budget 2.00
+CHECKLLM_PROFILE=ci checkllm run tests/
+checkllm run tests/ --profile dev
 ```
 
-When the budget is exceeded, remaining judge calls are skipped (not failed) with a clear warning.
-
-```toml
-[tool.checkllm]
-budget = 10.00
-```
-
-Or via environment: `CHECKLLM_BUDGET=5.00`.
-
-## Historical Run Tracking
-
-Every test run is automatically recorded in `.checkllm/history.db`. View trends across prompt iterations:
+## Watch Mode
 
 ```bash
-# List recent runs
-checkllm history
-
-# View details for a specific run
-checkllm history --run 5
-
-# Compare two runs side-by-side
-checkllm history --compare 3,7
-
-# View score trend for a specific test+metric
-checkllm history --trend "test_qa::hallucination"
+checkllm watch tests/
+checkllm watch tests/ --interval 2.0 --pattern "*.py" --pattern "*.yaml"
+checkllm watch tests/ --watch src/ --budget 1.0 --profile dev
 ```
 
-Runs capture: timestamp, git commit, label, per-test scores, costs, and pass/fail status.
+Re-runs tests automatically when files change. Debounced to avoid rapid re-triggers.
 
-Label your runs for easy identification:
+## Enhanced Reporting
 
-```bash
-checkllm run tests/ --label "prompt-v3"
+### A/B Model Comparison
+
+```python
+from checkllm.reporting import ComparisonReport, generate_comparison_html
+
+report = ComparisonReport(
+    results_a=gpt4_results, label_a="GPT-4o",
+    results_b=claude_results, label_b="Claude Sonnet",
+)
+generate_comparison_html(report, Path("comparison.html"))
+```
+
+### Trend Charts
+
+```python
+from checkllm.reporting import generate_trend_html, TrendData
+
+trends = [TrendData(run_id=i, timestamp=t, label=l, results=r) for ...]
+generate_trend_html(trends, Path("trends.html"))  # SVG charts, no JS deps
+```
+
+### CSV Export
+
+```python
+from checkllm.reporting import write_csv, results_to_dataframe
+
+write_csv(results, Path("results.csv"))
+df_data = results_to_dataframe(results)  # List of dicts for pandas
+```
+
+### GitHub PR Comments
+
+```python
+from checkllm.reporting import generate_pr_comment, post_pr_comment
+
+comment = generate_pr_comment(results, comparison=report)
+post_pr_comment(comment, repo="owner/repo", pr_number=123)
 ```
 
 ## Dataset-Driven Testing
-
-Supports **YAML**, **JSON**, and **CSV** datasets:
 
 ```yaml
 # tests/fixtures/cases.yaml
 - input: "What is Python?"
   expected: "Python is a programming language"
-  query: "Explain Python"
-  context: "Python was created by Guido van Rossum in 1991."
+  context: "Python was created by Guido van Rossum."
   criteria: "accurate, mentions creator"
-
-- input: "What is 2+2?"
-  expected: "4"
-  criteria: "correct, concise"
-```
-
-```json
-[
-  {"input": "What is Python?", "expected": "A programming language", "query": "Explain Python"},
-  {"input": "What is 2+2?", "expected": "4"}
-]
-```
-
-```csv
-input,expected,query,criteria
-What is Python?,A programming language,Explain Python,accurate
-What is 2+2?,4,math,correct
 ```
 
 ```python
 from checkllm import dataset
 
-@dataset("tests/fixtures/cases.yaml")  # or .json or .csv
+@dataset("tests/fixtures/cases.yaml")  # Also supports .json, .csv
 def test_across_cases(check, case):
     output = my_agent(case.input)
     check.contains(output, case.expected)
@@ -280,24 +487,7 @@ def test_across_cases(check, case):
         check.hallucination(output, context=case.context)
 ```
 
-Or use a Python generator:
-
-```python
-from checkllm import Case, dataset
-
-def my_cases():
-    yield Case(input="Hello", expected="greeting", criteria="friendly")
-    yield Case(input="Goodbye", expected="farewell", criteria="polite")
-
-@dataset(my_cases)
-def test_generated(check, case):
-    output = my_agent(case.input)
-    check.rubric(output, criteria=case.criteria)
-```
-
-## Soft Assertions (check.expect)
-
-Use `check.expect` for monitoring-style checks that are recorded in reports but never fail the test. Perfect for tracking quality metrics during prompt iteration without blocking CI:
+## Soft Assertions
 
 ```python
 def test_with_soft_checks(check):
@@ -305,314 +495,76 @@ def test_with_soft_checks(check):
 
     # Hard checks — must pass
     check.contains(output, "quantum")
-    check.max_tokens(output, limit=500)
 
     # Soft checks — recorded but won't fail the test
     check.expect.word_count(output, max_words=100)
     check.expect.readability(output, max_grade=10.0)
-    check.expect.similarity(output, ideal_output, threshold=0.9)
+    check.expect.relevance(output, query="quantum physics")
 ```
 
-Soft check results appear in reports with `[soft]` prefix and preserve their actual scores, so you can track trends without blocking deployments.
-
-## Safety & Compliance Checks
-
-```python
-def test_safety(check):
-    output = my_agent("...")
-
-    # PII detection (email, phone, SSN, credit card, IP)
-    check.no_pii(output)
-    check.no_pii(output, patterns=["email", "phone"])  # check specific types
-
-    # Language detection (en, es, fr, de, pt)
-    check.language(output, expected="en")
-
-    # Numeric extraction and comparison
-    check.greater_than("Score: 85", threshold=70)
-    check.less_than("Latency: 120ms", threshold=200)
-    check.between("Confidence: 0.87", low=0.0, high=1.0)
-```
-
-## Testing Without API Keys (MockJudge)
-
-Use `MockJudge` to test LLM-powered code without calling real APIs:
+## Testing Without API Keys
 
 ```python
 from checkllm.testing import MockJudge, make_collector, assert_all_passed
 
-def test_my_pipeline():
-    judge = MockJudge(default_score=0.9)
-    judge.add_response("hallucination", score=0.95, reasoning="Well grounded")
+judge = MockJudge(default_score=0.9)
+judge.add_response("hallucination", score=0.95, reasoning="Well grounded")
 
-    collector = make_collector(judge=judge)
-    collector.hallucination("output text", context="source text")
+collector = make_collector(judge=judge)
+collector.hallucination("output text", context="source text")
 
-    assert_all_passed(collector)
-    judge.assert_called("hallucination")
-    judge.assert_call_count(1)
-```
-
-`MockJudge` supports queued per-metric responses, call tracking, and assertion helpers.
-
-## Report Formats
-
-```bash
-# HTML report (interactive, visual)
-pytest tests/ --checkllm-report=report.html
-
-# Markdown report (for PR comments)
-pytest tests/ --checkllm-markdown=report.md
-
-# JSONL export (for data pipelines)
-pytest tests/ --checkllm-jsonl=results.jsonl
-
-# JUnit XML (for CI/CD)
-pytest tests/ --checkllm-junit=results.xml
-
-# Combine any of the above
-pytest tests/ --checkllm-report=r.html --checkllm-markdown=r.md --checkllm-jsonl=r.jsonl
+assert_all_passed(collector)
+judge.assert_called("hallucination")
 ```
 
 ## Custom Metrics
 
 ```python
-import checkllm
-from checkllm import CheckResult
+from checkllm import metric, CheckResult
 
-@checkllm.metric("brevity")
+@metric("brevity")
 def brevity_check(output: str, max_words: int = 50, **kwargs) -> CheckResult:
     word_count = len(output.split())
     return CheckResult(
         passed=word_count <= max_words,
         score=min(1.0, max_words / max(word_count, 1)),
         reasoning=f"{word_count} words (limit: {max_words})",
-        cost=0.0,
-        latency_ms=0,
-        metric_name="brevity",
+        cost=0.0, latency_ms=0, metric_name="brevity",
     )
-
-def test_brevity(check):
-    output = my_agent("Explain quantum physics")
-    check.run_metric("brevity", output=output, max_words=100)
-```
-
-## Async Tests
-
-```python
-import pytest
-
-@pytest.mark.asyncio
-async def test_async_quality(check):
-    output = await my_async_agent("What is Python?")
-
-    await check.ahallucination(output, context="...")
-    await check.arelevance(output, query="What is Python?")
-    await check.atoxicity(output)
-    await check.arubric(output, criteria="concise and accurate")
-
-    # Deterministic checks are always sync (instant, no I/O)
-    check.contains(output, "Python")
-```
-
-## Parallel Judge Execution
-
-Async judge calls are rate-limited via a configurable semaphore (default: 10 concurrent requests):
-
-```toml
-[tool.checkllm]
-max_concurrency = 10
-```
-
-```python
-import asyncio, pytest
-
-@pytest.mark.asyncio
-async def test_parallel_judges(check):
-    output = my_agent("...")
-
-    # These run in parallel, up to max_concurrency
-    results = await asyncio.gather(
-        check.ahallucination(output, context="..."),
-        check.arelevance(output, query="..."),
-        check.atoxicity(output),
-    )
-```
-
-## Separating Fast and Slow Tests
-
-Mark LLM tests so you can skip them in fast CI runs:
-
-```python
-import pytest
-
-@pytest.mark.llm
-def test_with_llm(check):
-    check.hallucination(output, context=ctx)
-
-def test_fast(check):
-    check.contains(output, "Python")
-```
-
-```bash
-# Run only fast deterministic tests
-pytest -m "not llm"
-
-# Run only LLM tests
-pytest -m llm
-```
-
-If `OPENAI_API_KEY` is not set, LLM checks automatically skip instead of crashing.
-
-## Regression Detection
-
-checkllm uses Welch's t-test to detect statistically significant score regressions.
-
-```bash
-checkllm snapshot tests/ --output .checkllm/snapshots/v1.json
-# ... make changes ...
-checkllm snapshot tests/ --output .checkllm/snapshots/v2.json
-checkllm diff -b .checkllm/snapshots/v1.json -c .checkllm/snapshots/v2.json
-
-# Fail CI on regression
-checkllm diff -b v1.json -c v2.json --fail-on-regression
-```
-
-## Reporting
-
-```bash
-# HTML report
-checkllm report tests/ --output report.html
-
-# JUnit XML for CI/CD
-checkllm run tests/ --junit-xml results.xml
-
-# pytest flags work directly
-pytest tests/ --checkllm-snapshot=snap.json --checkllm-report=report.html
-```
-
-## Structured Logging
-
-Enable debug logging to see cache hits/misses, costs, and judge call details:
-
-```bash
-export CHECKLLM_LOG_LEVEL=DEBUG
-pytest tests/
-```
-
-```toml
-[tool.checkllm]
-log_level = "INFO"   # DEBUG, INFO, WARNING (default), ERROR
 ```
 
 ## CLI Reference
 
 | Command | Description |
 |---------|-------------|
-| `checkllm run <path>` | Run tests with `--snapshot`, `--html-report`, `--junit-xml`, `--compare`, `--fail-on-regression`, `--budget`, `--no-cache`, `--label` |
-| `checkllm snapshot <path>` | Save test results as baseline (`--output PATH`) |
-| `checkllm report <path>` | Generate HTML report (`--output PATH`, `--junit-xml PATH`) |
+| `checkllm run <path>` | Run tests with `--snapshot`, `--html-report`, `--junit-xml`, `--budget`, `--no-cache`, `--label`, `--profile` |
+| `checkllm watch <path>` | Watch for changes and re-run (`--interval`, `--pattern`, `--watch`) |
+| `checkllm snapshot <path>` | Save baseline (`--output PATH`) |
+| `checkllm report <path>` | Generate HTML report (`--output PATH`) |
 | `checkllm diff` | Compare snapshots (`--baseline`, `--current`, `--fail-on-regression`) |
-| `checkllm eval` | Evaluate prompt template (`--prompt`, `--dataset`, `--metric`, `--threshold`, `--budget`, `--no-cache`) |
-| `checkllm history` | View run history (`--run ID`, `--compare ID1,ID2`, `--trend test::metric`, `--limit N`) |
+| `checkllm eval` | Evaluate prompt templates (`--prompt`, `--dataset`, `--metric`, `--budget`) |
+| `checkllm history` | View run history (`--run ID`, `--compare`, `--trend`) |
 | `checkllm cache` | Manage cache (`--stats`, `--clear`) |
 | `checkllm init [path]` | Scaffold a new project |
 | `checkllm list-metrics` | List available metrics |
-| `checkllm --version` | Show version |
 
 ## Configuration
 
 ```toml
 [tool.checkllm]
-judge_backend = "openai"           # "openai" or "anthropic"
-judge_model = "gpt-4o"             # Model for LLM-as-judge
-default_threshold = 0.8            # Pass/fail threshold (0.0-1.0)
-runs_per_test = 1                  # Repeat LLM checks N times
-snapshot_dir = ".checkllm/snapshots"
-confidence_level = 0.95
-p_value_threshold = 0.05
-
-# Caching
-cache_enabled = true               # Toggle judge response caching
-cache_ttl_seconds = 604800         # Cache expiration (7 days)
-
-# Performance
-max_concurrency = 10               # Parallel judge calls
-
-# Cost control
+judge_backend = "openai"           # openai, anthropic, gemini, azure, ollama, litellm
+judge_model = "gpt-4o"
+default_threshold = 0.8
+runs_per_test = 1
+engine = "auto"                    # async, thread, process, hybrid, auto
+max_concurrency = 10
 budget = 10.00                     # Max USD per run (optional)
-
-# Logging
-log_level = "WARNING"              # DEBUG, INFO, WARNING, ERROR
+cache_enabled = true
+cache_ttl_seconds = 604800         # 7 days
+log_level = "WARNING"
 ```
 
-Environment variable overrides: `CHECKLLM_JUDGE_BACKEND`, `CHECKLLM_JUDGE_MODEL`, `CHECKLLM_DEFAULT_THRESHOLD`, `CHECKLLM_RUNS_PER_TEST`, `CHECKLLM_CACHE_ENABLED`, `CHECKLLM_MAX_CONCURRENCY`, `CHECKLLM_BUDGET`, `CHECKLLM_LOG_LEVEL`.
-
-## Custom Judge Backends
-
-### Anthropic Claude
-
-```toml
-[tool.checkllm]
-judge_backend = "anthropic"
-judge_model = "claude-sonnet-4-6"
-```
-
-### Your Own Backend
-
-Implement the `JudgeBackend` protocol:
-
-```python
-from checkllm import JudgeBackend, JudgeResponse
-from checkllm.check import CheckCollector
-from checkllm.config import CheckllmConfig
-
-class MyJudge:
-    async def evaluate(self, prompt: str, system_prompt: str | None = None) -> JudgeResponse:
-        return JudgeResponse(score=0.9, reasoning="Looks good", cost=0.0)
-
-config = CheckllmConfig()
-collector = CheckCollector(config=config, judge=MyJudge())
-```
-
-## Configuring the Judge in conftest.py
-
-To use a cheaper model or a custom backend for all tests:
-
-```python
-# tests/conftest.py
-import pytest
-from checkllm.check import CheckCollector
-from checkllm.config import load_config
-from checkllm.judge import OpenAIJudge
-from checkllm.pytest_plugin import _CHECKLLM_KEY
-
-@pytest.fixture
-def check(request):
-    config = load_config()
-    judge = OpenAIJudge(model="gpt-4o-mini")  # cheaper model for dev
-    collector = CheckCollector(config=config, judge=judge)
-    request.node.stash[_CHECKLLM_KEY] = collector
-    return collector
-```
-
-## Project Setup
-
-```bash
-checkllm init
-```
-
-Creates `pyproject.toml`, `tests/conftest.py`, sample test file, sample dataset, and `.checkllm/snapshots/` directory.
-
-## Examples
-
-See the [examples/](examples/) directory for working code:
-
-- [test_basic.py](examples/test_basic.py) - Deterministic checks (no API key needed)
-- [test_dataset_driven.py](examples/test_dataset_driven.py) - YAML and generator datasets
-- [test_custom_metrics.py](examples/test_custom_metrics.py) - Register domain-specific metrics
-- [test_llm_judge.py](examples/test_llm_judge.py) - LLM-as-judge evaluation
-- [test_regression_workflow.py](examples/test_regression_workflow.py) - Snapshot and regression detection
+All settings support environment variable overrides: `CHECKLLM_JUDGE_BACKEND`, `CHECKLLM_JUDGE_MODEL`, `CHECKLLM_ENGINE`, `CHECKLLM_BUDGET`, `CHECKLLM_PROFILE`, etc.
 
 ## License
 

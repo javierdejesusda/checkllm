@@ -760,12 +760,57 @@ def init(
     )
 
 
+@app.command()
+def watch(
+    test_path: str = typer.Argument(help="Path to test directory or file"),
+    watch_path: Optional[list[str]] = typer.Option(None, "--watch", "-w", help="Additional paths to watch"),
+    interval: float = typer.Option(1.0, "--interval", "-i", help="Poll interval in seconds"),
+    debounce: float = typer.Option(0.5, "--debounce", help="Debounce delay in seconds"),
+    pattern: Optional[list[str]] = typer.Option(None, "--pattern", "-p", help="File patterns to watch"),
+    budget: Optional[float] = typer.Option(None, "--budget", help="Budget per run"),
+    no_cache: bool = typer.Option(False, "--no-cache", help="Disable cache"),
+    profile: Optional[str] = typer.Option(None, "--profile", help="Config profile to use"),
+):
+    """Watch for file changes and re-run tests automatically."""
+    from checkllm.watcher import WatchRunner
+
+    env_overrides: dict[str, str] = {}
+    if budget is not None:
+        env_overrides["CHECKLLM_BUDGET"] = str(budget)
+    if no_cache:
+        env_overrides["CHECKLLM_CACHE_ENABLED"] = "false"
+    if profile:
+        env_overrides["CHECKLLM_PROFILE"] = profile
+
+    patterns = pattern if pattern else None
+
+    runner = WatchRunner(
+        test_path=test_path,
+        watch_paths=watch_path,
+        poll_interval=interval,
+        debounce=debounce,
+        patterns=patterns,
+        env_overrides=env_overrides,
+    )
+
+    try:
+        runner.run()
+    except KeyboardInterrupt:
+        runner.stop()
+        console.print("\n[bold]Stopped.[/]")
+
+
 @app.command(name="list-metrics")
 def list_metrics():
     """List all registered custom metrics."""
     from checkllm.metrics import _global_registry
 
-    builtin_judge = ["hallucination", "relevance", "toxicity", "rubric", "fluency", "coherence", "sentiment", "correctness"]
+    builtin_judge = [
+        "hallucination", "relevance", "toxicity", "rubric", "fluency", "coherence",
+        "sentiment", "correctness", "faithfulness", "context_relevance",
+        "answer_completeness", "instruction_following", "summarization",
+        "bias", "consistency", "groundedness",
+    ]
     builtin_deterministic = [
         "contains", "not_contains", "exact_match", "starts_with", "ends_with",
         "regex", "max_tokens", "min_tokens", "word_count", "char_count",

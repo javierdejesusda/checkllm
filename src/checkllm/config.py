@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from typing import Any
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -36,6 +37,12 @@ class CheckllmConfig(BaseModel):
     # Logging
     log_level: str = "WARNING"
 
+    # Engine type
+    engine: str = "auto"
+
+    # Active profile (None when no profile is selected)
+    active_profile: str | None = None
+
     @field_validator("runs_per_test")
     @classmethod
     def validate_runs(cls, v: int) -> int:
@@ -44,9 +51,24 @@ class CheckllmConfig(BaseModel):
         return v
 
 
-def load_config(project_dir: Path | None = None) -> CheckllmConfig:
-    """Load config from pyproject.toml [tool.checkllm], with env var overrides."""
-    file_values: dict = {}
+def load_config(
+    project_dir: Path | None = None,
+    profile: str | None = None,
+) -> CheckllmConfig:
+    """Load config from pyproject.toml ``[tool.checkllm]``, with env var overrides.
+
+    Merge order: defaults -> base config -> profile overrides -> env var overrides.
+
+    Parameters
+    ----------
+    project_dir:
+        Directory containing ``pyproject.toml``.  Defaults to ``Path.cwd()``.
+    profile:
+        Profile name to activate.  Resolution order:
+        *profile* parameter > ``CHECKLLM_PROFILE`` env var > ``None``.
+    """
+    file_values: dict[str, Any] = {}
+    profiles: dict[str, dict[str, Any]] = {}
 
     if project_dir is None:
         project_dir = Path.cwd()
@@ -55,9 +77,26 @@ def load_config(project_dir: Path | None = None) -> CheckllmConfig:
     if pyproject_path.exists():
         with open(pyproject_path, "rb") as f:
             data = tomllib.load(f)
-        file_values = data.get("tool", {}).get("checkllm", {})
+        checkllm_section = data.get("tool", {}).get("checkllm", {})
 
-    env_overrides: dict = {}
+        # Separate profiles from base config values
+        for key, value in checkllm_section.items():
+            if key == "profiles":
+                if isinstance(value, dict):
+                    profiles = value
+            else:
+                file_values[key] = value
+
+    # Resolve which profile to use: parameter > env var > None
+    resolved_profile = profile or os.environ.get("CHECKLLM_PROFILE") or None
+
+    # Merge: base config <- profile overrides
+    merged: dict[str, Any] = {**file_values}
+    if resolved_profile and resolved_profile in profiles:
+        merged.update(profiles[resolved_profile])
+
+    # Apply env var overrides last
+    env_overrides: dict[str, Any] = {}
     env_map = {
         "CHECKLLM_JUDGE_BACKEND": "judge_backend",
         "CHECKLLM_JUDGE_MODEL": "judge_model",
@@ -72,11 +111,16 @@ def load_config(project_dir: Path | None = None) -> CheckllmConfig:
         "CHECKLLM_MAX_CONCURRENCY": "max_concurrency",
         "CHECKLLM_BUDGET": "budget",
         "CHECKLLM_LOG_LEVEL": "log_level",
+        "CHECKLLM_ENGINE": "engine",
     }
     for env_key, config_key in env_map.items():
         value = os.environ.get(env_key)
         if value is not None:
             env_overrides[config_key] = value
 
-    merged = {**file_values, **env_overrides}
+    merged.update(env_overrides)
+
+    # Record which profile is active
+    merged["active_profile"] = resolved_profile
+
     return CheckllmConfig(**merged)

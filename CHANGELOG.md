@@ -1,5 +1,105 @@
 # Changelog
 
+## 1.0.0 (2026-03-29)
+
+### Parallel Evaluation Engines
+
+- **AsyncEngine** — asyncio-based with configurable concurrency and backpressure
+- **ThreadPoolEngine** — threading-based for I/O-bound judge calls in sync code
+- **ProcessPoolEngine** — for CPU-bound deterministic checks at scale
+- **HybridEngine** — auto-routes judge calls to async, deterministic to threads
+- **create_engine()** factory with `engine="auto"` smart selection
+- All engines track tasks submitted/completed, average execution time, queue depth
+
+### Multi-Provider Judge Backends
+
+- **GeminiJudge** — Google Gemini API (gemini-2.0-flash, gemini-2.0-pro, etc.)
+- **AzureOpenAIJudge** — Azure-hosted OpenAI models
+- **OllamaJudge** — local models via Ollama HTTP API (cost=0, no API key needed)
+- **LiteLLMJudge** — 100+ models through LiteLLM unified interface
+- **CustomHTTPJudge** — any REST endpoint with configurable response parsing
+- **create_judge()** factory for all 7 backends
+
+### Consensus Judging
+
+- Run the same evaluation across multiple judges simultaneously
+- 7 aggregation strategies: `majority`, `unanimous`, `mean`, `weighted`, `median`, `min`, `max`
+- `ConsensusJudge` class implements `JudgeBackend` protocol (nestable)
+- `consensus()` convenience function for quick multi-judge evaluation
+- Tracks agreement ratio, individual votes, costs per judge
+
+### New LLM-as-Judge Metrics (8 new)
+
+- **faithfulness** — RAG: is the answer faithful to retrieved context?
+- **context_relevance** — RAG: is the retrieved context relevant to the query?
+- **answer_completeness** — does the answer fully address all parts of the question?
+- **instruction_following** — does the output follow given format/style/constraint instructions?
+- **summarization** — summary accuracy, conciseness, and key information retention
+- **bias** — demographic, cultural, gender, racial bias detection (1.0=no bias)
+- **consistency** — multi-output consistency comparison
+- **groundedness** — claim-by-claim grounding across multiple source documents
+
+### Embedding-based Semantic Similarity
+
+- `check.semantic_similarity()` using embedding cosine similarity
+- **OpenAIEmbeddings** — text-embedding-3-small/large, ada-002 with cost tracking
+- **SentenceTransformerEmbeddings** — local models (all-MiniLM-L6-v2, etc.), cost=0
+- **CachedEmbeddings** — LRU cache wrapper for any embedding backend
+- `batch_semantic_similarity()` with text deduplication for efficiency
+
+### Guardrails Mode (Runtime Validation)
+
+- **Guard** class for production runtime LLM output validation
+- `guard.validate(output)` / `guard.avalidate(output)` — sync and async
+- **CheckSpec** model for declarative check definitions
+- Predefined guards: `safety_guard`, `quality_guard`, `rag_guard`
+- **GuardrailMiddleware** — ASGI middleware for FastAPI/Starlette
+- **@guardrail** decorator for function-level validation
+- Soft checks that record but don't block
+
+### Rate Limiting & Circuit Breaker
+
+- **TokenBucketRateLimiter** — classic token bucket with async acquire
+- **PerProviderRateLimiter** — separate limits per provider
+- **CircuitBreaker** — auto-disable failing backends (CLOSED→OPEN→HALF_OPEN→CLOSED)
+- **ResilientJudge** — wraps any judge with rate limiting + circuit breaker + fallback
+- **RetryPolicy** — configurable retry with exponential backoff and jitter
+- **with_retry()** async utility
+
+### Enhanced Reporting
+
+- **A/B comparison reports** — side-by-side HTML/Markdown/terminal with color-coded deltas
+- **Trend reports** — inline SVG charts for score/pass-rate/cost over time
+- **CSV export** — `write_csv()` and `results_to_dataframe()` for data analysis
+- **GitHub PR comments** — `generate_pr_comment()` with collapsible details, `post_pr_comment()` via API
+
+### Configuration Profiles
+
+- Define profiles in `[tool.checkllm.profiles.dev]`, `[tool.checkllm.profiles.ci]`, etc.
+- Activate via `CHECKLLM_PROFILE=ci` or `--profile ci`
+- Merge order: defaults → base config → profile → env vars
+- New `engine` config option for parallel execution strategy
+
+### Programmatic API
+
+- `evaluate()` async function — use checkllm outside pytest
+- `check_output()` sync wrapper — one-liner validation
+- **Evaluator** builder — fluent API with `.with_judge()`, `.add_check()`, `.run()`, `.batch_run()`
+- `parse_check_shorthand()` — parse `"no_pii"` or `"max_tokens:200"` into check specs
+
+### Watch Mode
+
+- `checkllm watch tests/` — re-run tests on file changes
+- Cross-platform polling (no external dependencies)
+- Debounced detection, configurable patterns and intervals
+- Rich terminal output with run history
+
+### Other
+
+- 836 tests (up from ~250)
+- 55 public API symbols exported from top-level package
+- Optional dependencies: `checkllm[gemini]`, `checkllm[litellm]`, `checkllm[embeddings]`, `checkllm[all]`
+
 ## 0.3.0 (2026-03-29)
 
 ### Testing Helpers (`checkllm.testing`)
