@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import math
 import re
+from collections import Counter
 from typing import Any, Type
 
 import tiktoken
@@ -599,4 +600,395 @@ class DeterministicChecks:
             passed=passed, score=score,
             reasoning=f"Value: {value}, must be in [{low}, {high}]",
             cost=0.0, latency_ms=0, metric_name="between",
+        )
+
+    # --- Text similarity metrics ---
+
+    def bleu(self, output: str, reference: str, threshold: float = 0.5) -> CheckResult:
+        """BLEU score (Bilingual Evaluation Understudy) with unigram through 4-gram precision and brevity penalty."""
+        output_tokens = output.lower().split()
+        reference_tokens = reference.lower().split()
+
+        if not output_tokens or not reference_tokens:
+            return CheckResult(
+                passed=False, score=0.0,
+                reasoning="Empty output or reference",
+                cost=0.0, latency_ms=0, metric_name="bleu",
+            )
+
+        # Compute modified n-gram precisions for n=1..4
+        log_avg = 0.0
+        max_n = min(4, len(output_tokens))
+        if max_n == 0:
+            return CheckResult(
+                passed=False, score=0.0,
+                reasoning="Output too short to compute BLEU",
+                cost=0.0, latency_ms=0, metric_name="bleu",
+            )
+
+        for n in range(1, max_n + 1):
+            out_ngrams: Counter[tuple[str, ...]] = Counter(
+                tuple(output_tokens[i:i + n]) for i in range(len(output_tokens) - n + 1)
+            )
+            ref_ngrams: Counter[tuple[str, ...]] = Counter(
+                tuple(reference_tokens[i:i + n]) for i in range(len(reference_tokens) - n + 1)
+            )
+            clipped = {ng: min(count, ref_ngrams.get(ng, 0)) for ng, count in out_ngrams.items()}
+            numerator = sum(clipped.values())
+            denominator = sum(out_ngrams.values())
+            if denominator == 0 or numerator == 0:
+                # If any n-gram precision is 0, BLEU is 0
+                score = 0.0
+                passed = score >= threshold
+                return CheckResult(
+                    passed=passed, score=score,
+                    reasoning=f"BLEU: {score:.4f} (threshold: {threshold}) — zero {n}-gram matches",
+                    cost=0.0, latency_ms=0, metric_name="bleu",
+                )
+            log_avg += (1.0 / max_n) * math.log(numerator / denominator)
+
+        # Brevity penalty
+        bp = 1.0
+        if len(output_tokens) < len(reference_tokens):
+            bp = math.exp(1.0 - len(reference_tokens) / len(output_tokens))
+
+        score = bp * math.exp(log_avg)
+        score = min(1.0, max(0.0, score))
+        passed = score >= threshold
+        return CheckResult(
+            passed=passed, score=score,
+            reasoning=f"BLEU: {score:.4f} (threshold: {threshold}, BP: {bp:.4f})",
+            cost=0.0, latency_ms=0, metric_name="bleu",
+        )
+
+    def rouge_l(self, output: str, reference: str, threshold: float = 0.5) -> CheckResult:
+        """ROUGE-L score based on Longest Common Subsequence at word level."""
+        output_tokens = output.lower().split()
+        reference_tokens = reference.lower().split()
+
+        if not output_tokens or not reference_tokens:
+            return CheckResult(
+                passed=False, score=0.0,
+                reasoning="Empty output or reference",
+                cost=0.0, latency_ms=0, metric_name="rouge_l",
+            )
+
+        # Compute LCS length using dynamic programming
+        m, n = len(output_tokens), len(reference_tokens)
+        # Use space-optimized DP (two rows)
+        prev = [0] * (n + 1)
+        for i in range(1, m + 1):
+            curr = [0] * (n + 1)
+            for j in range(1, n + 1):
+                if output_tokens[i - 1] == reference_tokens[j - 1]:
+                    curr[j] = prev[j - 1] + 1
+                else:
+                    curr[j] = max(curr[j - 1], prev[j])
+            prev = curr
+        lcs_len = prev[n]
+
+        precision = lcs_len / m if m > 0 else 0.0
+        recall = lcs_len / n if n > 0 else 0.0
+
+        if precision + recall == 0:
+            f1 = 0.0
+        else:
+            f1 = 2.0 * precision * recall / (precision + recall)
+
+        score = min(1.0, max(0.0, f1))
+        passed = score >= threshold
+        return CheckResult(
+            passed=passed, score=score,
+            reasoning=f"ROUGE-L F1: {score:.4f} (P: {precision:.4f}, R: {recall:.4f}, threshold: {threshold})",
+            cost=0.0, latency_ms=0, metric_name="rouge_l",
+        )
+
+    # --- JSON field-level assertion ---
+
+    def json_field(self, output: str, field_path: str, expected: Any = None, condition: str | None = None) -> CheckResult:
+        """JSON field-level assertion with dot-notation navigation and condition support."""
+        try:
+            data = json.loads(output)
+        except json.JSONDecodeError as e:
+            return CheckResult(
+                passed=False, score=0.0,
+                reasoning=f"Invalid JSON: {e}",
+                cost=0.0, latency_ms=0, metric_name="json_field",
+            )
+
+        # Navigate to field using dot notation
+        parts = field_path.split(".")
+        current: Any = data
+        for part in parts:
+            if isinstance(current, dict) and part in current:
+                current = current[part]
+            elif isinstance(current, list):
+                try:
+                    idx = int(part)
+                    current = current[idx]
+                except (ValueError, IndexError):
+                    return CheckResult(
+                        passed=False, score=0.0,
+                        reasoning=f"Field path '{field_path}' not found — invalid list index '{part}'",
+                        cost=0.0, latency_ms=0, metric_name="json_field",
+                    )
+            else:
+                return CheckResult(
+                    passed=False, score=0.0,
+                    reasoning=f"Field path '{field_path}' not found at segment '{part}'",
+                    cost=0.0, latency_ms=0, metric_name="json_field",
+                )
+
+        # Evaluate condition or check equality
+        if condition is not None:
+            return self._eval_json_condition(current, condition, field_path)
+
+        if expected is not None:
+            passed = current == expected
+            return CheckResult(
+                passed=passed, score=1.0 if passed else 0.0,
+                reasoning=f"Field '{field_path}' = {current!r}, expected {expected!r}",
+                cost=0.0, latency_ms=0, metric_name="json_field",
+            )
+
+        # No condition and no expected — just check that the field exists
+        return CheckResult(
+            passed=True, score=1.0,
+            reasoning=f"Field '{field_path}' exists with value: {current!r}",
+            cost=0.0, latency_ms=0, metric_name="json_field",
+        )
+
+    def _eval_json_condition(self, value: Any, condition: str, field_path: str) -> CheckResult:
+        """Evaluate a condition against a JSON field value."""
+        if condition == "exists":
+            # If we got here, the field exists
+            return CheckResult(
+                passed=True, score=1.0,
+                reasoning=f"Field '{field_path}' exists",
+                cost=0.0, latency_ms=0, metric_name="json_field",
+            )
+        elif condition == "not_empty":
+            if value is None:
+                passed = False
+            elif isinstance(value, (str, list, dict)):
+                passed = len(value) > 0
+            else:
+                passed = True  # Numbers, booleans are considered not empty
+            return CheckResult(
+                passed=passed, score=1.0 if passed else 0.0,
+                reasoning=f"Field '{field_path}' {'is not empty' if passed else 'is empty'}: {value!r}",
+                cost=0.0, latency_ms=0, metric_name="json_field",
+            )
+        elif condition.startswith("gt:"):
+            threshold = float(condition[3:])
+            try:
+                num_val = float(value)
+            except (TypeError, ValueError):
+                return CheckResult(
+                    passed=False, score=0.0,
+                    reasoning=f"Field '{field_path}' value {value!r} is not numeric (condition: {condition})",
+                    cost=0.0, latency_ms=0, metric_name="json_field",
+                )
+            passed = num_val > threshold
+            return CheckResult(
+                passed=passed, score=1.0 if passed else 0.0,
+                reasoning=f"Field '{field_path}' = {num_val}, {'>' if passed else '<='} {threshold}",
+                cost=0.0, latency_ms=0, metric_name="json_field",
+            )
+        elif condition.startswith("lt:"):
+            threshold = float(condition[3:])
+            try:
+                num_val = float(value)
+            except (TypeError, ValueError):
+                return CheckResult(
+                    passed=False, score=0.0,
+                    reasoning=f"Field '{field_path}' value {value!r} is not numeric (condition: {condition})",
+                    cost=0.0, latency_ms=0, metric_name="json_field",
+                )
+            passed = num_val < threshold
+            return CheckResult(
+                passed=passed, score=1.0 if passed else 0.0,
+                reasoning=f"Field '{field_path}' = {num_val}, {'<' if passed else '>='} {threshold}",
+                cost=0.0, latency_ms=0, metric_name="json_field",
+            )
+        elif condition.startswith("contains:"):
+            substr = condition[9:]
+            str_val = str(value)
+            passed = substr in str_val
+            return CheckResult(
+                passed=passed, score=1.0 if passed else 0.0,
+                reasoning=f"Field '{field_path}': '{substr}' {'found' if passed else 'not found'} in {str_val!r}",
+                cost=0.0, latency_ms=0, metric_name="json_field",
+            )
+        elif condition.startswith("type:"):
+            expected_type = condition[5:]
+            type_map = {
+                "str": str, "string": str,
+                "int": int, "integer": int,
+                "float": float,
+                "bool": bool, "boolean": bool,
+                "list": list, "array": list,
+                "dict": dict, "object": dict,
+                "none": type(None), "null": type(None),
+            }
+            target_type = type_map.get(expected_type)
+            if target_type is None:
+                return CheckResult(
+                    passed=False, score=0.0,
+                    reasoning=f"Unknown type '{expected_type}' in condition",
+                    cost=0.0, latency_ms=0, metric_name="json_field",
+                )
+            passed = isinstance(value, target_type)
+            return CheckResult(
+                passed=passed, score=1.0 if passed else 0.0,
+                reasoning=f"Field '{field_path}' type is {type(value).__name__}, expected {expected_type}",
+                cost=0.0, latency_ms=0, metric_name="json_field",
+            )
+        else:
+            return CheckResult(
+                passed=False, score=0.0,
+                reasoning=f"Unknown condition: '{condition}'",
+                cost=0.0, latency_ms=0, metric_name="json_field",
+            )
+
+    # --- SQL validation ---
+
+    def is_valid_sql(self, output: str) -> CheckResult:
+        """Basic SQL syntax validation without executing."""
+        # Strip markdown code fences
+        code = output.strip()
+        if code.startswith("```sql"):
+            code = code[len("```sql"):]
+        elif code.startswith("```"):
+            code = code[3:]
+        if code.endswith("```"):
+            code = code[:-3]
+        code = code.strip()
+
+        if not code:
+            return CheckResult(
+                passed=False, score=0.0,
+                reasoning="Empty SQL statement",
+                cost=0.0, latency_ms=0, metric_name="is_valid_sql",
+            )
+
+        errors: list[str] = []
+
+        # Check balanced parentheses
+        depth = 0
+        for ch in code:
+            if ch == '(':
+                depth += 1
+            elif ch == ')':
+                depth -= 1
+            if depth < 0:
+                errors.append("Unbalanced parentheses: extra closing ')'")
+                break
+        if depth > 0:
+            errors.append(f"Unbalanced parentheses: {depth} unclosed '('")
+
+        # Check that it starts with a known SQL keyword
+        sql_start_keywords = {
+            "SELECT", "INSERT", "UPDATE", "DELETE", "CREATE", "DROP", "ALTER",
+            "WITH", "MERGE", "REPLACE", "TRUNCATE", "EXPLAIN", "DESCRIBE",
+            "SHOW", "USE", "SET", "BEGIN", "COMMIT", "ROLLBACK", "GRANT",
+            "REVOKE", "EXEC", "EXECUTE", "CALL",
+        }
+        # Get the first word (uppercase)
+        first_word_match = re.match(r'\s*(\w+)', code, re.IGNORECASE)
+        if first_word_match:
+            first_word = first_word_match.group(1).upper()
+            if first_word not in sql_start_keywords:
+                errors.append(f"Statement does not start with a recognized SQL keyword (found '{first_word}')")
+        else:
+            errors.append("Could not identify a SQL keyword at the start")
+
+        # Check for unclosed string literals
+        in_single = False
+        in_double = False
+        for i, ch in enumerate(code):
+            if ch == "'" and not in_double:
+                in_single = not in_single
+            elif ch == '"' and not in_single:
+                in_double = not in_double
+        if in_single:
+            errors.append("Unclosed single-quoted string literal")
+        if in_double:
+            errors.append("Unclosed double-quoted string literal")
+
+        if errors:
+            return CheckResult(
+                passed=False, score=max(0.0, 1.0 - len(errors) * 0.25),
+                reasoning=f"SQL validation errors: {'; '.join(errors)}",
+                cost=0.0, latency_ms=0, metric_name="is_valid_sql",
+            )
+
+        return CheckResult(
+            passed=True, score=1.0,
+            reasoning="Valid SQL syntax (basic validation passed)",
+            cost=0.0, latency_ms=0, metric_name="is_valid_sql",
+        )
+
+    # --- Markdown validation ---
+
+    def is_valid_markdown(
+        self,
+        output: str,
+        require_headers: bool = False,
+        require_lists: bool = False,
+        require_code_blocks: bool = False,
+    ) -> CheckResult:
+        """Check for valid markdown structure and optionally require specific elements."""
+        if not output.strip():
+            return CheckResult(
+                passed=False, score=0.0,
+                reasoning="Empty output",
+                cost=0.0, latency_ms=0, metric_name="is_valid_markdown",
+            )
+
+        errors: list[str] = []
+        elements_found: list[str] = []
+
+        # Check for headers
+        has_headers = bool(re.search(r'^#{1,6}\s+\S', output, re.MULTILINE))
+        if has_headers:
+            elements_found.append("headers")
+        if require_headers and not has_headers:
+            errors.append("No headers found (expected at least one)")
+
+        # Check for lists (unordered or ordered)
+        has_unordered = bool(re.search(r'^[\s]*[-*+]\s+\S', output, re.MULTILINE))
+        has_ordered = bool(re.search(r'^[\s]*\d+\.\s+\S', output, re.MULTILINE))
+        has_lists = has_unordered or has_ordered
+        if has_lists:
+            elements_found.append("lists")
+        if require_lists and not has_lists:
+            errors.append("No lists found (expected at least one)")
+
+        # Check for code blocks (fenced)
+        has_code_blocks = bool(re.search(r'^```', output, re.MULTILINE))
+        if has_code_blocks:
+            elements_found.append("code blocks")
+            # Check that code blocks are properly closed
+            fence_count = len(re.findall(r'^```', output, re.MULTILINE))
+            if fence_count % 2 != 0:
+                errors.append("Unclosed code block (odd number of ``` fences)")
+        if require_code_blocks and not has_code_blocks:
+            errors.append("No code blocks found (expected at least one)")
+
+        passed = len(errors) == 0
+        total_checks = 1 + int(require_headers) + int(require_lists) + int(require_code_blocks)
+        passed_checks = total_checks - len(errors)
+        score = passed_checks / total_checks
+
+        if errors:
+            reasoning = f"Markdown issues: {'; '.join(errors)}"
+        else:
+            found_str = ", ".join(elements_found) if elements_found else "plain text"
+            reasoning = f"Valid markdown structure (elements: {found_str})"
+
+        return CheckResult(
+            passed=passed, score=score,
+            reasoning=reasoning,
+            cost=0.0, latency_ms=0, metric_name="is_valid_markdown",
         )

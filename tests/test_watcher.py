@@ -320,17 +320,20 @@ class TestWatchCLI:
     """Test the watch CLI command registration."""
 
     def test_watch_command_in_help(self) -> None:
+        import re
         from typer.testing import CliRunner
         from checkllm.cli import app
 
         runner = CliRunner()
         result = runner.invoke(app, ["watch", "--help"])
         assert result.exit_code == 0
-        assert "Watch for file changes" in result.output
-        assert "--interval" in result.output
-        assert "--debounce" in result.output
-        assert "--pattern" in result.output
-        assert "--watch" in result.output
-        assert "--budget" in result.output
-        assert "--no-cache" in result.output
-        assert "--profile" in result.output
+        # Strip ANSI escape codes for reliable assertions on all platforms
+        clean = re.sub(r"\x1b\[[0-9;]*m", "", result.output)
+        assert "Watch for file changes" in clean
+        assert "--interval" in clean
+        assert "--debounce" in clean
+        assert "--pattern" in clean
+        assert "--watch" in clean
+        assert "--budget" in clean
+        assert "--no-cache" in clean
+        assert "--profile" in clean

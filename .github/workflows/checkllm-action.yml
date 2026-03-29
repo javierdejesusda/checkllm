@@ -1,0 +1,83 @@
+# Template GitHub Action for running checkllm evaluations on PRs.
+# Copy this to your repo's .github/workflows/ directory and configure.
+#
+# Usage:
+#   1. Copy this file to .github/workflows/checkllm-eval.yml
+#   2. Set OPENAI_API_KEY (or ANTHROPIC_API_KEY) as a repository secret
+#   3. Customize the eval paths and configuration below
+
+name: LLM Evaluation
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install checkllm
+        run: pip install "checkllm[all]"
+
+      - name: Run deterministic checks
+        run: |
+          pytest tests/ -v -m "not llm" \
+            --tb=short \
+            --checkllm-junit=results/deterministic.xml
+
+      - name: Run LLM evaluations
+        if: env.OPENAI_API_KEY != ''
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          CHECKLLM_BUDGET: "5.0"
+          CHECKLLM_ENGINE: "async"
+          CHECKLLM_MAX_CONCURRENCY: "5"
+        run: |
+          pytest tests/ -v \
+            --tb=short \
+            --checkllm-report=results/report.html \
+            --checkllm-junit=results/full.xml \
+            --checkllm-snapshot=results/snapshot.json
+
+      - name: Upload evaluation results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: checkllm-results
+          path: results/
+
+      - name: Post PR comment with results
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = 'results/full.xml';
+            if (fs.existsSync(path)) {
+              const content = fs.readFileSync(path, 'utf8');
+              const tests = content.match(/tests="(\d+)"/)?.[1] || '0';
+              const failures = content.match(/failures="(\d+)"/)?.[1] || '0';
+              const status = failures === '0' ? ':white_check_mark:' : ':x:';
+              const body = `## ${status} checkllm Evaluation Results\n\n` +
+                `- **Tests:** ${tests}\n` +
+                `- **Failures:** ${failures}\n\n` +
+                `[Download full report](${process.env.GITHUB_SERVER_URL}/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID})`;
+              github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: body
+              });
+            }

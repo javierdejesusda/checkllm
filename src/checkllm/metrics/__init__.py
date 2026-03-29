@@ -7,10 +7,18 @@ from checkllm.metrics.answer_completeness import AnswerCompletenessMetric
 from checkllm.metrics.bias import BiasMetric
 from checkllm.metrics.consistency import ConsistencyMetric
 from checkllm.metrics.context_relevance import ContextRelevanceMetric
+from checkllm.metrics.contextual_precision import ContextualPrecisionMetric
+from checkllm.metrics.contextual_recall import ContextualRecallMetric
+from checkllm.metrics.conversation_completeness import ConversationCompletenessMetric
 from checkllm.metrics.faithfulness import FaithfulnessMetric
+from checkllm.metrics.g_eval import GEvalMetric
 from checkllm.metrics.groundedness import GroundednessMetric
 from checkllm.metrics.instruction_following import InstructionFollowingMetric
+from checkllm.metrics.knowledge_retention import KnowledgeRetentionMetric
+from checkllm.metrics.role_adherence import RoleAdherenceMetric
 from checkllm.metrics.summarization import SummarizationMetric
+from checkllm.metrics.task_completion import TaskCompletionMetric
+from checkllm.metrics.tool_accuracy import ToolAccuracyMetric
 from checkllm.models import CheckResult
 
 

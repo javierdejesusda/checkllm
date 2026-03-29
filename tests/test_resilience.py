@@ -657,7 +657,7 @@ class TestWithRetry:
         await with_retry(fn, policy)
         elapsed = time.monotonic() - start
         # With jitter, actual sleep is between 0 and base_delay
-        assert elapsed < 0.02  # generous upper bound
+        assert elapsed < 0.1  # generous upper bound for CI (Windows timer precision)
 
     @pytest.mark.asyncio
     async def test_default_policy(self):

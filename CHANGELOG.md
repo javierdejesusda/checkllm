@@ -1,5 +1,128 @@
 # Changelog
 
+## 2.0.0 (2026-03-29)
+
+### New LLM-as-Judge Metrics (8 new, 24 total)
+
+- **g_eval** — G-Eval: custom criteria evaluation with chain-of-thought reasoning (most flexible metric)
+- **contextual_precision** — are the most relevant retrieved documents ranked higher? (Ragas-style)
+- **contextual_recall** — what fraction of the ground-truth answer is supported by context? (Ragas-style)
+- **task_completion** — did the LLM actually accomplish the user's stated goal?
+- **role_adherence** — does the LLM stay in its assigned persona/role throughout?
+- **tool_accuracy** — agent tool selection and parameter correctness evaluation
+- **knowledge_retention** — does the chatbot remember facts from earlier in the conversation?
+- **conversation_completeness** — were all user requests fulfilled across the multi-turn exchange?
+
+### New Deterministic Checks (5 new, 33 total)
+
+- **bleu** — BLEU score (1-4 gram) with brevity penalty for reference comparison
+- **rouge_l** — ROUGE-L (LCS-based F1) for summary/translation evaluation
+- **json_field** — JSONPath-style deep field assertions with conditions (exists, gt, lt, contains, type)
+- **is_valid_sql** — SQL syntax validation (balanced parens, keywords, string literals)
+- **is_valid_markdown** — markdown structure validation with optional header/list/code-block requirements
+
+### Multi-Turn Conversational Evaluation
+
+- **ConversationalTestCase** model for multi-turn conversation threads
+- **Turn** model (role, content, metadata) with user/assistant/system filtering
+- `format_transcript()` for readable conversation formatting
+- Knowledge retention and conversation completeness metrics operate on full conversation context
+
+### Agent / Agentic Workflow Evaluation
+
+- **AgentTestCase** with query, steps, tool calls, trajectory, and final output
+- **ToolCall** model (name, parameters, result, timestamp)
+- **AgentStep** model (thought, action, tool_call, observation)
+- `validate_tool_calls()` — compare actual vs expected tool usage
+- `validate_trajectory_length()` — ensure agent efficiency
+- `validate_tool_order()` — verify tool call sequencing via LCS
+- `validate_no_repeated_tools()` — detect redundant tool usage
+
+### Synthetic Test Data Generation
+
+- **Synthesizer** class — generate test cases from documents or descriptions using an LLM
+- `from_documents()` — ground test cases in provided document corpus
+- `from_description()` — generate from free-text system description
+- `evolve()` — make existing test cases more challenging
+- 6 evolution strategies: simple, reasoning, multi_context, conditional, adversarial, comparative
+- Parallel batch generation with cost tracking
+
+### Red Teaming / Adversarial Testing
+
+- **RedTeamer** — automated vulnerability scanning for LLM applications
+- 10 vulnerability types: prompt injection, jailbreak, PII leakage, harmful content, bias exploitation, context manipulation, instruction override, role escape, data extraction, encoding attack
+- 8 attack enhancement strategies: direct, roleplay, leetspeak, ROT-13, base64, multi-turn, logic trap, authority
+- 70+ built-in attack templates
+- Heuristic + LLM-judge evaluation of attack success
+- **VulnerabilityReport** with severity breakdown and summary
+
+### Batch API Support
+
+- **BatchEvaluator** — submit evaluation jobs via OpenAI batch API for 50% cost savings
+- JSONL request building, file upload, polling, and result retrieval
+- Automatic cost estimation at batch discount rate
+
+### Streaming Evaluation
+
+- **StreamingEvaluator** — evaluate LLM outputs as they stream token by token
+- Configurable check intervals with sync and async check support
+- Early stop conditions for immediate termination
+- **StreamingCheckpoint** model for progressive evaluation status
+
+### OpenTelemetry Tracing
+
+- **Tracer** with `span()` context manager and `trace()` decorator
+- Integrates with OpenTelemetry when available, falls back to local-only
+- Record CheckResults as span events
+- Nested span support, JSON export, sync and async function tracing
+
+### Experiment Tracking
+
+- **ExperimentTracker** with SQLite persistence
+- `start_run()`, `log_results()`, `end_run()` lifecycle
+- Run comparison with score/pass-rate/cost diffs and per-metric analysis
+- `best_run()` by avg_score, pass_rate, cost, or custom metric
+- Tag-based filtering and prompt version tracking
+
+### YAML Declarative Evaluation Configs
+
+- Define evaluations in YAML (promptfoo-style): providers, prompts, tests, assertions
+- **YamlEvalRunner** — orchestrate provider x prompt x test matrix
+- Jinja2 template rendering for prompt variables
+- 30+ assertion types mapped to deterministic and LLM checks
+- `checkllm yaml-run config.yaml` CLI command
+
+### Interactive Web Dashboard
+
+- `checkllm dashboard` — browser-based UI for exploring evaluation results
+- Dark theme with modern design, no external JS/CSS dependencies
+- Experiment run list with search/filter
+- Run detail view with score distribution charts
+- Side-by-side run comparison with delta badges
+
+### New CLI Commands
+
+- `checkllm dashboard` — launch interactive web dashboard
+- `checkllm yaml-run` — run YAML-defined evaluations
+- `checkllm redteam` — automated red teaming against an LLM
+- `checkllm experiments` — view and compare experiment tracking data
+
+### GitHub Action Template
+
+- Ready-to-use `.github/workflows/checkllm-action.yml` template
+- Deterministic + LLM evaluation with budget controls
+- Automatic PR comment with results summary
+- Artifact upload for full reports
+
+### Stats
+
+- 1,112 tests (up from 836)
+- 87 public API symbols (up from 55)
+- 74 source files, 16,350 LOC
+- 84 test files, 13,031 LOC
+- 24 LLM-as-judge metrics + 33 deterministic checks
+- 14 CLI commands
+
 ## 1.0.0 (2026-03-29)
 
 ### Parallel Evaluation Engines

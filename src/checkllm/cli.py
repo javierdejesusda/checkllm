@@ -810,13 +810,18 @@ def list_metrics():
         "sentiment", "correctness", "faithfulness", "context_relevance",
         "answer_completeness", "instruction_following", "summarization",
         "bias", "consistency", "groundedness",
+        "g_eval", "contextual_precision", "contextual_recall",
+        "task_completion", "role_adherence", "tool_accuracy",
+        "knowledge_retention", "conversation_completeness",
     ]
     builtin_deterministic = [
         "contains", "not_contains", "exact_match", "starts_with", "ends_with",
         "regex", "max_tokens", "min_tokens", "word_count", "char_count",
         "sentence_count", "similarity", "readability", "latency", "cost",
-        "json_schema", "is_json", "is_valid_python",
+        "json_schema", "is_json", "is_valid_python", "is_valid_sql", "is_valid_markdown",
         "all_of", "any_of", "none_of",
+        "bleu", "rouge_l", "json_field",
+        "no_pii", "language", "greater_than", "less_than", "between",
     ]
     console.print("[bold]LLM-as-Judge metrics:[/]")
     for m in builtin_judge:
@@ -832,3 +837,172 @@ def list_metrics():
             console.print(f"  [cyan]{m}[/]")
     else:
         console.print(f"\n[dim]No custom metrics registered.[/]")
+
+
+@app.command()
+def dashboard(
+    port: int = typer.Option(8484, "--port", "-p", help="Port to serve on"),
+    host: str = typer.Option("localhost", "--host", help="Host to bind to"),
+    no_browser: bool = typer.Option(False, "--no-browser", help="Don't open browser"),
+    db_path: Optional[str] = typer.Option(None, "--db", help="Experiments database path"),
+):
+    """Launch the interactive web dashboard."""
+    from checkllm.dashboard import start_dashboard
+
+    db = db_path or ".checkllm/experiments.db"
+    console.print(f"[bold]Starting dashboard on {host}:{port}[/]")
+    start_dashboard(port=port, host=host, open_browser=not no_browser, db_path=db)
+
+
+@app.command(name="yaml-run")
+def yaml_run(
+    config_path: str = typer.Argument(help="Path to YAML config file"),
+    output: Optional[str] = typer.Option(None, "--output", "-o", help="Save results JSON"),
+):
+    """Run evaluations defined in a YAML config file."""
+    import asyncio
+    import json as _json
+    from checkllm.yaml_config import load_eval_config, YamlEvalRunner
+    from rich.table import Table
+    from rich.text import Text
+
+    config = load_eval_config(config_path)
+    console.print(f"[bold]Running YAML evaluation:[/] {config.description or config_path}")
+    console.print(f"  Providers: {len(config.providers)}, Prompts: {len(config.prompts)}, Tests: {len(config.tests)}")
+
+    runner = YamlEvalRunner(config)
+    results = asyncio.run(runner.run())
+
+    table = Table(title="Results", show_lines=True)
+    table.add_column("Provider")
+    table.add_column("Prompt")
+    table.add_column("Test")
+    table.add_column("Assertion")
+    table.add_column("Status", width=6)
+    table.add_column("Score", justify="right")
+
+    for result in results:
+        for check in result.get("results", []):
+            status = Text("PASS", style="bold green") if check.get("passed") else Text("FAIL", style="bold red")
+            table.add_row(
+                result.get("provider", ""), result.get("prompt", ""),
+                result.get("test", "")[:30], check.get("metric_name", ""),
+                status, f"{check.get('score', 0):.2f}",
+            )
+    console.print(table)
+
+    if output:
+        Path(output).write_text(_json.dumps(results, indent=2, default=str))
+        console.print(f"\n[bold green]Results saved to {output}[/]")
+
+
+@app.command()
+def redteam(
+    target_prompt: str = typer.Argument(help="System prompt for target LLM"),
+    attacks_per_type: int = typer.Option(3, "--attacks", "-n", help="Attacks per type"),
+    types: Optional[list[str]] = typer.Option(None, "--type", "-t", help="Vuln types to test"),
+    output: Optional[str] = typer.Option(None, "--output", "-o", help="Save report JSON"),
+):
+    """Run automated red teaming against an LLM."""
+    import asyncio
+    from checkllm.redteam import RedTeamer, VulnerabilityType
+
+    vuln_types = None
+    if types:
+        try:
+            vuln_types = [VulnerabilityType(t) for t in types]
+        except ValueError as e:
+            console.print(f"[bold red]Invalid type: {e}[/]")
+            console.print(f"[dim]Valid: {', '.join(v.value for v in VulnerabilityType)}[/]")
+            raise typer.Exit(code=1)
+
+    console.print(f"[bold]Red Team Scan[/] ({attacks_per_type} attacks/type)")
+
+    async def target(prompt: str) -> str:
+        from openai import AsyncOpenAI
+        client = AsyncOpenAI()
+        resp = await client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": target_prompt},
+                {"role": "user", "content": prompt},
+            ],
+            temperature=0.0,
+        )
+        return resp.choices[0].message.content or ""
+
+    red = RedTeamer()
+    report = asyncio.run(red.scan(
+        target=target, vulnerability_types=vuln_types,
+        attacks_per_type=attacks_per_type, system_prompt=target_prompt,
+    ))
+    console.print(report.summary())
+
+    if output:
+        Path(output).write_text(report.model_dump_json(indent=2))
+        console.print(f"\n[bold green]Report saved to {output}[/]")
+
+    if report.successful_attacks > 0:
+        raise typer.Exit(code=1)
+
+
+@app.command()
+def experiments(
+    list_all: bool = typer.Option(False, "--list", "-l", help="List experiment runs"),
+    compare_runs: Optional[str] = typer.Option(None, "--compare", help="Compare 'ID1,ID2'"),
+    best: Optional[str] = typer.Option(None, "--best", help="Best run for experiment"),
+    limit: int = typer.Option(20, "--limit", "-n", help="Number of runs"),
+    db_path: Optional[str] = typer.Option(None, "--db", help="Database path"),
+):
+    """View and compare experiment tracking data."""
+    from rich.table import Table
+    from checkllm.experiments import ExperimentTracker
+
+    db = db_path or ".checkllm/experiments.db"
+    tracker = ExperimentTracker(db_path=db)
+
+    if compare_runs:
+        parts = compare_runs.split(",")
+        if len(parts) != 2:
+            console.print("[bold red]--compare format: 'ID1,ID2'[/]")
+            raise typer.Exit(code=1)
+        comp = tracker.compare(parts[0].strip(), parts[1].strip())
+        console.print(f"  Score diff: {comp.score_diff:+.3f}")
+        console.print(f"  Pass rate diff: {comp.pass_rate_diff:+.3f}")
+        console.print(f"  Cost diff: ${comp.cost_diff:+.4f}")
+        if comp.improved_metrics:
+            console.print(f"  [green]Improved: {', '.join(comp.improved_metrics)}[/]")
+        if comp.degraded_metrics:
+            console.print(f"  [red]Degraded: {', '.join(comp.degraded_metrics)}[/]")
+        raise typer.Exit(code=0)
+
+    if best:
+        run = tracker.best_run(best)
+        if run:
+            console.print(f"[bold]Best run for '{best}':[/] {run.run_id}")
+            console.print(f"  Score: {run.avg_score:.3f}, Pass rate: {run.pass_rate:.1%}")
+        else:
+            console.print(f"[dim]No runs found for '{best}'[/]")
+        raise typer.Exit(code=0)
+
+    runs = tracker.list_runs(limit=limit)
+    if not runs:
+        console.print("[dim]No experiment runs recorded yet.[/]")
+        raise typer.Exit(code=0)
+
+    table = Table(title="Experiment Runs")
+    table.add_column("ID", max_width=10)
+    table.add_column("Experiment")
+    table.add_column("Model")
+    table.add_column("Prompt Ver.")
+    table.add_column("Score", justify="right")
+    table.add_column("Pass Rate", justify="right")
+    table.add_column("Cost", justify="right")
+
+    for r in runs:
+        table.add_row(
+            r.run_id[:8], r.experiment_name, r.model,
+            r.prompt_version, f"{r.avg_score:.3f}",
+            f"{r.pass_rate:.0%}", f"${r.total_cost:.4f}",
+        )
+    console.print(table)

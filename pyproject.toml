@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "checkllm"
-version = "1.0.0"
-description = "Test LLM-powered applications with the same rigor as traditional software."
+version = "2.0.0"
+description = "The most comprehensive LLM testing and evaluation framework for Python."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
@@ -13,7 +13,7 @@ authors = [
     { name = "checkllm contributors" },
 ]
 classifiers = [
-    "Development Status :: 4 - Beta",
+    "Development Status :: 5 - Production/Stable",
     "Framework :: Pytest",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",

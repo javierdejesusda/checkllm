@@ -18,16 +18,24 @@ from checkllm.metrics.bias import BiasMetric
 from checkllm.metrics.coherence import CoherenceMetric
 from checkllm.metrics.consistency import ConsistencyMetric
 from checkllm.metrics.context_relevance import ContextRelevanceMetric
+from checkllm.metrics.contextual_precision import ContextualPrecisionMetric
+from checkllm.metrics.contextual_recall import ContextualRecallMetric
+from checkllm.metrics.conversation_completeness import ConversationCompletenessMetric
 from checkllm.metrics.correctness import CorrectnessMetric
 from checkllm.metrics.faithfulness import FaithfulnessMetric
 from checkllm.metrics.fluency import FluencyMetric
+from checkllm.metrics.g_eval import GEvalMetric
 from checkllm.metrics.groundedness import GroundednessMetric
 from checkllm.metrics.hallucination import HallucinationMetric
 from checkllm.metrics.instruction_following import InstructionFollowingMetric
+from checkllm.metrics.knowledge_retention import KnowledgeRetentionMetric
 from checkllm.metrics.relevance import RelevanceMetric
+from checkllm.metrics.role_adherence import RoleAdherenceMetric
 from checkllm.metrics.rubric import RubricMetric
 from checkllm.metrics.sentiment import SentimentMetric
 from checkllm.metrics.summarization import SummarizationMetric
+from checkllm.metrics.task_completion import TaskCompletionMetric
+from checkllm.metrics.tool_accuracy import ToolAccuracyMetric
 from checkllm.metrics.toxicity import ToxicityMetric
 from checkllm.models import CheckFailedError, CheckResult
 
@@ -656,6 +664,212 @@ class CheckCollector:
             cache_kwargs={"output": output, "sources": "|".join(sources), "threshold": str(t)},
             runs=runs,
         )
+
+    # --- v2.0 LLM-as-judge checks ---
+
+    def g_eval(
+        self,
+        output: str,
+        criteria: str,
+        steps: list[str] | None = None,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = GEvalMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        cache_kw = {"output": output, "criteria": criteria, "threshold": str(t)}
+        if steps:
+            cache_kw["steps"] = "|".join(steps)
+        return self._cached_judge_check(
+            metric_name="g_eval",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output, criteria=criteria, steps=steps),
+            cache_kwargs=cache_kw,
+            runs=runs,
+        )
+
+    def contextual_precision(
+        self,
+        output: str,
+        context: list[str],
+        query: str,
+        expected: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = ContextualPrecisionMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="contextual_precision",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output, context=context, query=query, expected=expected),
+            cache_kwargs={"output": output, "context": "|".join(context), "query": query, "expected": expected, "threshold": str(t)},
+            runs=runs,
+        )
+
+    def contextual_recall(
+        self,
+        output: str,
+        context: list[str],
+        expected: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = ContextualRecallMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="contextual_recall",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output, context=context, expected=expected),
+            cache_kwargs={"output": output, "context": "|".join(context), "expected": expected, "threshold": str(t)},
+            runs=runs,
+        )
+
+    def task_completion(
+        self,
+        output: str,
+        task_description: str,
+        constraints: list[str] | None = None,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = TaskCompletionMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        cache_kw = {"output": output, "task_description": task_description, "threshold": str(t)}
+        if constraints:
+            cache_kw["constraints"] = "|".join(constraints)
+        return self._cached_judge_check(
+            metric_name="task_completion",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output, task_description=task_description, constraints=constraints),
+            cache_kwargs=cache_kw,
+            runs=runs,
+        )
+
+    def role_adherence(
+        self,
+        output: str,
+        role_description: str,
+        query: str | None = None,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = RoleAdherenceMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        cache_kw = {"output": output, "role_description": role_description, "threshold": str(t)}
+        if query:
+            cache_kw["query"] = query
+        return self._cached_judge_check(
+            metric_name="role_adherence",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output, role_description=role_description, query=query),
+            cache_kwargs=cache_kw,
+            runs=runs,
+        )
+
+    def tool_accuracy(
+        self,
+        output: str,
+        expected_tools: list[dict[str, object]],
+        query: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = ToolAccuracyMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        import json as _json
+        return self._cached_judge_check(
+            metric_name="tool_accuracy",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output, expected_tools=expected_tools, query=query),
+            cache_kwargs={"output": output, "expected_tools": _json.dumps(expected_tools, sort_keys=True), "query": query, "threshold": str(t)},
+            runs=runs,
+        )
+
+    def knowledge_retention(
+        self,
+        conversation: Any,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = KnowledgeRetentionMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        transcript = conversation.format_transcript()
+        return self._cached_judge_check(
+            metric_name="knowledge_retention",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(conversation=conversation),
+            cache_kwargs={"transcript": transcript, "threshold": str(t)},
+            runs=runs,
+        )
+
+    def conversation_completeness(
+        self,
+        conversation: Any,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = ConversationCompletenessMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        transcript = conversation.format_transcript()
+        return self._cached_judge_check(
+            metric_name="conversation_completeness",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(conversation=conversation),
+            cache_kwargs={"transcript": transcript, "threshold": str(t)},
+            runs=runs,
+        )
+
+    # --- v2.0 deterministic checks ---
+
+    def bleu(self, output: str, reference: str, threshold: float = 0.5) -> CheckResult:
+        result = self._deterministic.bleu(output, reference, threshold)
+        self.results.append(result)
+        return result
+
+    def rouge_l(self, output: str, reference: str, threshold: float = 0.5) -> CheckResult:
+        result = self._deterministic.rouge_l(output, reference, threshold)
+        self.results.append(result)
+        return result
+
+    def json_field(self, output: str, field_path: str, expected: Any = None, condition: str | None = None) -> CheckResult:
+        result = self._deterministic.json_field(output, field_path, expected, condition)
+        self.results.append(result)
+        return result
+
+    def is_valid_sql(self, output: str) -> CheckResult:
+        result = self._deterministic.is_valid_sql(output)
+        self.results.append(result)
+        return result
+
+    def is_valid_markdown(self, output: str, require_headers: bool = False, require_lists: bool = False, require_code_blocks: bool = False) -> CheckResult:
+        result = self._deterministic.is_valid_markdown(output, require_headers, require_lists, require_code_blocks)
+        self.results.append(result)
+        return result
 
     # --- Parallel batch execution ---
 
