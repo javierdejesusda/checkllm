@@ -47,8 +47,25 @@ def run(
     budget: Optional[float] = typer.Option(None, "--budget", help="Maximum USD to spend on judge calls"),
     no_cache: bool = typer.Option(False, "--no-cache", help="Disable judge response caching"),
     label: Optional[str] = typer.Option(None, "--label", "-l", help="Label for this run in history"),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Estimate costs without running tests"),
 ):
     """Run LLM tests with rich terminal output."""
+    if dry_run:
+        from checkllm.estimator import estimate_from_test_file, CostEstimate
+        path = Path(test_path)
+        files = [path] if path.is_file() else sorted(path.rglob("test_*.py"))
+        config = load_config()
+        model = config.judge_model
+        total = CostEstimate(model=model)
+        for f in files:
+            est = estimate_from_test_file(str(f), model=model)
+            total.deterministic_count += est.deterministic_count
+            total.judge_count += est.judge_count
+            total.total_cost += est.total_cost
+        total.total_cost = round(total.total_cost, 4)
+        console.print(f"[bold]Dry run — {total.summary()}[/]")
+        raise typer.Exit(code=0)
+
     cmd = [sys.executable, "-m", "pytest", test_path, "-v"]
     if junit_xml:
         cmd.extend([f"--checkllm-junit={junit_xml}"])
@@ -610,6 +627,47 @@ def cache(
         console.print("[dim]Use --stats to view cache info, --clear to clear it.[/]")
 
     cache_obj.close()
+
+
+@app.command()
+def estimate(
+    test_path: str = typer.Argument(help="Path to test file or directory"),
+    model: str = typer.Option("gpt-4o", "--model", "-m", help="Model to estimate costs for"),
+):
+    """Estimate the cost of running checks before executing them."""
+    from checkllm.estimator import estimate_from_test_file, CostEstimate
+
+    path = Path(test_path)
+    if path.is_file():
+        files = [path]
+    else:
+        files = sorted(path.rglob("test_*.py"))
+
+    if not files:
+        console.print("[yellow]No test files found.[/]")
+        raise typer.Exit(code=0)
+
+    total = CostEstimate(model=model)
+    for f in files:
+        est = estimate_from_test_file(str(f), model=model)
+        total.deterministic_count += est.deterministic_count
+        total.judge_count += est.judge_count
+        total.total_cost += est.total_cost
+
+    total.total_cost = round(total.total_cost, 4)
+    console.print(f"\n[bold]{total.summary()}[/]")
+
+    if total.judge_count > 0 and model != "gpt-4o-mini":
+        mini_total = CostEstimate(model="gpt-4o-mini")
+        for f in files:
+            est = estimate_from_test_file(str(f), model="gpt-4o-mini")
+            mini_total.judge_count += est.judge_count
+            mini_total.deterministic_count += est.deterministic_count
+            mini_total.total_cost += est.total_cost
+        mini_total.total_cost = round(mini_total.total_cost, 4)
+        console.print(f"[dim]With gpt-4o-mini: ~${mini_total.total_cost:.2f}[/]")
+
+    console.print(f"\n[dim]Files scanned: {len(files)}[/]")
 
 
 @app.command()
