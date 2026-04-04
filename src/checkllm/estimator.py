@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 from checkllm.judge import _OPENAI_PRICES, _ANTHROPIC_PRICES, _DEFAULT_PRICE
