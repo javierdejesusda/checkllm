@@ -1,5 +1,27 @@
 # Changelog
 
+## v3.0.0a1 (2026-04-04)
+
+### Developer Experience
+- **Auto-detect judge backend** — checkllm now auto-detects the best available LLM judge from your environment (OpenAI > Anthropic > Gemini > Ollama). Zero config needed.
+- **Interactive `checkllm init`** — scaffolds tailored test files based on your use case (RAG, chatbot, agent, general) with `--ci` flag for GitHub Actions
+- **Smart error messages** — actionable guidance when API keys are missing, budgets are exceeded, or dependencies are needed
+- **Cost estimation** — `checkllm estimate tests/` shows expected cost before running; `--dry-run` flag on `checkllm run`
+- **Fluent assertions** — `check.that(output).contains("Python").has_no_pii().max_tokens(200)`
+
+### Plugin System
+- **Community metric discovery** — third-party packages can register metrics via entry points; `checkllm list-metrics` shows builtin + plugins with source attribution
+
+### CLI
+- New `checkllm estimate` command
+- `checkllm run --dry-run` flag
+- Enhanced `checkllm list-metrics` with categories and plugin discovery
+- `checkllm init --use-case` and `--ci` flags
+
+### Internal
+- New modules: `discovery.py`, `errors.py`, `estimator.py`, `chain.py`
+- Default `judge_backend` changed from `"openai"` to `"auto"`
+
 ## 2.0.0 (2026-03-29)
 
 ### New LLM-as-Judge Metrics (8 new, 24 total)
