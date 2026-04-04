@@ -91,6 +91,16 @@ class CheckCollector:
             self._expect = SoftCheckProxy(self)
         return self._expect
 
+    def that(self, output: str):
+        """Start a fluent assertion chain for the given output.
+
+        Usage::
+
+            check.that(output).contains("Python").has_no_pii().max_tokens(200)
+        """
+        from checkllm.chain import AssertionChain
+        return AssertionChain(self, output)
+
     def _get_judge(self) -> JudgeBackend:
         if self._judge is None:
             backend = self.config.judge_backend
