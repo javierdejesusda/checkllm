@@ -12,9 +12,11 @@ from checkllm.agents import (
 from checkllm.api import Evaluator, check_output, evaluate, parse_check_shorthand
 from checkllm.batch import BatchEvaluator, BatchJob, BatchStatus
 from checkllm.cache import JudgeCache
+from checkllm.chain import AssertionChain
 from checkllm.consensus import AggregationStrategy, ConsensusJudge, ConsensusResult, consensus
 from checkllm.conversation import ConversationalTestCase, Turn
 from checkllm.datasets.case import Case
+from checkllm.discovery import detect_judge_backend, format_no_judge_error
 from checkllm.embeddings import (
     CachedEmbeddings,
     OpenAIEmbeddings,
@@ -30,6 +32,8 @@ from checkllm.engines import (
     ThreadPoolEngine,
     create_engine,
 )
+from checkllm.errors import format_budget_error, format_missing_dependency_error
+from checkllm.estimator import CostEstimate, estimate_check_cost, estimate_from_test_file
 from checkllm.experiments import ExperimentComparison, ExperimentRun, ExperimentTracker
 from checkllm.guardrails import (
     CheckSpec,
@@ -74,7 +78,7 @@ from checkllm.testing import MockJudge, assert_all_passed, assert_score_above, m
 from checkllm.tracing import Span, Tracer, get_tracer, trace
 from checkllm.yaml_config import EvalConfig, YamlEvalRunner, load_eval_config
 
-__version__ = "2.0.0"
+__version__ = "3.0.0a1"
 
 __all__ = [
     # Agent evaluation
@@ -89,6 +93,8 @@ __all__ = [
     "BatchEvaluator",
     "BatchJob",
     "BatchStatus",
+    # Chain
+    "AssertionChain",
     # Consensus
     "AggregationStrategy",
     "ConsensusJudge",
@@ -111,6 +117,9 @@ __all__ = [
     "batch_semantic_similarity",
     "cosine_similarity",
     "semantic_similarity",
+    # Discovery
+    "detect_judge_backend",
+    "format_no_judge_error",
     # Engines
     "AsyncEngine",
     "EngineType",
@@ -118,6 +127,13 @@ __all__ = [
     "ProcessPoolEngine",
     "ThreadPoolEngine",
     "create_engine",
+    # Errors
+    "format_budget_error",
+    "format_missing_dependency_error",
+    # Estimator
+    "CostEstimate",
+    "estimate_check_cost",
+    "estimate_from_test_file",
     # Experiments
     "ExperimentComparison",
     "ExperimentRun",
