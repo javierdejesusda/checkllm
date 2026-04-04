@@ -93,11 +93,33 @@ class CheckCollector:
 
     def _get_judge(self) -> JudgeBackend:
         if self._judge is None:
-            if self.config.judge_backend == "anthropic":
+            backend = self.config.judge_backend
+            model = self.config.judge_model
+
+            if backend == "auto":
+                from checkllm.discovery import detect_judge_backend, format_no_judge_error
+                detected = detect_judge_backend()
+                if detected is None:
+                    raise JudgeConfigError(format_no_judge_error())
+                backend, model = detected
+
+            if backend == "anthropic":
                 from checkllm.judge import AnthropicJudge
-                self._judge = AnthropicJudge(model=self.config.judge_model)
+                self._judge = AnthropicJudge(model=model)
+            elif backend == "gemini":
+                from checkllm.providers import GeminiJudge
+                self._judge = GeminiJudge(model=model)
+            elif backend == "ollama":
+                from checkllm.providers import OllamaJudge
+                self._judge = OllamaJudge(model=model)
+            elif backend == "litellm":
+                from checkllm.providers import LiteLLMJudge
+                self._judge = LiteLLMJudge(model=model)
+            elif backend == "azure":
+                from checkllm.providers import AzureOpenAIJudge
+                self._judge = AzureOpenAIJudge(deployment=model)
             else:
-                self._judge = OpenAIJudge(model=self.config.judge_model)
+                self._judge = OpenAIJudge(model=model)
         return self._judge
 
     def _check_budget(self) -> bool:
