@@ -673,20 +673,57 @@ def estimate(
 @app.command()
 def init(
     path: str = typer.Argument(".", help="Directory to initialize"),
+    use_case: Optional[str] = typer.Option(
+        None, "--use-case", "-u",
+        help="What you're building: rag, chatbot, agent, general",
+    ),
+    ci: bool = typer.Option(False, "--ci", help="Also generate GitHub Actions workflow"),
 ):
-    """Scaffold a new checkllm project with sample files."""
+    """Scaffold a new checkllm project with tailored test files."""
+    from checkllm.discovery import detect_judge_backend
+
     target = Path(path)
     target.mkdir(parents=True, exist_ok=True)
 
+    # Detect available judge
+    detected = detect_judge_backend()
+    if detected:
+        backend, model = detected
+        console.print(f"[green]Detected judge backend:[/] {backend} ({model})")
+    else:
+        backend, model = "openai", "gpt-4o"
+        console.print("[yellow]No API key or Ollama detected. Generating deterministic-only tests.[/]")
+        console.print("[dim]Set OPENAI_API_KEY or start Ollama to enable LLM-as-judge checks.[/]")
+
+    # If no use_case provided, default to "general" (non-interactive for CLI testing)
+    if use_case is None:
+        use_case = "general"
+
+    # Determine template
+    template_map = {
+        "rag": "test_rag.py.tmpl",
+        "chatbot": "test_chatbot.py.tmpl",
+        "agent": "test_agent.py.tmpl",
+        "general": "test_general.py.tmpl",
+    }
+    template_name = template_map.get(use_case, "test_general.py.tmpl")
+    template_dir = Path(__file__).parent / "templates" / "init"
+    template_path = template_dir / template_name
+
+    # If no API key detected and not general, fall back to general (deterministic-only)
+    if not detected and use_case != "general":
+        console.print(f"[yellow]No API key found — generating deterministic-only tests.[/]")
+        template_path = template_dir / "test_general.py.tmpl"
+
+    # Write pyproject.toml config
     pyproject = target / "pyproject.toml"
     checkllm_config = (
-        '\n[tool.checkllm]\n'
-        'judge_model = "gpt-4o"\n'
-        'default_threshold = 0.8\n'
-        'runs_per_test = 1\n'
-        'snapshot_dir = ".checkllm/snapshots"\n'
-        'cache_enabled = true\n'
-        'max_concurrency = 10\n'
+        f'\n[tool.checkllm]\n'
+        f'judge_backend = "{backend}"\n'
+        f'judge_model = "{model}"\n'
+        f'default_threshold = 0.8\n'
+        f'cache_enabled = true\n'
+        f'max_concurrency = 10\n'
     )
     if pyproject.exists():
         content = pyproject.read_text()
@@ -697,91 +734,48 @@ def init(
             console.print(f"[dim]{pyproject} already has [tool.checkllm] section[/]")
     else:
         full_pyproject = (
-            '[project]\n'
-            'name = "my-project"\n'
-            'version = "0.1.0"\n'
-            'dependencies = []\n'
-            '\n'
+            '[project]\nname = "my-project"\nversion = "0.1.0"\n'
+            'dependencies = []\n\n'
             '[project.optional-dependencies]\n'
-            'dev = [\n'
-            '    "checkllm",\n'
-            '    "pytest",\n'
-            ']\n'
-            '\n'
-            '[tool.pytest.ini_options]\n'
-            'testpaths = ["tests"]\n'
+            'dev = [\n    "checkllm",\n    "pytest",\n]\n\n'
+            '[tool.pytest.ini_options]\ntestpaths = ["tests"]\n'
             + checkllm_config
         )
         pyproject.write_text(full_pyproject)
         console.print(f"[green]Created {pyproject}[/]")
 
+    # Write test file
     tests_dir = target / "tests"
     tests_dir.mkdir(exist_ok=True)
-    conftest = tests_dir / "conftest.py"
-    if not conftest.exists():
-        conftest.write_text(
-            '"""checkllm configuration for this project.\n'
-            '\n'
-            'The check fixture is auto-discovered by the checkllm pytest plugin.\n'
-            'Customize the judge backend here if needed.\n'
-            '"""\n'
-            '# To use a custom judge backend, uncomment and modify:\n'
-            '#\n'
-            '# import pytest\n'
-            '# from checkllm.check import CheckCollector\n'
-            '# from checkllm.config import load_config\n'
-            '# from checkllm.judge import OpenAIJudge\n'
-            '#\n'
-            '# @pytest.fixture\n'
-            '# def check(request):\n'
-            '#     config = load_config()\n'
-            '#     judge = OpenAIJudge(model="gpt-4o-mini")  # cheaper model\n'
-            '#     collector = CheckCollector(config=config, judge=judge)\n'
-            '#     request.node.stash[pytest.StashKey[CheckCollector]()] = collector\n'
-            '#     return collector\n'
-        )
-        console.print(f"[green]Created {conftest}[/]")
-    else:
-        console.print(f"[dim]{conftest} already exists[/]")
 
     sample_test = tests_dir / "test_llm_example.py"
     if not sample_test.exists():
-        sample_test.write_text(
-            '"""Sample checkllm test file."""\n'
-            '\n'
-            '\n'
-            'def test_output_quality(check):\n'
-            '    """Example: check an LLM output with deterministic checks."""\n'
-            '    output = "Python is a high-level programming language."\n'
-            '\n'
-            '    check.contains(output, "Python")\n'
-            '    check.not_contains(output, "JavaScript")\n'
-            '    check.max_tokens(output, limit=50)\n'
-            '    check.regex(output, pattern=r"[A-Z][a-z]+")\n'
-            '\n'
-            '\n'
-            'def test_json_output(check):\n'
-            '    """Example: validate JSON structure."""\n'
-            '    from pydantic import BaseModel\n'
-            '\n'
-            '    class Response(BaseModel):\n'
-            '        answer: str\n'
-            '        confidence: float\n'
-            '\n'
-            '    output = \'{"answer": "42", "confidence": 0.95}\'\n'
-            '    check.json_schema(output, schema=Response)\n'
-            '\n'
-            '\n'
-            '# Uncomment below to test with LLM-as-judge (requires OPENAI_API_KEY)\n'
-            '# def test_hallucination(check):\n'
-            '#     output = "The sky is blue due to Rayleigh scattering."\n'
-            '#     context = "Rayleigh scattering causes the sky to appear blue."\n'
-            '#     check.hallucination(output, context=context)\n'
-        )
+        if template_path.exists():
+            sample_test.write_text(template_path.read_text())
+        else:
+            # Fallback if templates not found
+            sample_test.write_text(
+                '"""checkllm test file."""\n\n\n'
+                'def test_output_quality(check):\n'
+                '    output = "Python is a high-level programming language."\n'
+                '    check.contains(output, "Python")\n'
+                '    check.max_tokens(output, limit=200)\n'
+            )
         console.print(f"[green]Created {sample_test}[/]")
     else:
-        console.print(f"[dim]{sample_test} already exists[/]")
+        console.print(f"[dim]{sample_test} already exists — skipping[/]")
 
+    # Write conftest.py
+    conftest = tests_dir / "conftest.py"
+    if not conftest.exists():
+        conftest.write_text(
+            '"""checkllm configuration.\n\n'
+            'The check fixture is auto-discovered by the checkllm pytest plugin.\n'
+            '"""\n'
+        )
+        console.print(f"[green]Created {conftest}[/]")
+
+    # Write sample dataset
     fixtures_dir = tests_dir / "fixtures"
     fixtures_dir.mkdir(exist_ok=True)
     sample_dataset = fixtures_dir / "cases.yaml"
@@ -792,29 +786,43 @@ def init(
             '  expected: "Python is a programming language"\n'
             '  query: "Explain Python"\n'
             '  criteria: "accurate, concise"\n'
-            '\n'
-            '- input: "What is 2+2?"\n'
-            '  expected: "4"\n'
-            '  query: "Simple math"\n'
-            '  criteria: "correct answer"\n'
         )
         console.print(f"[green]Created {sample_dataset}[/]")
-    else:
-        console.print(f"[dim]{sample_dataset} already exists[/]")
 
+    # Create .checkllm directory
     checkllm_dir = target / ".checkllm" / "snapshots"
     checkllm_dir.mkdir(parents=True, exist_ok=True)
     gitkeep = checkllm_dir / ".gitkeep"
     if not gitkeep.exists():
         gitkeep.touch()
 
+    # CI workflow
+    if ci:
+        ci_dir = target / ".github" / "workflows"
+        ci_dir.mkdir(parents=True, exist_ok=True)
+        ci_file = ci_dir / "checkllm.yml"
+        ci_template = template_dir / "checkllm_ci.yml.tmpl"
+        if ci_template.exists():
+            ci_file.write_text(ci_template.read_text())
+        else:
+            ci_file.write_text(
+                'name: checkllm\non:\n  pull_request:\n    branches: [main]\n'
+                'jobs:\n  eval:\n    runs-on: ubuntu-latest\n    steps:\n'
+                '      - uses: actions/checkout@v4\n'
+                '      - uses: actions/setup-python@v5\n'
+                '        with:\n          python-version: "3.12"\n'
+                '      - run: pip install checkllm[all] pytest\n'
+                '      - run: checkllm run tests/ --budget 5.0\n'
+                '        env:\n          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}\n'
+            )
+        console.print(f"[green]Created {ci_file}[/]")
+
     console.print(
-        f"\n[bold green]checkllm initialized![/]\n\n"
-        f"  Run tests:     [cyan]checkllm run tests/[/]\n"
-        f"  Save baseline: [cyan]checkllm snapshot tests/[/]\n"
+        f"\n[bold green]checkllm initialized![/] ({use_case} template)\n\n"
+        f"  Run tests:     [cyan]pytest tests/ -v[/]\n"
+        f"  Estimate cost: [cyan]checkllm estimate tests/[/]\n"
         f"  HTML report:   [cyan]checkllm report tests/[/]\n"
-        f"  View history:  [cyan]checkllm history[/]\n"
-        f"  Cache stats:   [cyan]checkllm cache --stats[/]\n"
+        f"  View metrics:  [cyan]checkllm list-metrics[/]\n"
     )
 
 
