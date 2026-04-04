@@ -801,42 +801,104 @@ def watch(
 
 
 @app.command(name="list-metrics")
-def list_metrics():
-    """List all registered custom metrics."""
+def list_metrics(
+    installed: bool = typer.Option(False, "--installed", help="Show only installed/available metrics"),
+):
+    """List all available metrics and checks."""
+    from rich.table import Table
+
+    deterministic_checks = [
+        ("contains", "Check substring presence"),
+        ("not_contains", "Check substring absence"),
+        ("exact_match", "Exact string match"),
+        ("starts_with", "Check prefix"),
+        ("ends_with", "Check suffix"),
+        ("regex", "Regular expression match"),
+        ("similarity", "Levenshtein similarity"),
+        ("max_tokens", "Maximum token count"),
+        ("min_tokens", "Minimum token count"),
+        ("word_count", "Word count range"),
+        ("char_count", "Character count range"),
+        ("sentence_count", "Sentence count range"),
+        ("is_json", "Valid JSON check"),
+        ("is_valid_python", "Valid Python syntax"),
+        ("json_schema", "Pydantic schema validation"),
+        ("json_field", "JSON field extraction"),
+        ("is_valid_sql", "Valid SQL syntax"),
+        ("is_valid_markdown", "Valid Markdown"),
+        ("readability", "Flesch-Kincaid grade level"),
+        ("language", "Language detection"),
+        ("bleu", "BLEU score"),
+        ("rouge_l", "ROUGE-L score"),
+        ("all_of", "All substrings present"),
+        ("any_of", "Any substring present"),
+        ("none_of", "No substrings present"),
+        ("no_pii", "PII detection"),
+        ("greater_than", "Numeric > threshold"),
+        ("less_than", "Numeric < threshold"),
+        ("between", "Numeric in range"),
+        ("latency", "Response time check"),
+        ("cost", "API cost check"),
+    ]
+
+    llm_metrics = [
+        ("hallucination", "Faithfulness to context"),
+        ("relevance", "Query-output relevance"),
+        ("faithfulness", "RAG answer faithfulness"),
+        ("context_relevance", "Retrieved context relevance"),
+        ("answer_completeness", "Answer completeness"),
+        ("groundedness", "Claim-by-claim grounding"),
+        ("contextual_precision", "Document ranking quality"),
+        ("contextual_recall", "Ground truth coverage"),
+        ("toxicity", "Harmful content detection"),
+        ("bias", "Demographic/cultural bias"),
+        ("fluency", "Writing quality"),
+        ("coherence", "Logical consistency"),
+        ("correctness", "Semantic correctness"),
+        ("consistency", "Multi-output consistency"),
+        ("instruction_following", "Instruction compliance"),
+        ("summarization", "Summary quality"),
+        ("sentiment", "Tone/mood assessment"),
+        ("rubric", "Custom criteria evaluation"),
+        ("g_eval", "Chain-of-thought evaluation"),
+        ("task_completion", "Goal accomplishment"),
+        ("role_adherence", "Persona consistency"),
+        ("tool_accuracy", "Agent tool selection"),
+        ("knowledge_retention", "Conversation memory"),
+        ("conversation_completeness", "Multi-turn fulfillment"),
+    ]
+
+    # Deterministic table
+    table_det = Table(title="Deterministic Checks (free, instant, no API key)")
+    table_det.add_column("Check", style="cyan")
+    table_det.add_column("Description")
+    for name, desc in deterministic_checks:
+        table_det.add_row(name, desc)
+    console.print(table_det)
+    console.print()
+
+    # LLM metrics table
+    table_llm = Table(title="LLM-as-Judge Metrics (requires API key)")
+    table_llm.add_column("Metric", style="green")
+    table_llm.add_column("Description")
+    for name, desc in llm_metrics:
+        table_llm.add_row(name, desc)
+    console.print(table_llm)
+
+    # Plugin metrics
     from checkllm.metrics import _global_registry
-
-    builtin_judge = [
-        "hallucination", "relevance", "toxicity", "rubric", "fluency", "coherence",
-        "sentiment", "correctness", "faithfulness", "context_relevance",
-        "answer_completeness", "instruction_following", "summarization",
-        "bias", "consistency", "groundedness",
-        "g_eval", "contextual_precision", "contextual_recall",
-        "task_completion", "role_adherence", "tool_accuracy",
-        "knowledge_retention", "conversation_completeness",
-    ]
-    builtin_deterministic = [
-        "contains", "not_contains", "exact_match", "starts_with", "ends_with",
-        "regex", "max_tokens", "min_tokens", "word_count", "char_count",
-        "sentence_count", "similarity", "readability", "latency", "cost",
-        "json_schema", "is_json", "is_valid_python", "is_valid_sql", "is_valid_markdown",
-        "all_of", "any_of", "none_of",
-        "bleu", "rouge_l", "json_field",
-        "no_pii", "language", "greater_than", "less_than", "between",
-    ]
-    console.print("[bold]LLM-as-Judge metrics:[/]")
-    for m in builtin_judge:
-        console.print(f"  [cyan]{m}[/]")
-    console.print(f"\n[bold]Deterministic checks:[/]")
-    for m in builtin_deterministic:
-        console.print(f"  [cyan]{m}[/]")
-
-    custom = _global_registry.list_metrics()
-    if custom:
-        console.print(f"\n[bold]Custom registered metrics:[/]")
-        for m in custom:
-            console.print(f"  [cyan]{m}[/]")
-    else:
-        console.print(f"\n[dim]No custom metrics registered.[/]")
+    _global_registry.load_entry_points()
+    plugins = [m for m in _global_registry.list_metrics_detailed() if m["source"] != "local"]
+    if plugins:
+        console.print()
+        table_plug = Table(title="Plugin Metrics (community)")
+        table_plug.add_column("Metric", style="magenta")
+        table_plug.add_column("Source")
+        for m in plugins:
+            table_plug.add_row(m["name"], m["source"])
+        console.print(table_plug)
+    elif not installed:
+        console.print("\n[dim]No plugin metrics installed. See docs for creating plugins.[/]")
 
 
 @app.command()
