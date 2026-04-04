@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import importlib.metadata
+import logging
 from typing import Any, Callable
 
 from checkllm.metrics.answer_completeness import AnswerCompletenessMetric
@@ -21,14 +22,17 @@ from checkllm.metrics.task_completion import TaskCompletionMetric
 from checkllm.metrics.tool_accuracy import ToolAccuracyMetric
 from checkllm.models import CheckResult
 
+logger = logging.getLogger("checkllm.metrics")
+
 
 class MetricRegistry:
     """Registry for custom metric functions."""
 
     def __init__(self) -> None:
         self.metrics: dict[str, Callable[..., CheckResult]] = {}
+        self._sources: dict[str, str] = {}
 
-    def register(self, name: str) -> Callable:
+    def register(self, name: str, source: str = "local") -> Callable:
         """Decorator to register a custom metric function."""
 
         def decorator(func: Callable[..., CheckResult]) -> Callable[..., CheckResult]:
@@ -38,12 +42,20 @@ class MetricRegistry:
                     "Choose a different name."
                 )
             self.metrics[name] = func
+            self._sources[name] = source
             return func
 
         return decorator
 
     def list_metrics(self) -> list[str]:
         return list(self.metrics.keys())
+
+    def list_metrics_detailed(self) -> list[dict[str, str]]:
+        """Return metrics with source attribution."""
+        return [
+            {"name": name, "source": self._sources.get(name, "unknown")}
+            for name in self.metrics
+        ]
 
     def load_entry_points(self) -> None:
         """Discover and load plugins from checkllm.metrics entry points."""
@@ -53,11 +65,13 @@ class MetricRegistry:
             eps = importlib.metadata.entry_points().get("checkllm.metrics", [])
         for ep in eps:
             try:
-                register_func = ep.load()
-                if callable(register_func):
-                    register_func(self)
-            except Exception:
-                pass
+                loaded = ep.load()
+                if callable(loaded) and ep.name not in self.metrics:
+                    self.metrics[ep.name] = loaded
+                    self._sources[ep.name] = f"plugin:{ep.dist.name if ep.dist else 'unknown'}"
+                    logger.info("Loaded plugin metric: %s", ep.name)
+            except Exception as exc:
+                logger.debug("Failed to load metric plugin %s: %s", ep.name, exc)
 
 
 _global_registry = MetricRegistry()
