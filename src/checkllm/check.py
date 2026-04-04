@@ -111,7 +111,11 @@ class CheckCollector:
                 detected = detect_judge_backend()
                 if detected is None:
                     raise JudgeConfigError(format_no_judge_error())
-                backend, model = detected
+                detected_backend, detected_model = detected
+                backend = detected_backend
+                # Only use detected model if user hasn't explicitly configured one
+                if model == "gpt-4o":  # default value means not explicitly set
+                    model = detected_model
 
             if backend == "anthropic":
                 from checkllm.judge import AnthropicJudge
