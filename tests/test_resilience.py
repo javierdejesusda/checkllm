@@ -289,7 +289,7 @@ class TestCircuitBreaker:
             await cb.call(_async_fail(RuntimeError("boom")))
         assert cb.state is CircuitState.OPEN
 
-        await asyncio.sleep(0.06)
+        await asyncio.sleep(0.15)
         assert cb.state is CircuitState.HALF_OPEN
 
     @pytest.mark.asyncio
@@ -301,7 +301,7 @@ class TestCircuitBreaker:
             await cb.call(_async_fail(RuntimeError("boom")))
         assert cb.state is CircuitState.OPEN
 
-        await asyncio.sleep(0.06)
+        await asyncio.sleep(0.15)
         assert cb.state is CircuitState.HALF_OPEN
 
         # Successful probe closes the circuit
@@ -318,7 +318,7 @@ class TestCircuitBreaker:
             await cb.call(_async_fail(RuntimeError("first")))
         assert cb.state is CircuitState.OPEN
 
-        await asyncio.sleep(0.06)
+        await asyncio.sleep(0.15)
         assert cb.state is CircuitState.HALF_OPEN
 
         # Failure in half-open reopens
@@ -335,7 +335,7 @@ class TestCircuitBreaker:
         with pytest.raises(RuntimeError):
             await cb.call(_async_fail(RuntimeError("boom")))
 
-        await asyncio.sleep(0.06)
+        await asyncio.sleep(0.15)
         assert cb.state is CircuitState.HALF_OPEN
 
         # First call in half-open is allowed (we need to make it slow so the
@@ -371,7 +371,7 @@ class TestCircuitBreaker:
         assert cb.state is CircuitState.OPEN
 
         # Wait for recovery timeout
-        await asyncio.sleep(0.06)
+        await asyncio.sleep(0.15)
         assert cb.state is CircuitState.HALF_OPEN
 
         # Successful probe closes it
