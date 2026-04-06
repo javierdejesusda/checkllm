@@ -1134,3 +1134,121 @@ def experiments(
             f"{r.pass_rate:.0%}", f"${r.total_cost:.4f}",
         )
     console.print(table)
+
+
+@app.command()
+def ci(
+    test_path: str = typer.Argument("tests/", help="Path to test directory or file"),
+    fail_on_regression: bool = typer.Option(False, "--fail-on-regression", help="Exit 1 if regression detected"),
+    compare: Optional[str] = typer.Option(None, "--compare", help="Branch to compare against (snapshot baseline)"),
+    budget: Optional[float] = typer.Option(None, "--budget", help="Maximum USD to spend"),
+    no_comment: bool = typer.Option(False, "--no-comment", help="Skip posting PR comment"),
+    profile: Optional[str] = typer.Option(None, "--profile", help="Config profile to use"),
+):
+    """Run tests in CI and post results as a PR comment.
+
+    Auto-detects GitHub Actions environment (GITHUB_TOKEN, PR number).
+    Falls back to normal test run when not in GitHub Actions.
+    """
+    import os
+    import json
+
+    # Detect GitHub Actions environment
+    github_token = os.environ.get("GITHUB_TOKEN")
+    github_event_path = os.environ.get("GITHUB_EVENT_PATH")
+    github_repository = os.environ.get("GITHUB_REPOSITORY")
+
+    pr_number = None
+    if github_event_path and Path(github_event_path).exists():
+        try:
+            event = json.loads(Path(github_event_path).read_text())
+            pr_number = event.get("pull_request", {}).get("number")
+        except (json.JSONDecodeError, KeyError):
+            pass
+
+    is_github_ci = bool(github_token and github_repository)
+
+    if is_github_ci:
+        console.print(f"[bold]checkllm CI[/] — detected GitHub Actions")
+        console.print(f"[dim]Repository: {github_repository}[/]")
+        if pr_number:
+            console.print(f"[dim]PR: #{pr_number}[/]")
+    else:
+        console.print("[bold]checkllm CI[/] — running locally (no GitHub Actions detected)")
+
+    # Build pytest command
+    snapshot_path = ".checkllm/ci_snapshot.json"
+    cmd = [
+        sys.executable, "-m", "pytest", test_path, "-v",
+        f"--checkllm-snapshot={snapshot_path}",
+    ]
+
+    # Environment overrides
+    env = os.environ.copy()
+    if budget is not None:
+        env["CHECKLLM_BUDGET"] = str(budget)
+    if profile:
+        env["CHECKLLM_PROFILE"] = profile
+
+    # Run tests
+    result = subprocess.run(cmd, env=env)
+
+    # Post PR comment if in GitHub Actions
+    if is_github_ci and pr_number and not no_comment:
+        try:
+            from checkllm.pytest_plugin import get_session_results
+            from checkllm.reporting.github import generate_pr_comment, post_pr_comment
+
+            # Load results from snapshot
+            snapshot_file = Path(snapshot_path)
+            if snapshot_file.exists():
+                from checkllm.regression.snapshot import load_snapshot
+                snap = load_snapshot(snapshot_file)
+
+                # Convert snapshot to CheckResult-like format for comment generation
+                from checkllm.models import CheckResult
+                results: dict[str, list[CheckResult]] = {}
+                for test_name, runs in snap.tests.items():
+                    checks = []
+                    for run in runs:
+                        for metric_name, metric in run.metrics.items():
+                            checks.append(CheckResult(
+                                passed=metric.passed,
+                                score=metric.score,
+                                reasoning="",
+                                cost=0.0,
+                                latency_ms=0,
+                                metric_name=metric_name,
+                            ))
+                    results[test_name] = checks
+
+                comment = generate_pr_comment(results)
+                post_pr_comment(
+                    comment,
+                    repo=github_repository,
+                    pr_number=pr_number,
+                    token=github_token,
+                )
+                console.print(f"[green]Posted results to PR #{pr_number}[/]")
+            else:
+                console.print("[yellow]No snapshot generated — skipping PR comment[/]")
+        except ImportError as exc:
+            console.print(f"[yellow]Could not post PR comment: {exc}[/]")
+            console.print("[dim]Install httpx for PR comments: pip install httpx[/]")
+        except Exception as exc:
+            console.print(f"[yellow]Failed to post PR comment: {exc}[/]")
+
+    # Regression comparison
+    if compare:
+        baseline_path = f".checkllm/snapshots/{compare}.json"
+        if Path(baseline_path).exists() and Path(snapshot_path).exists():
+            _run_comparison(baseline_path, snapshot_path, fail_on_regression)
+        else:
+            console.print(f"[yellow]Baseline not found at {baseline_path} — skipping comparison[/]")
+
+    exit_code = result.returncode
+    if fail_on_regression and compare:
+        # _run_comparison may have already exited with code 1
+        pass
+
+    raise typer.Exit(code=exit_code)
