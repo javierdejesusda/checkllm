@@ -1,5 +1,17 @@
 # Changelog
 
+## v3.2.0 (2026-04-06)
+
+### VS Code Extension
+- **checkllm for VS Code** — inline LLM test results in the editor
+  - CodeLens annotations above test functions showing pass/fail count, average score, and cost
+  - Green/red gutter dots next to each test function
+  - Hover popup with per-check score table
+  - Auto-refresh when `.checkllm/` result files change
+  - Commands: Run Tests, Estimate Costs, Refresh Results
+  - Configurable judge backend, model, threshold, and budget via VS Code settings
+  - Status bar showing aggregate pass/fail count
+
 ## v3.1.0 (2026-04-06)
 
 ### Framework Integrations
