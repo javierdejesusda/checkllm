@@ -1,0 +1,57 @@
+site_name: checkllm
+site_description: The pytest of LLM testing
+site_url: https://checkllm.github.io/checkllm/
+repo_url: https://github.com/checkllm/checkllm
+repo_name: checkllm/checkllm
+
+theme:
+  name: material
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: amber
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: amber
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.instant
+    - navigation.tabs
+    - navigation.sections
+    - content.code.copy
+    - content.code.annotate
+    - search.highlight
+
+nav:
+  - Home: index.md
+  - Quickstart: quickstart.md
+  - Guides:
+    - Deterministic Checks: guides/deterministic-checks.md
+    - LLM Metrics: guides/llm-metrics.md
+    - Guardrails: guides/guardrails.md
+    - CI/CD: guides/ci-cd.md
+    - Custom Metrics: guides/custom-metrics.md
+    - Plugins: guides/plugins.md
+    - Configuration: guides/configuration.md
+  - Comparison: comparison.md
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+  - admonition
+  - pymdownx.details
+  - attr_list
+  - md_in_html
+  - toc:
+      permalink: true
+
+plugins:
+  - search

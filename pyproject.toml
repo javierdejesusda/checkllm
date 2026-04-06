@@ -50,8 +50,12 @@ litellm = [
 embeddings = [
     "sentence-transformers>=2.0.0",
 ]
+docs = [
+    "mkdocs-material>=9.0.0",
+    "mkdocs>=1.5.0",
+]
 all = [
-    "checkllm[anthropic,gemini,litellm,embeddings]",
+    "checkllm[anthropic,gemini,litellm,embeddings,docs]",
 ]
 dev = [
     "pytest>=7.0.0",
