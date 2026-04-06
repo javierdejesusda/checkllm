@@ -1,5 +1,17 @@
 # Changelog
 
+## v3.1.0 (2026-04-06)
+
+### Framework Integrations
+- **LangChain integration** — `CheckllmCallbackHandler` validates chain/LLM outputs via `on_chain_end` and `on_llm_end` callbacks. Supports `"log"` and `"raise"` failure modes.
+- **LlamaIndex integration** — `CheckllmCallbackHandler` validates query engine responses via `on_event_end` callback. Same API as the LangChain handler.
+- Both integrations require zero framework dependencies at import time — only checkllm internals are used.
+
+### Enhanced Dashboard
+- **Trend charts** — `/api/trends` endpoint returns score-over-time data; frontend renders inline SVG line charts with pass/fail colored dots
+- **Cost breakdown** — `/api/cost-breakdown` endpoint returns per-metric and per-test cost aggregation; frontend renders bar charts
+- **Search/filter** — filter runs by label, commit, or test name in the runs list
+
 ## v3.0.0b1 (2026-04-06)
 
 ### CI/CD

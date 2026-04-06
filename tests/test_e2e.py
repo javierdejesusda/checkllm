@@ -129,4 +129,4 @@ def test_cli_version():
     from checkllm.cli import app
 
     result = CliRunner().invoke(app, ["--version"])
-    assert "3.0.0b1" in result.output
+    assert "3.1.0" in result.output

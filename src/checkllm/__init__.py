@@ -78,7 +78,7 @@ from checkllm.testing import MockJudge, assert_all_passed, assert_score_above, m
 from checkllm.tracing import Span, Tracer, get_tracer, trace
 from checkllm.yaml_config import EvalConfig, YamlEvalRunner, load_eval_config
 
-__version__ = "3.0.0b1"
+__version__ = "3.1.0"
 
 __all__ = [
     # Agent evaluation
