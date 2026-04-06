@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "checkllm"
-version = "3.0.0a1"
+version = "3.0.0b1"
 description = "The most comprehensive LLM testing and evaluation framework for Python."
 readme = "README.md"
 license = "MIT"

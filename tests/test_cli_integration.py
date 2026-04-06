@@ -136,7 +136,7 @@ class TestCliDiff:
 class TestCliVersion:
     def test_version_flag(self):
         result = runner.invoke(app, ["--version"])
-        assert "3.0.0a1" in result.output
+        assert "3.0.0b1" in result.output
 
 
 class TestCliInit:

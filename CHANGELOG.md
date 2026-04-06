@@ -1,5 +1,18 @@
 # Changelog
 
+## v3.0.0b1 (2026-04-06)
+
+### CI/CD
+- **`checkllm ci` command** — auto-detects GitHub Actions environment, runs tests, and posts formatted results as PR comments. Supports `--budget`, `--compare`, `--fail-on-regression`, and `--no-comment` flags.
+
+### Pytest Helpers
+- **Pre-built fixtures** — `shared_judge` (session-scoped judge reuse), `budget_session` (cross-test cost tracking), `auto_snapshot` (auto-save snapshots after sessions). Import from `checkllm.pytest_helpers`.
+
+### Documentation
+- **MkDocs site** — full documentation with guides for deterministic checks, LLM metrics, guardrails, CI/CD, custom metrics, plugins, and configuration. Run `mkdocs serve` locally.
+- **CONTRIBUTING.md** — contributor guide with architecture overview, step-by-step instructions for adding checks, metrics, and plugins
+- **Community templates** — GitHub issue templates (bug report, feature request, new metric proposal) and PR template
+
 ## v3.0.0a1 (2026-04-04)
 
 ### Developer Experience
