@@ -1243,12 +1243,15 @@ def ci(
         baseline_path = f".checkllm/snapshots/{compare}.json"
         if Path(baseline_path).exists() and Path(snapshot_path).exists():
             _run_comparison(baseline_path, snapshot_path, fail_on_regression)
+        elif fail_on_regression:
+            console.print(f"[bold red]Baseline not found at {baseline_path}[/]")
+            console.print(
+                "[red]Cannot verify regressions without a baseline. "
+                "Create one with: checkllm snapshot tests/ --output "
+                f"{baseline_path}[/]"
+            )
+            raise typer.Exit(code=1)
         else:
             console.print(f"[yellow]Baseline not found at {baseline_path} — skipping comparison[/]")
 
-    exit_code = result.returncode
-    if fail_on_regression and compare:
-        # _run_comparison may have already exited with code 1
-        pass
-
-    raise typer.Exit(code=exit_code)
+    raise typer.Exit(code=result.returncode)

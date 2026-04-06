@@ -175,7 +175,7 @@ def _run_async(coro: Any) -> Any:
 async def evaluate(
     output: str,
     checks: list[dict[str, Any] | str],
-    judge: str | JudgeBackend = "openai",
+    judge: str | JudgeBackend = "auto",
     threshold: float = 0.8,
     budget: float | None = None,
 ) -> ValidationResult:
@@ -219,7 +219,7 @@ async def evaluate(
 def check_output(
     output: str,
     checks: list[dict[str, Any] | str],
-    judge: str | JudgeBackend = "openai",
+    judge: str | JudgeBackend = "auto",
     threshold: float = 0.8,
     budget: float | None = None,
 ) -> ValidationResult:
