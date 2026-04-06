@@ -1,0 +1,80 @@
+{
+  "name": "checkllm",
+  "displayName": "checkllm",
+  "description": "Inline LLM test results for checkllm",
+  "version": "0.1.0",
+  "publisher": "checkllm",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Testing", "Linters"],
+  "activationEvents": [
+    "workspaceContains:.checkllm",
+    "workspaceContains:pyproject.toml"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "checkllm.run",
+        "title": "Run checkllm Tests",
+        "category": "checkllm"
+      },
+      {
+        "command": "checkllm.estimate",
+        "title": "Estimate checkllm Costs",
+        "category": "checkllm"
+      },
+      {
+        "command": "checkllm.refresh",
+        "title": "Refresh checkllm Results",
+        "category": "checkllm"
+      }
+    ],
+    "configuration": {
+      "title": "checkllm",
+      "properties": {
+        "checkllm.judgeBackend": {
+          "type": "string",
+          "default": "auto",
+          "enum": ["auto", "openai", "anthropic", "gemini", "ollama", "litellm"],
+          "description": "Judge backend to use"
+        },
+        "checkllm.judgeModel": {
+          "type": "string",
+          "default": "gpt-4o",
+          "description": "Judge model name"
+        },
+        "checkllm.defaultThreshold": {
+          "type": "number",
+          "default": 0.8,
+          "description": "Default pass/fail threshold"
+        },
+        "checkllm.budget": {
+          "type": "number",
+          "default": 5.0,
+          "description": "Maximum USD budget per run"
+        },
+        "checkllm.autoRefresh": {
+          "type": "boolean",
+          "default": true,
+          "description": "Auto-refresh results when .checkllm/ files change"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.3.0"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.0.0"
+  }
+}
