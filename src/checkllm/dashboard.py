@@ -579,6 +579,86 @@ function buildScoreMap(results) {
   return m;
 }
 
+/* ---- Trend Chart (all dynamic values escaped via esc()) ---- */
+function renderTrendChart(container, points, label) {
+  if (!points || points.length === 0) {
+    setContent(container, '<p class="empty">No trend data available</p>');
+    return;
+  }
+  var w = 600, h = 200, pad = 40;
+  var scores = points.map(function(p) { return p.score; });
+  var minS = Math.min.apply(null, scores.concat([0]));
+  var maxS = Math.max.apply(null, scores.concat([1]));
+  var range = maxS - minS || 1;
+
+  var xStep = (w - 2 * pad) / Math.max(points.length - 1, 1);
+  var pts = points.map(function(p, i) {
+    var x = pad + i * xStep;
+    var y = h - pad - ((p.score - minS) / range) * (h - 2 * pad);
+    return { x: x, y: y, score: p.score, passed: p.passed };
+  });
+
+  var pathD = pts.map(function(p, i) { return (i === 0 ? 'M' : 'L') + p.x + ',' + p.y; }).join(' ');
+
+  var svg = '<svg viewBox="0 0 ' + w + ' ' + h + '" style="width:100%;max-width:' + w + 'px">';
+  // Grid lines
+  for (var i = 0; i <= 4; i++) {
+    var gy = pad + i * (h - 2 * pad) / 4;
+    var val = (maxS - (i / 4) * range).toFixed(2);
+    svg += '<line x1="' + pad + '" y1="' + gy + '" x2="' + (w - pad) + '" y2="' + gy + '" stroke="var(--bg4)" stroke-dasharray="4"/>';
+    svg += '<text x="' + (pad - 5) + '" y="' + (gy + 4) + '" text-anchor="end" fill="var(--fg3)" font-size="11">' + esc(val) + '</text>';
+  }
+  // Line
+  svg += '<path d="' + pathD + '" fill="none" stroke="var(--accent)" stroke-width="2"/>';
+  // Dots — colors are hardcoded CSS vars (not dynamic data)
+  pts.forEach(function(p) {
+    var color = p.passed ? 'var(--green)' : 'var(--red)';
+    svg += '<circle cx="' + p.x + '" cy="' + p.y + '" r="4" fill="' + color + '"/>';
+  });
+  svg += '</svg>';
+  // All dynamic content (label, val) is escaped via esc(); SVG coords are numbers
+  setContent(container, '<h3 style="color:var(--fg2);margin-bottom:8px">' + esc(label) + '</h3>' + svg);
+}
+
+/* ---- Cost Breakdown (all dynamic values escaped via esc()) ---- */
+function renderCostBreakdown(container, data) {
+  if (!data || data.total_cost === 0) {
+    setContent(container, '<p class="empty">No cost data for this run</p>');
+    return;
+  }
+  var html = '<div class="stats-row">' +
+    '<div class="stat-card yellow"><div class="value">$' + esc(data.total_cost.toFixed(4)) + '</div><div class="label">Total Cost</div></div>' +
+    '</div>';
+
+  html += '<h3 style="color:var(--fg2);margin:16px 0 8px">By Metric</h3><div class="bar-chart">';
+  for (var name in data.by_metric) {
+    var cost = data.by_metric[name];
+    if (cost <= 0) continue;
+    var pct = Math.min(100, (cost / data.total_cost) * 100);
+    html += '<div class="bar-row">' +
+      '<div class="bar-label">' + esc(name) + '</div>' +
+      '<div class="bar-track"><div class="bar-fill ok" style="width:' + esc(pct.toFixed(2)) + '%"></div></div>' +
+      '<div class="bar-value">$' + esc(cost.toFixed(4)) + '</div>' +
+      '</div>';
+  }
+  html += '</div>';
+
+  html += '<h3 style="color:var(--fg2);margin:16px 0 8px">By Test</h3><div class="bar-chart">';
+  for (var tname in data.by_test) {
+    var tcost = data.by_test[tname];
+    if (tcost <= 0) continue;
+    var tpct = Math.min(100, (tcost / data.total_cost) * 100);
+    html += '<div class="bar-row">' +
+      '<div class="bar-label">' + esc(tname) + '</div>' +
+      '<div class="bar-track"><div class="bar-fill ok" style="width:' + esc(tpct.toFixed(2)) + '%"></div></div>' +
+      '<div class="bar-value">$' + esc(tcost.toFixed(4)) + '</div>' +
+      '</div>';
+  }
+  html += '</div>';
+
+  setContent(container, html);
+}
+
 /* ---- Boot ---- */
 init();
 </script>
@@ -615,6 +695,10 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
             self._serve_compare(query)
         elif path == "/api/metrics":
             self._serve_metrics()
+        elif path == "/api/trends":
+            self._serve_trends(query)
+        elif path == "/api/cost-breakdown":
+            self._serve_cost_breakdown(query)
         else:
             self._send_json({"error": "not found"}, status=404)
 
@@ -746,6 +830,58 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
             self._send_json({
                 "run_a": _serialize_run(run_a),
                 "run_b": _serialize_run(run_b),
+            })
+        finally:
+            history.close()
+
+    def _serve_trends(self, query: dict[str, str]) -> None:
+        """GET /api/trends?metric=<name>&test=<test>&limit=<n> -- score trend over time."""
+        metric_name = query.get("metric", "")
+        test_name = query.get("test", "")
+        limit = int(query.get("limit", "20"))
+
+        if not metric_name or not test_name:
+            self._send_json({"error": "metric and test params required"}, status=400)
+            return
+
+        history = self._get_history()
+        try:
+            data = history.get_metric_trend(test_name, metric_name, limit=limit)
+            self._send_json({"points": data})
+        finally:
+            history.close()
+
+    def _serve_cost_breakdown(self, query: dict[str, str]) -> None:
+        """GET /api/cost-breakdown?run=<id> -- cost per metric and test."""
+        run_id = query.get("run", "")
+        try:
+            rid = int(run_id)
+        except ValueError:
+            self._send_json({"error": "invalid run id"}, status=400)
+            return
+
+        history = self._get_history()
+        try:
+            record = history.get_run(rid)
+            if record is None:
+                self._send_json({"error": "run not found"}, status=404)
+                return
+
+            by_metric: dict[str, float] = {}
+            by_test: dict[str, float] = {}
+            for test_name, checks in record.results.items():
+                test_cost = 0.0
+                for c in checks:
+                    cost = c.get("cost", 0.0)
+                    metric = c.get("metric_name", "unknown")
+                    by_metric[metric] = by_metric.get(metric, 0.0) + cost
+                    test_cost += cost
+                by_test[test_name] = test_cost
+
+            self._send_json({
+                "total_cost": record.total_cost,
+                "by_metric": dict(sorted(by_metric.items(), key=lambda x: -x[1])),
+                "by_test": dict(sorted(by_test.items(), key=lambda x: -x[1])),
             })
         finally:
             history.close()
