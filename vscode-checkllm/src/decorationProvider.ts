@@ -65,6 +65,6 @@ export class DecorationProvider {
   }
 
   private escapeRegex(s: string): string {
-    return s.replace(/[.*+?^${}()|[\]\]/g, '\$&');
+    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 }

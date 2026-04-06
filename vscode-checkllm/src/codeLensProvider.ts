@@ -64,6 +64,6 @@ export class CheckllmCodeLensProvider implements vscode.CodeLensProvider {
   }
 
   private escapeRegex(s: string): string {
-    return s.replace(/[.*+?^${}()|[\]\]/g, '\$&');
+    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 }
