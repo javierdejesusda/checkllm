@@ -103,7 +103,17 @@ try:
         get_vulnerabilities_by_owasp,
     )
     from checkllm.streaming import StreamingCheckpoint, StreamingEvaluator
-    from checkllm.synthesizer import EvolutionStrategy, SynthesisConfig, Synthesizer
+    from checkllm.synthesizer import (
+        ConversationSimulator,
+        EvolutionStrategy,
+        KnowledgeGraph,
+        KnowledgeNode,
+        SimulatedConversation,
+        SimulatedTurn,
+        SynthesisConfig,
+        Synthesizer,
+    )
+    from checkllm.optimize import OptimizationResult, PromptOptimizer, PromptVariant
     from checkllm.testing import MockJudge, assert_all_passed, assert_score_above, make_collector
     from checkllm.yaml_config import EvalConfig, YamlEvalRunner, load_eval_config
 except ImportError:
@@ -232,6 +242,17 @@ __all__ = [
     # Streaming
     "StreamingCheckpoint",
     "StreamingEvaluator",
+    # Conversation simulator
+    "ConversationSimulator",
+    "SimulatedConversation",
+    "SimulatedTurn",
+    # Knowledge graph
+    "KnowledgeGraph",
+    "KnowledgeNode",
+    # Prompt optimization
+    "OptimizationResult",
+    "PromptOptimizer",
+    "PromptVariant",
     # Synthesizer
     "EvolutionStrategy",
     "SynthesisConfig",

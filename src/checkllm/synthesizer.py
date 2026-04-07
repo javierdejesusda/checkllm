@@ -825,3 +825,210 @@ class Synthesizer:
             if count > 0:
                 plan.append((strat, count))
         return plan
+
+
+class SimulatedTurn(BaseModel):
+    """A single turn in a simulated conversation."""
+
+    role: str
+    content: str
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class SimulatedConversation(BaseModel):
+    """A complete simulated multi-turn conversation."""
+
+    turns: list[SimulatedTurn] = Field(default_factory=list)
+    topic: str = ""
+    persona: str = ""
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+    @property
+    def user_turns(self) -> list[SimulatedTurn]:
+        """Return only the user turns."""
+        return [t for t in self.turns if t.role == "user"]
+
+    @property
+    def assistant_turns(self) -> list[SimulatedTurn]:
+        """Return only the assistant turns."""
+        return [t for t in self.turns if t.role == "assistant"]
+
+    def format_transcript(self) -> str:
+        """Format the conversation as a plain-text transcript.
+
+        Returns:
+            A newline-joined string with each turn as ``role: content``.
+        """
+        lines = []
+        for t in self.turns:
+            lines.append(f"{t.role}: {t.content}")
+        return "\n".join(lines)
+
+
+class ConversationSimulator:
+    """Generates multi-turn synthetic conversations for testing.
+
+    Usage::
+
+        sim = ConversationSimulator(judge=my_judge)
+        conversations = await sim.agenerate(
+            topic="customer support for a SaaS product",
+            num_conversations=5,
+            turns_per_conversation=6,
+        )
+    """
+
+    def __init__(self, judge: JudgeBackend) -> None:
+        self.judge = judge
+
+    def generate(
+        self,
+        topic: str,
+        num_conversations: int = 5,
+        turns_per_conversation: int = 6,
+        persona: str | None = None,
+    ) -> list[SimulatedConversation]:
+        """Generate conversations synchronously.
+
+        Args:
+            topic: The subject matter for the conversations.
+            num_conversations: Number of conversations to generate.
+            turns_per_conversation: Total turns (user + assistant) per conversation.
+            persona: Optional description of the user persona. Defaults to a
+                generic description based on *topic*.
+
+        Returns:
+            A list of SimulatedConversation objects.
+        """
+        try:
+            loop = asyncio.get_running_loop()
+        except RuntimeError:
+            loop = None
+        if loop and loop.is_running():
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor() as pool:
+                return pool.submit(
+                    asyncio.run,
+                    self.agenerate(
+                        topic, num_conversations, turns_per_conversation, persona
+                    ),
+                ).result()
+        return asyncio.run(
+            self.agenerate(topic, num_conversations, turns_per_conversation, persona)
+        )
+
+    async def agenerate(
+        self,
+        topic: str,
+        num_conversations: int = 5,
+        turns_per_conversation: int = 6,
+        persona: str | None = None,
+    ) -> list[SimulatedConversation]:
+        """Generate multi-turn conversations asynchronously.
+
+        Args:
+            topic: The subject matter for the conversations.
+            num_conversations: Number of conversations to generate.
+            turns_per_conversation: Total turns (user + assistant) per conversation.
+            persona: Optional description of the user persona.
+
+        Returns:
+            A list of SimulatedConversation objects.
+        """
+        conversations = []
+        user_persona = persona or f"A user asking about {topic}"
+
+        for _ in range(num_conversations):
+            conv = await self._simulate_one(topic, turns_per_conversation, user_persona)
+            conversations.append(conv)
+        return conversations
+
+    async def _simulate_one(
+        self,
+        topic: str,
+        num_turns: int,
+        persona: str,
+    ) -> SimulatedConversation:
+        """Simulate a single multi-turn conversation.
+
+        Args:
+            topic: The subject matter of the conversation.
+            num_turns: Total number of turns to generate.
+            persona: The user persona description.
+
+        Returns:
+            A SimulatedConversation with alternating user/assistant turns.
+        """
+        turns: list[SimulatedTurn] = []
+        history = ""
+
+        for i in range(num_turns):
+            if i % 2 == 0:
+                content = await self._generate_user_turn(topic, persona, history, i)
+                turns.append(SimulatedTurn(role="user", content=content))
+            else:
+                content = await self._generate_assistant_turn(topic, history)
+                turns.append(SimulatedTurn(role="assistant", content=content))
+            history = "\n".join(f"{t.role}: {t.content}" for t in turns)
+
+        return SimulatedConversation(
+            turns=turns,
+            topic=topic,
+            persona=persona,
+        )
+
+    async def _generate_user_turn(
+        self,
+        topic: str,
+        persona: str,
+        history: str,
+        turn_idx: int,
+    ) -> str:
+        """Generate a single user turn via the judge.
+
+        Args:
+            topic: The conversation topic.
+            persona: The user persona description.
+            history: The conversation history so far.
+            turn_idx: The zero-based index of this turn.
+
+        Returns:
+            The generated user message text.
+        """
+        prompt_parts = [
+            f"You are simulating a user in a conversation about: {topic}",
+            f"User persona: {persona}",
+        ]
+        if history:
+            prompt_parts.append(f"Conversation so far:\n{history}")
+        if turn_idx == 0:
+            prompt_parts.append(
+                "Generate the user's opening message. Be natural and specific."
+            )
+        else:
+            prompt_parts.append(
+                "Generate the user's next message. Follow up naturally on the conversation."
+            )
+        prompt_parts.append("Output ONLY the user's message, nothing else.")
+
+        response = await self.judge.evaluate(prompt="\n\n".join(prompt_parts))
+        return response.reasoning.strip()
+
+    async def _generate_assistant_turn(self, topic: str, history: str) -> str:
+        """Generate a single assistant turn via the judge.
+
+        Args:
+            topic: The conversation topic.
+            history: The conversation history so far.
+
+        Returns:
+            The generated assistant message text.
+        """
+        prompt = (
+            f"You are simulating a helpful assistant in a conversation about: {topic}\n\n"
+            f"Conversation so far:\n{history}\n\n"
+            f"Generate the assistant's response. Be helpful and natural.\n"
+            f"Output ONLY the assistant's response, nothing else."
+        )
+        response = await self.judge.evaluate(prompt=prompt)
+        return response.reasoning.strip()
