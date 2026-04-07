@@ -102,6 +102,14 @@ try:
         get_owasp_mapping,
         get_vulnerabilities_by_owasp,
     )
+    from checkllm.compliance import (
+        ComplianceFramework,
+        ComplianceReport,
+        ComplianceRequirement,
+        generate_compliance_report,
+    )
+    from checkllm.arena import Arena, ArenaCandidate, ArenaResult
+    from checkllm.metrics.dag import DAGEvalResult, DAGMetric, DAGNode
     from checkllm.streaming import StreamingCheckpoint, StreamingEvaluator
     from checkllm.synthesizer import (
         ConversationSimulator,
@@ -231,6 +239,19 @@ __all__ = [
     "VulnerabilityType",
     "get_owasp_mapping",
     "get_vulnerabilities_by_owasp",
+    # Compliance reporting
+    "ComplianceFramework",
+    "ComplianceReport",
+    "ComplianceRequirement",
+    "generate_compliance_report",
+    # Arena A/B testing
+    "Arena",
+    "ArenaCandidate",
+    "ArenaResult",
+    # DAG metrics
+    "DAGEvalResult",
+    "DAGMetric",
+    "DAGNode",
     # Resilience
     "CircuitBreaker",
     "CircuitOpenError",
