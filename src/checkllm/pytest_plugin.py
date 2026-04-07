@@ -162,6 +162,22 @@ def pytest_configure(config: pytest.Config) -> None:
         "markers",
         "llm: mark test as requiring an LLM API key (deselect with '-m \"not llm\"')",
     )
+    config.addinivalue_line(
+        "markers",
+        "deterministic: mark test as using only deterministic checks (no API calls)",
+    )
+    config.addinivalue_line(
+        "markers",
+        "expensive: mark test as high-cost (multiple LLM judge calls)",
+    )
+    config.addinivalue_line(
+        "markers",
+        "rag: mark test as evaluating RAG pipeline quality",
+    )
+    config.addinivalue_line(
+        "markers",
+        "safety: mark test as evaluating safety/toxicity/bias",
+    )
 
 
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:

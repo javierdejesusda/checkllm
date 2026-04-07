@@ -10,6 +10,12 @@ from checkllm.agents import (
     validate_tool_order,
     validate_trajectory_length,
 )
+from checkllm.deprecations import (
+    CheckllmDeprecationWarning,
+    CheckllmRemovedIn5Warning,
+    CheckllmRemovedIn6Warning,
+    deprecated,
+)
 from checkllm.chain import AssertionChain
 from checkllm.conversation import ConversationalTestCase, Turn
 from checkllm.datasets.case import Case
@@ -90,9 +96,14 @@ try:
 except ImportError:
     pass  # Optional dependencies not installed
 
-__version__ = "3.2.0"
+__version__ = "4.0.0"
 
 __all__ = [
+    # Deprecation framework
+    "CheckllmDeprecationWarning",
+    "CheckllmRemovedIn5Warning",
+    "CheckllmRemovedIn6Warning",
+    "deprecated",
     # Agent evaluation
     "AgentStep",
     "AgentTestCase",
