@@ -129,10 +129,28 @@ def pytest_runtest_makereport(item, call):
             if report.passed:
                 failed = [r for r in collector.results if not r.passed]
                 if failed:
-                    count = len(failed)
-                    names = ", ".join(r.metric_name for r in failed)
                     report.outcome = "failed"
-                    report.longrepr = f"{count} check(s) failed: {names}"
+                    report.longrepr = _format_check_failures(
+                        item.nodeid, failed, collector.results,
+                    )
+
+
+def _format_check_failures(node_id, failed, all_results):
+    """Build a rich, per-check failure report for the pytest terminal."""
+    lines = [
+        f"checkllm: {len(failed)}/{len(all_results)} check(s) failed",
+        "",
+    ]
+    for r in failed:
+        lines.append(r.format_failure())
+        lines.append("")
+
+    passed = [r for r in all_results if r.passed]
+    if passed:
+        names = ", ".join(r.metric_name for r in passed)
+        lines.append(f"  Passed: {names}")
+
+    return "\n".join(lines)
 
 
 def pytest_configure(config: pytest.Config) -> None:
