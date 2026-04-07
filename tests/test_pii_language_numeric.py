@@ -1,5 +1,4 @@
 """Tests for PII detection, language detection, and numeric comparison checks."""
-import pytest
 
 from checkllm.deterministic import DeterministicChecks
 

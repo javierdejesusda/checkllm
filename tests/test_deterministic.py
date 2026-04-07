@@ -1,5 +1,4 @@
 import pydantic
-import pytest
 
 from checkllm.deterministic import DeterministicChecks
 from checkllm.models import CheckResult

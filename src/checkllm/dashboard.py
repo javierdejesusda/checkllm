@@ -25,7 +25,7 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from checkllm.history import RunHistory, RunRecord, RunSummary
+from checkllm.history import RunHistory, RunRecord
 
 logger = logging.getLogger("checkllm.dashboard")
 
@@ -1108,10 +1108,10 @@ def start_dashboard(
         from rich.console import Console
         console = Console()
         console.print(f"\n  [bold green]checkllm dashboard[/] running at [bold cyan]{url}[/]")
-        console.print(f"  [dim]Press Ctrl+C to stop.[/]\n")
+        console.print("  [dim]Press Ctrl+C to stop.[/]\n")
     except ImportError:
         print(f"\n  checkllm dashboard running at {url}")
-        print(f"  Press Ctrl+C to stop.\n")
+        print("  Press Ctrl+C to stop.\n")
 
     if open_browser:
         threading.Timer(0.5, lambda: webbrowser.open(url)).start()

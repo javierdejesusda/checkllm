@@ -9,7 +9,6 @@ from checkllm.synthesizer import (
     KnowledgeGraph,
     KnowledgeNode,
     Synthesizer,
-    SynthesisConfig,
 )
 from checkllm.models import JudgeResponse
 

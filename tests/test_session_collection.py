@@ -1,9 +1,7 @@
 """Tests for pytest plugin session-wide result collection, snapshot, and report generation."""
 import json
 import xml.etree.ElementTree as ET
-from pathlib import Path
 
-import pytest
 
 
 class TestSessionSnapshot:

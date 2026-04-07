@@ -1,7 +1,5 @@
 """Tests for Markdown report generation."""
-from pathlib import Path
 
-import pytest
 
 from checkllm.models import CheckResult
 from checkllm.reporting.markdown import generate_markdown_report

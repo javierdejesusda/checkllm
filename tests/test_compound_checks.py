@@ -1,5 +1,4 @@
 """Tests for compound checks (all_of, any_of, none_of) and code validation."""
-import pytest
 
 from checkllm.deterministic import DeterministicChecks
 

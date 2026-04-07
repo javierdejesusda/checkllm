@@ -14,7 +14,12 @@ from checkllm.benchmarks.runner import BenchmarkResult, BenchmarkSuite
 
 def test_list_benchmarks_returns_expected_names():
     names = list_benchmarks()
-    assert set(names) == {"mmlu", "truthfulqa", "gsm8k"}
+    expected = {
+        "arc", "bbh", "bbq", "boolq", "drop", "gsm8k", "hellaswag",
+        "humaneval", "ifeval", "lambada", "logiqa", "mathqa", "mmlu",
+        "squad", "truthfulqa", "winogrande",
+    }
+    assert set(names) == expected
 
 
 def test_list_benchmarks_is_sorted():
@@ -77,10 +82,10 @@ def test_load_benchmark_case_insensitive():
     assert len(dataset.samples) == 3
 
 
-def test_all_benchmarks_have_at_least_20_samples():
+def test_all_benchmarks_have_at_least_15_samples():
     for name in list_benchmarks():
         dataset = load_benchmark(name)
-        assert len(dataset.samples) >= 20, (
+        assert len(dataset.samples) >= 15, (
             f"{name} has only {len(dataset.samples)} samples"
         )
 

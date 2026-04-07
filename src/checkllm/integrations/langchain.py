@@ -19,8 +19,7 @@ Requires: ``pip install langchain-core``
 from __future__ import annotations
 
 import logging
-from typing import Any, Sequence
-from uuid import UUID
+from typing import Any
 
 from checkllm.api import _build_guard, _run_async
 from checkllm.guardrails import Guard, ValidationResult

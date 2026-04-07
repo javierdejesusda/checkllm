@@ -1,5 +1,4 @@
 """Verify hooks fire during actual check execution."""
-import pytest
 
 from checkllm.config import CheckllmConfig
 from checkllm.check import CheckCollector

@@ -22,7 +22,7 @@ from typing import Any
 
 from checkllm.check import CheckCollector
 from checkllm.config import CheckllmConfig
-from checkllm.models import CheckResult, JudgeResponse
+from checkllm.models import JudgeResponse
 
 
 class MockJudge:

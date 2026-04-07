@@ -1,7 +1,7 @@
 """Integration test for Phase A competitive features."""
-from checkllm.redteam import VulnerabilityType, OWASPCategory, AttackStrategy
+from checkllm.redteam import VulnerabilityType, AttackStrategy
 from checkllm.compare import ProviderMatrix, MatrixResult
-from checkllm.benchmarks import list_benchmarks, load_benchmark, BenchmarkResult
+from checkllm.benchmarks import list_benchmarks, load_benchmark
 from checkllm.config import CheckllmConfig
 from checkllm.check import CheckCollector
 

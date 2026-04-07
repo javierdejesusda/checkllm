@@ -186,7 +186,6 @@ def eval_cmd(
     label: Optional[str] = typer.Option(None, "--label", "-l", help="Label for this run in history"),
 ):
     """Evaluate a prompt template against a dataset."""
-    import asyncio
     from checkllm.datasets.loader import load_dataset
     from checkllm.check import CheckCollector
     from checkllm.reporting.terminal import render_results
@@ -490,7 +489,6 @@ def _render_run_detail(record) -> None:
     """Render detailed view of a single run."""
     from rich.table import Table
     from rich.text import Text
-    from checkllm.models import CheckResult
 
     ts = datetime.fromtimestamp(record.timestamp).strftime("%Y-%m-%d %H:%M:%S")
     console.print(f"\n[bold]Run #{record.run_id}[/] — {ts}")
@@ -712,7 +710,7 @@ def init(
 
     # If no API key detected and not general, fall back to general (deterministic-only)
     if not detected and use_case != "general":
-        console.print(f"[yellow]No API key found — generating deterministic-only tests.[/]")
+        console.print("[yellow]No API key found — generating deterministic-only tests.[/]")
         template_path = template_dir / "test_general.py.tmpl"
 
     # Write pyproject.toml config
@@ -1169,7 +1167,7 @@ def ci(
     is_github_ci = bool(github_token and github_repository)
 
     if is_github_ci:
-        console.print(f"[bold]checkllm CI[/] — detected GitHub Actions")
+        console.print("[bold]checkllm CI[/] — detected GitHub Actions")
         console.print(f"[dim]Repository: {github_repository}[/]")
         if pr_number:
             console.print(f"[dim]PR: #{pr_number}[/]")

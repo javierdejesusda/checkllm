@@ -1,5 +1,4 @@
 """Verify checkllm registers useful pytest markers."""
-import pytest
 
 
 def test_markers_registered(pytester):

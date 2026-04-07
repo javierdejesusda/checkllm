@@ -1,7 +1,6 @@
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-import pytest
 
 from checkllm.models import CheckResult
 from checkllm.reporting.junit import generate_junit_xml

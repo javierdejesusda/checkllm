@@ -1,10 +1,9 @@
-from unittest.mock import AsyncMock
 
 import pytest
 
 from checkllm.check import CheckCollector
 from checkllm.config import CheckllmConfig
-from checkllm.models import CheckFailedError, CheckResult, JudgeResponse
+from checkllm.models import CheckFailedError, CheckResult
 
 
 class TestCheckCollectorDeterministic:
@@ -97,7 +96,6 @@ class TestCheckCollectorRepr:
 class TestCheckCollectorCustomMetric:
     def test_run_metric_with_registered_metric(self):
         from checkllm.metrics import _global_registry
-        from checkllm.models import CheckResult
 
         @_global_registry.register("test_custom_check")
         def custom_check(output: str, **kwargs) -> CheckResult:

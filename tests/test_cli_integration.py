@@ -1,8 +1,6 @@
 """Tests for real CLI command implementations."""
-from pathlib import Path
 from unittest.mock import patch, MagicMock
 
-import pytest
 from typer.testing import CliRunner
 
 from checkllm.cli import app

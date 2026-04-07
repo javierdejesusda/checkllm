@@ -7,7 +7,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-import re
 import time
 from pathlib import Path
 from typing import Any
@@ -269,7 +268,7 @@ class YamlEvalRunner:
                 try:
                     from anthropic import AsyncAnthropic
                 except ImportError:
-                    return f"[anthropic package not installed]"
+                    return "[anthropic package not installed]"
                 client = AsyncAnthropic(
                     api_key=provider.api_key,
                     **(provider.options.get("client", {})),
@@ -285,7 +284,7 @@ class YamlEvalRunner:
                 try:
                     import google.generativeai as genai
                 except ImportError:
-                    return f"[google-generativeai package not installed]"
+                    return "[google-generativeai package not installed]"
                 genai.configure(api_key=provider.api_key)
                 gen_model = genai.GenerativeModel(model or "gemini-pro")
                 response = await asyncio.to_thread(

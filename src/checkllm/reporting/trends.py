@@ -1,14 +1,13 @@
 """Trend reporting — track scores, pass rates and costs over time."""
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from io import StringIO
 from pathlib import Path
 
 from rich.console import Console
 from rich.table import Table
-from rich.text import Text
 
 from checkllm.models import CheckResult
 

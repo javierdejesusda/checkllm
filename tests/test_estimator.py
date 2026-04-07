@@ -1,5 +1,4 @@
 """Tests for pre-run cost estimation."""
-import pytest
 from checkllm.estimator import estimate_check_cost, estimate_from_test_file, CostEstimate
 
 

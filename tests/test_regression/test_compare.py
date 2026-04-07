@@ -1,6 +1,5 @@
-import pytest
 
-from checkllm.regression.compare import RegressionReport, compare_snapshot
+from checkllm.regression.compare import compare_snapshot
 from checkllm.regression.snapshot import (
     MetricRecord,
     Snapshot,

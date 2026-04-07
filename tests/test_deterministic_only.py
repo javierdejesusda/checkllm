@@ -1,5 +1,4 @@
 """Verify deterministic-only usage does not require openai."""
-import pytest
 
 from checkllm.config import CheckllmConfig
 from checkllm.check import CheckCollector

@@ -1,6 +1,5 @@
 """Tests for CSV and JSON dataset loading."""
 import json
-from pathlib import Path
 
 import pytest
 

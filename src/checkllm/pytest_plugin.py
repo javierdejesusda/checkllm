@@ -9,7 +9,6 @@ import pytest
 
 from checkllm.check import CheckCollector
 from checkllm.config import load_config
-from checkllm.datasets.case import Case
 from checkllm.datasets.loader import load_dataset
 from checkllm.models import CheckResult
 

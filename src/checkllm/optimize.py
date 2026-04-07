@@ -28,7 +28,6 @@ from typing import Any, Callable, Awaitable
 from pydantic import BaseModel, Field
 
 from checkllm.judge import JudgeBackend
-from checkllm.models import CheckResult
 
 logger = logging.getLogger("checkllm.optimize")
 

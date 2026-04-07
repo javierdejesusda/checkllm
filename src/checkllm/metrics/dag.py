@@ -30,14 +30,12 @@ Usage::
 
 from __future__ import annotations
 
-import asyncio
 import time
-from typing import Any
 
 from pydantic import BaseModel, Field
 
 from checkllm.judge import JudgeBackend
-from checkllm.models import CheckResult, JudgeResponse
+from checkllm.models import CheckResult
 
 
 class DAGNode(BaseModel):

@@ -1,6 +1,5 @@
 """Tests for judge auto-detection."""
 from unittest.mock import patch
-import pytest
 from checkllm.discovery import detect_judge_backend
 
 

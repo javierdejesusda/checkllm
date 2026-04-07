@@ -13,7 +13,6 @@ import pytest
 
 from checkllm.check import CheckCollector
 from checkllm.config import load_config
-from checkllm.models import CheckResult
 
 logger = logging.getLogger("checkllm.helpers")
 

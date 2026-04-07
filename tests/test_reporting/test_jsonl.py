@@ -1,8 +1,6 @@
 """Tests for JSONL export."""
 import json
-from pathlib import Path
 
-import pytest
 
 from checkllm.models import CheckResult
 from checkllm.reporting.jsonl import export_jsonl

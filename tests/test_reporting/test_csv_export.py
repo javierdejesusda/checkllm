@@ -5,7 +5,6 @@ import csv
 from io import StringIO
 from pathlib import Path
 
-import pytest
 
 from checkllm.models import CheckResult
 from checkllm.reporting.csv_export import results_to_dataframe, write_csv, write_csv_string

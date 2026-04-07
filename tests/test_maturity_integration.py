@@ -1,13 +1,11 @@
 """Integration test: verify all maturity improvements work together."""
 import warnings
 
-import pytest
 
 from checkllm.config import CheckllmConfig
 from checkllm.check import CheckCollector
 from checkllm.deprecations import CheckllmDeprecationWarning, deprecated
 from checkllm.hookspecs import hookimpl, plugin_manager
-from checkllm.models import CheckResult
 
 
 class TestMaturityIntegration:

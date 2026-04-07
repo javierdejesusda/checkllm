@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from checkllm.metrics.role_adherence import RoleAdherenceMetric
-from checkllm.models import CheckResult, JudgeResponse
+from checkllm.models import JudgeResponse
 
 
 class TestRoleAdherenceMetric:

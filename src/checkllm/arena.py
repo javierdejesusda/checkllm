@@ -21,7 +21,6 @@ from __future__ import annotations
 
 import asyncio
 import statistics
-from typing import Any
 
 from pydantic import BaseModel, Field
 from scipy import stats as scipy_stats

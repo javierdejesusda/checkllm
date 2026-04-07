@@ -3,8 +3,10 @@ from __future__ import annotations
 import json
 import math
 import re
+import xml.etree.ElementTree as ET
 from collections import Counter
 from typing import Any, Type
+from urllib.parse import urlparse
 
 import tiktoken
 from pydantic import BaseModel, ValidationError
@@ -579,7 +581,7 @@ class DeterministicChecks:
         if value is None:
             return CheckResult(
                 passed=False, score=0.0,
-                reasoning=f"No number found in output",
+                reasoning="No number found in output",
                 cost=0.0, latency_ms=0, metric_name="greater_than",
                 input_preview=output[:200],
             )
@@ -598,7 +600,7 @@ class DeterministicChecks:
         if value is None:
             return CheckResult(
                 passed=False, score=0.0,
-                reasoning=f"No number found in output",
+                reasoning="No number found in output",
                 cost=0.0, latency_ms=0, metric_name="less_than",
                 input_preview=output[:200],
             )
@@ -617,7 +619,7 @@ class DeterministicChecks:
         if value is None:
             return CheckResult(
                 passed=False, score=0.0,
-                reasoning=f"No number found in output",
+                reasoning="No number found in output",
                 cost=0.0, latency_ms=0, metric_name="between",
                 input_preview=output[:200],
             )
@@ -1045,5 +1047,710 @@ class DeterministicChecks:
             passed=passed, score=score,
             reasoning=reasoning,
             cost=0.0, latency_ms=0, metric_name="is_valid_markdown",
+            input_preview=output[:200],
+        )
+
+    def icontains(self, output: str, substring: str) -> CheckResult:
+        """Case-insensitive substring check.
+
+        Args:
+            output: The text to search in.
+            substring: The substring to look for (case-insensitive).
+
+        Returns:
+            CheckResult with pass/fail based on case-insensitive presence.
+        """
+        found = substring.lower() in output.lower()
+        return CheckResult(
+            passed=found,
+            score=1.0 if found else 0.0,
+            reasoning=f"Substring '{substring}' (case-insensitive) {'found' if found else 'not found'} in output",
+            cost=0.0, latency_ms=0, metric_name="icontains",
+            input_preview=output[:200],
+        )
+
+    def icontains_any(self, output: str, substrings: list[str]) -> CheckResult:
+        """Case-insensitive check that at least one substring is present.
+
+        Args:
+            output: The text to search in.
+            substrings: List of substrings to look for (case-insensitive).
+
+        Returns:
+            CheckResult with pass/fail based on case-insensitive match of any substring.
+        """
+        output_lower = output.lower()
+        found = [s for s in substrings if s.lower() in output_lower]
+        passed = len(found) > 0
+        score = min(1.0, len(found) / max(len(substrings), 1))
+        if found:
+            reasoning = f"Found (case-insensitive): {', '.join(repr(s) for s in found)}"
+        else:
+            reasoning = f"None of {len(substrings)} substrings found (case-insensitive)"
+        return CheckResult(
+            passed=passed, score=score, reasoning=reasoning,
+            cost=0.0, latency_ms=0, metric_name="icontains_any",
+            input_preview=output[:200],
+        )
+
+    def icontains_all(self, output: str, substrings: list[str]) -> CheckResult:
+        """Case-insensitive check that all substrings are present.
+
+        Args:
+            output: The text to search in.
+            substrings: List of substrings that must all be present (case-insensitive).
+
+        Returns:
+            CheckResult with pass/fail based on case-insensitive match of all substrings.
+        """
+        output_lower = output.lower()
+        found = [s for s in substrings if s.lower() in output_lower]
+        missing = [s for s in substrings if s.lower() not in output_lower]
+        passed = len(missing) == 0
+        score = len(found) / max(len(substrings), 1)
+        if missing:
+            reasoning = f"Missing (case-insensitive): {', '.join(repr(s) for s in missing)}"
+        else:
+            reasoning = f"All {len(substrings)} substrings found (case-insensitive)"
+        return CheckResult(
+            passed=passed, score=score, reasoning=reasoning,
+            cost=0.0, latency_ms=0, metric_name="icontains_all",
+            input_preview=output[:200],
+        )
+
+    def is_html(self, output: str) -> CheckResult:
+        """Check that output is valid HTML with balanced tags.
+
+        Looks for common HTML tags and validates that opening/closing tags
+        are balanced. Does not require a full DOM parser.
+
+        Args:
+            output: The text to validate as HTML.
+
+        Returns:
+            CheckResult with pass/fail based on HTML validity.
+        """
+        text = output.strip()
+        if not text:
+            return CheckResult(
+                passed=False, score=0.0, reasoning="Empty output",
+                cost=0.0, latency_ms=0, metric_name="is_html",
+                input_preview=output[:200],
+            )
+
+        html_tag_pattern = re.compile(r'<(/?)(\w+)(?:\s[^>]*)?\s*(/?)>')
+        tags = html_tag_pattern.findall(text)
+        if not tags:
+            return CheckResult(
+                passed=False, score=0.0,
+                reasoning="No HTML tags found in output",
+                cost=0.0, latency_ms=0, metric_name="is_html",
+                input_preview=output[:200],
+            )
+
+        void_elements = {
+            "area", "base", "br", "col", "embed", "hr", "img", "input",
+            "link", "meta", "param", "source", "track", "wbr",
+        }
+        stack: list[str] = []
+        for is_closing, tag_name, is_self_closing in tags:
+            tag_lower = tag_name.lower()
+            if is_self_closing or tag_lower in void_elements:
+                continue
+            if is_closing:
+                if not stack or stack[-1] != tag_lower:
+                    return CheckResult(
+                        passed=False, score=0.0,
+                        reasoning=f"Unbalanced HTML: unexpected closing </{tag_lower}>",
+                        cost=0.0, latency_ms=0, metric_name="is_html",
+                        input_preview=output[:200],
+                    )
+                stack.pop()
+            else:
+                stack.append(tag_lower)
+
+        if stack:
+            return CheckResult(
+                passed=False, score=0.0,
+                reasoning=f"Unclosed HTML tags: {', '.join(stack)}",
+                cost=0.0, latency_ms=0, metric_name="is_html",
+                input_preview=output[:200],
+            )
+
+        return CheckResult(
+            passed=True, score=1.0,
+            reasoning=f"Valid HTML with {len(tags)} tags, all balanced",
+            cost=0.0, latency_ms=0, metric_name="is_html",
+            input_preview=output[:200],
+        )
+
+    def contains_html(self, output: str) -> CheckResult:
+        """Check that output contains HTML elements.
+
+        Args:
+            output: The text to search for HTML elements.
+
+        Returns:
+            CheckResult with pass/fail based on HTML element presence.
+        """
+        html_pattern = re.compile(r'<(\w+)(?:\s[^>]*)?\s*/?>|</(\w+)\s*>')
+        matches = html_pattern.findall(output)
+        found = len(matches) > 0
+        return CheckResult(
+            passed=found,
+            score=1.0 if found else 0.0,
+            reasoning=f"{'Found' if found else 'No'} HTML elements in output ({len(matches)} tags)",
+            cost=0.0, latency_ms=0, metric_name="contains_html",
+            input_preview=output[:200],
+        )
+
+    def is_xml(self, output: str) -> CheckResult:
+        """Check that output is valid XML using xml.etree.ElementTree.
+
+        Args:
+            output: The text to validate as XML.
+
+        Returns:
+            CheckResult with pass/fail based on XML validity.
+        """
+        text = output.strip()
+        if not text:
+            return CheckResult(
+                passed=False, score=0.0, reasoning="Empty output",
+                cost=0.0, latency_ms=0, metric_name="is_xml",
+                input_preview=output[:200],
+            )
+        try:
+            ET.fromstring(text)
+            return CheckResult(
+                passed=True, score=1.0,
+                reasoning="Valid XML document",
+                cost=0.0, latency_ms=0, metric_name="is_xml",
+                input_preview=output[:200],
+            )
+        except ET.ParseError as e:
+            return CheckResult(
+                passed=False, score=0.0,
+                reasoning=f"Invalid XML: {e}",
+                cost=0.0, latency_ms=0, metric_name="is_xml",
+                input_preview=output[:200],
+            )
+
+    def contains_xml(self, output: str) -> CheckResult:
+        """Check that output contains XML elements.
+
+        Args:
+            output: The text to search for XML elements.
+
+        Returns:
+            CheckResult with pass/fail based on XML element presence.
+        """
+        xml_pattern = re.compile(r'<(\w+)(?:\s[^>]*)?>.*?</\1>', re.DOTALL)
+        match = xml_pattern.search(output)
+        found = match is not None
+        return CheckResult(
+            passed=found,
+            score=1.0 if found else 0.0,
+            reasoning=f"XML elements {'found' if found else 'not found'} in output",
+            cost=0.0, latency_ms=0, metric_name="contains_xml",
+            input_preview=output[:200],
+        )
+
+    _REFUSAL_PATTERNS: list[str] = [
+        r"I cannot\b",
+        r"I can't\b",
+        r"I'm sorry,?\s+but I can't",
+        r"I'm unable to\b",
+        r"I am unable to\b",
+        r"I'm not able to\b",
+        r"As an AI\b",
+        r"As a language model\b",
+        r"I don't have the ability\b",
+        r"I must decline\b",
+        r"I will not\b",
+        r"I won't\b",
+        r"I refuse to\b",
+        r"I apologize,?\s+but I cannot",
+        r"I'm afraid I can't",
+        r"not appropriate for me to\b",
+        r"against my guidelines\b",
+        r"violates my (guidelines|policies|rules)",
+        r"outside my capabilities\b",
+    ]
+
+    def is_refusal(self, output: str) -> CheckResult:
+        """Detect if the model refused the request.
+
+        Checks for common refusal phrases like "I cannot", "As an AI", etc.
+
+        Args:
+            output: The model output to check.
+
+        Returns:
+            CheckResult where passed=True means a refusal WAS detected.
+        """
+        matched: list[str] = []
+        for pattern in self._REFUSAL_PATTERNS:
+            if re.search(pattern, output, re.IGNORECASE):
+                matched.append(pattern)
+
+        is_refusal = len(matched) > 0
+        if is_refusal:
+            reasoning = f"Refusal detected ({len(matched)} pattern(s) matched)"
+        else:
+            reasoning = "No refusal patterns detected"
+        return CheckResult(
+            passed=is_refusal,
+            score=1.0 if is_refusal else 0.0,
+            reasoning=reasoning,
+            cost=0.0, latency_ms=0, metric_name="is_refusal",
+            input_preview=output[:200],
+        )
+
+    def levenshtein(self, output: str, reference: str, threshold: float = 0.7) -> CheckResult:
+        """Levenshtein edit distance check with normalized score.
+
+        Computes the Levenshtein similarity ratio (0-1) and passes if it
+        meets or exceeds the threshold.
+
+        Args:
+            output: The model output.
+            reference: The reference text to compare against.
+            threshold: Minimum similarity ratio to pass (0.0-1.0).
+
+        Returns:
+            CheckResult with score as the similarity ratio.
+        """
+        ratio = _levenshtein_ratio(output, reference)
+        passed = ratio >= threshold
+        return CheckResult(
+            passed=passed, score=ratio,
+            reasoning=f"Levenshtein ratio: {ratio:.4f} (threshold: {threshold})",
+            cost=0.0, latency_ms=0, metric_name="levenshtein",
+            input_preview=output[:200],
+            threshold=threshold,
+        )
+
+    def meteor(self, output: str, reference: str, threshold: float = 0.5) -> CheckResult:
+        """METEOR-like score using unigram matching with stemming approximation.
+
+        Computes precision, recall, and F-mean with a simple Porter-like
+        suffix stripping for stem matching. Includes a fragmentation penalty.
+
+        Args:
+            output: The model output.
+            reference: The reference text to compare against.
+            threshold: Minimum score to pass (0.0-1.0).
+
+        Returns:
+            CheckResult with METEOR-like score.
+        """
+        def simple_stem(word: str) -> str:
+            """Approximate English stemming by stripping common suffixes."""
+            w = word.lower()
+            for suffix in ("ing", "tion", "sion", "ment", "ness", "able", "ible",
+                           "ful", "less", "ous", "ive", "ly", "ed", "er", "es", "s"):
+                if w.endswith(suffix) and len(w) - len(suffix) >= 3:
+                    return w[:-len(suffix)]
+            return w
+
+        out_tokens = [simple_stem(w) for w in re.findall(r'\w+', output.lower())]
+        ref_tokens = [simple_stem(w) for w in re.findall(r'\w+', reference.lower())]
+
+        if not out_tokens or not ref_tokens:
+            return CheckResult(
+                passed=False, score=0.0,
+                reasoning="Empty output or reference for METEOR computation",
+                cost=0.0, latency_ms=0, metric_name="meteor",
+                input_preview=output[:200],
+                threshold=threshold,
+            )
+
+        ref_matched = [False] * len(ref_tokens)
+        out_matched = [False] * len(out_tokens)
+
+        for i, ot in enumerate(out_tokens):
+            for j, rt in enumerate(ref_tokens):
+                if not ref_matched[j] and ot == rt:
+                    out_matched[i] = True
+                    ref_matched[j] = True
+                    break
+
+        matches = sum(out_matched)
+        precision = matches / len(out_tokens) if out_tokens else 0.0
+        recall = matches / len(ref_tokens) if ref_tokens else 0.0
+
+        if precision + recall == 0:
+            score = 0.0
+        else:
+            alpha = 0.9
+            f_mean = (precision * recall) / (alpha * precision + (1 - alpha) * recall)
+
+            chunks = 0
+            in_chunk = False
+            for i in range(len(out_tokens)):
+                if out_matched[i]:
+                    if not in_chunk:
+                        chunks += 1
+                        in_chunk = True
+                else:
+                    in_chunk = False
+
+            frag_penalty = 0.5 * (chunks / max(matches, 1)) if matches > 0 else 0.0
+            score = f_mean * (1.0 - frag_penalty)
+            score = max(0.0, min(1.0, score))
+
+        passed = score >= threshold
+        return CheckResult(
+            passed=passed, score=score,
+            reasoning=f"METEOR: {score:.4f} (P: {precision:.4f}, R: {recall:.4f}, threshold: {threshold})",
+            cost=0.0, latency_ms=0, metric_name="meteor",
+            input_preview=output[:200],
+            threshold=threshold,
+        )
+
+    def perplexity_check(self, output: str, max_perplexity: float = 50.0) -> CheckResult:
+        """Simple perplexity proxy using token repetition and vocabulary diversity.
+
+        Higher repetition and lower vocabulary diversity yield a higher
+        pseudo-perplexity score. This is a heuristic, not true perplexity.
+
+        Args:
+            output: The model output to analyze.
+            max_perplexity: Maximum allowable pseudo-perplexity score.
+
+        Returns:
+            CheckResult with pseudo-perplexity score.
+        """
+        tokens = re.findall(r'\w+', output.lower())
+        if not tokens:
+            return CheckResult(
+                passed=True, score=1.0,
+                reasoning="Empty output, perplexity not applicable",
+                cost=0.0, latency_ms=0, metric_name="perplexity_check",
+                input_preview=output[:200],
+            )
+
+        total = len(tokens)
+        unique = len(set(tokens))
+        vocab_diversity = unique / total
+
+        token_counts = Counter(tokens)
+        max_freq = max(token_counts.values())
+        repetition_ratio = max_freq / total
+
+        pseudo_perplexity = (1.0 / max(vocab_diversity, 0.01)) * (1.0 + repetition_ratio * 10.0)
+
+        passed = pseudo_perplexity <= max_perplexity
+        score = min(1.0, max_perplexity / max(pseudo_perplexity, 0.01)) if not passed else 1.0
+        return CheckResult(
+            passed=passed, score=score,
+            reasoning=f"Pseudo-perplexity: {pseudo_perplexity:.2f} (max: {max_perplexity}, vocab diversity: {vocab_diversity:.3f})",
+            cost=0.0, latency_ms=0, metric_name="perplexity_check",
+            input_preview=output[:200],
+        )
+
+    def is_valid_yaml(self, output: str) -> CheckResult:
+        """Check that output is valid YAML using yaml.safe_load.
+
+        Args:
+            output: The text to validate as YAML.
+
+        Returns:
+            CheckResult with pass/fail based on YAML validity.
+        """
+        import yaml
+
+        text = output.strip()
+        if text.startswith("```yaml"):
+            text = text[len("```yaml"):]
+        elif text.startswith("```"):
+            text = text[3:]
+        if text.endswith("```"):
+            text = text[:-3]
+        text = text.strip()
+
+        if not text:
+            return CheckResult(
+                passed=False, score=0.0, reasoning="Empty output",
+                cost=0.0, latency_ms=0, metric_name="is_valid_yaml",
+                input_preview=output[:200],
+            )
+        try:
+            result = yaml.safe_load(text)
+            if result is None:
+                return CheckResult(
+                    passed=False, score=0.0,
+                    reasoning="YAML parsed as None/empty",
+                    cost=0.0, latency_ms=0, metric_name="is_valid_yaml",
+                    input_preview=output[:200],
+                )
+            return CheckResult(
+                passed=True, score=1.0,
+                reasoning=f"Valid YAML (parsed as {type(result).__name__})",
+                cost=0.0, latency_ms=0, metric_name="is_valid_yaml",
+                input_preview=output[:200],
+            )
+        except yaml.YAMLError as e:
+            return CheckResult(
+                passed=False, score=0.0,
+                reasoning=f"Invalid YAML: {e}",
+                cost=0.0, latency_ms=0, metric_name="is_valid_yaml",
+                input_preview=output[:200],
+            )
+
+    _CITATION_PATTERNS: list[str] = [
+        r'\[\d+\]',
+        r'\(\w[\w\s&.,]+,\s*\d{4}\)',
+        r'\(\w[\w\s&.,]+\s+\d{4}\)',
+        r'\b(?:doi|DOI):\s*\S+',
+        r'https?://\S+',
+    ]
+
+    def has_citations(self, output: str, min_count: int = 1) -> CheckResult:
+        """Check that output contains citation patterns.
+
+        Looks for patterns like [1], (Author, Year), DOI references, and URLs.
+
+        Args:
+            output: The text to search for citations.
+            min_count: Minimum number of citations required.
+
+        Returns:
+            CheckResult with pass/fail based on citation count.
+        """
+        all_matches: list[str] = []
+        for pattern in self._CITATION_PATTERNS:
+            all_matches.extend(re.findall(pattern, output))
+
+        count = len(all_matches)
+        passed = count >= min_count
+        score = min(1.0, count / max(min_count, 1))
+        return CheckResult(
+            passed=passed, score=score,
+            reasoning=f"Found {count} citation(s), minimum required: {min_count}",
+            cost=0.0, latency_ms=0, metric_name="has_citations",
+            input_preview=output[:200],
+        )
+
+    def no_repetition(self, output: str, max_ngram_repeat: int = 3) -> CheckResult:
+        """Detect excessive n-gram repetition in output.
+
+        Checks for repeated sequences of 3-grams or longer that appear
+        more than max_ngram_repeat times, which is a sign of degenerate output.
+
+        Args:
+            output: The text to check for repetition.
+            max_ngram_repeat: Maximum allowed repetitions of any n-gram (n>=3).
+
+        Returns:
+            CheckResult where passed=True means no excessive repetition found.
+        """
+        tokens = output.lower().split()
+        if len(tokens) < 3:
+            return CheckResult(
+                passed=True, score=1.0,
+                reasoning="Output too short for repetition analysis",
+                cost=0.0, latency_ms=0, metric_name="no_repetition",
+                input_preview=output[:200],
+            )
+
+        worst_ratio = 0.0
+        worst_ngram = ""
+        for n in (3, 4, 5):
+            if len(tokens) < n:
+                continue
+            ngrams: Counter[tuple[str, ...]] = Counter(
+                tuple(tokens[i:i + n]) for i in range(len(tokens) - n + 1)
+            )
+            for ng, count in ngrams.most_common(1):
+                if count > max_ngram_repeat:
+                    ratio = count / (len(tokens) - n + 1)
+                    if ratio > worst_ratio:
+                        worst_ratio = ratio
+                        worst_ngram = " ".join(ng)
+
+        if worst_ngram:
+            passed = False
+            score = max(0.0, 1.0 - worst_ratio)
+            reasoning = f"Excessive repetition: '{worst_ngram}' repeated too many times (ratio: {worst_ratio:.3f})"
+        else:
+            passed = True
+            score = 1.0
+            reasoning = f"No excessive n-gram repetition detected (max allowed: {max_ngram_repeat})"
+
+        return CheckResult(
+            passed=passed, score=score, reasoning=reasoning,
+            cost=0.0, latency_ms=0, metric_name="no_repetition",
+            input_preview=output[:200],
+        )
+
+    def semantic_similarity(self, output: str, reference: str, threshold: float = 0.7) -> CheckResult:
+        """Cosine similarity using TF-IDF vectors.
+
+        Computes term frequency-inverse document frequency vectors for
+        both texts and measures their cosine similarity. No external
+        model is needed.
+
+        Args:
+            output: The model output.
+            reference: The reference text to compare against.
+            threshold: Minimum cosine similarity to pass (0.0-1.0).
+
+        Returns:
+            CheckResult with cosine similarity score.
+        """
+        from scipy.spatial.distance import cosine as cosine_dist
+
+        def tokenize(text: str) -> list[str]:
+            return re.findall(r'\w+', text.lower())
+
+        out_tokens = tokenize(output)
+        ref_tokens = tokenize(reference)
+
+        if not out_tokens or not ref_tokens:
+            return CheckResult(
+                passed=False, score=0.0,
+                reasoning="Empty output or reference for similarity computation",
+                cost=0.0, latency_ms=0, metric_name="semantic_similarity",
+                input_preview=output[:200],
+                threshold=threshold,
+            )
+
+        all_tokens = sorted(set(out_tokens + ref_tokens))
+        token_to_idx = {t: i for i, t in enumerate(all_tokens)}
+        vocab_size = len(all_tokens)
+
+        out_counts = Counter(out_tokens)
+        ref_counts = Counter(ref_tokens)
+
+        out_tf = [0.0] * vocab_size
+        ref_tf = [0.0] * vocab_size
+        for token, count in out_counts.items():
+            out_tf[token_to_idx[token]] = count / len(out_tokens)
+        for token, count in ref_counts.items():
+            ref_tf[token_to_idx[token]] = count / len(ref_tokens)
+
+        num_docs = 2
+        idf = [0.0] * vocab_size
+        for i, token in enumerate(all_tokens):
+            doc_freq = int(token in out_counts) + int(token in ref_counts)
+            idf[i] = math.log((num_docs + 1) / (doc_freq + 1)) + 1
+
+        out_tfidf = [tf * idf_val for tf, idf_val in zip(out_tf, idf)]
+        ref_tfidf = [tf * idf_val for tf, idf_val in zip(ref_tf, idf)]
+
+        out_norm = math.sqrt(sum(v * v for v in out_tfidf))
+        ref_norm = math.sqrt(sum(v * v for v in ref_tfidf))
+
+        if out_norm == 0 or ref_norm == 0:
+            cos_sim = 0.0
+        else:
+            cos_sim = 1.0 - cosine_dist(out_tfidf, ref_tfidf)
+
+        cos_sim = max(0.0, min(1.0, cos_sim))
+        passed = cos_sim >= threshold
+        return CheckResult(
+            passed=passed, score=cos_sim,
+            reasoning=f"TF-IDF cosine similarity: {cos_sim:.4f} (threshold: {threshold})",
+            cost=0.0, latency_ms=0, metric_name="semantic_similarity",
+            input_preview=output[:200],
+            threshold=threshold,
+        )
+
+    def is_valid_url(self, output: str) -> CheckResult:
+        """Check if output contains valid URL patterns.
+
+        Args:
+            output: The text to check for valid URLs.
+
+        Returns:
+            CheckResult with pass/fail based on URL presence and validity.
+        """
+        url_pattern = re.compile(
+            r'https?://[^\s<>"\')\]]+|'
+            r'ftp://[^\s<>"\')\]]+|'
+            r'www\.[^\s<>"\')\]]+\.[a-zA-Z]{2,}'
+        )
+        matches = url_pattern.findall(output)
+        if not matches:
+            return CheckResult(
+                passed=False, score=0.0,
+                reasoning="No valid URL patterns found in output",
+                cost=0.0, latency_ms=0, metric_name="is_valid_url",
+                input_preview=output[:200],
+            )
+
+        valid_urls: list[str] = []
+        for url in matches:
+            if not url.startswith(("http://", "https://", "ftp://")):
+                url = "http://" + url
+            parsed = urlparse(url)
+            if parsed.scheme and parsed.netloc and "." in parsed.netloc:
+                valid_urls.append(url)
+
+        passed = len(valid_urls) > 0
+        score = len(valid_urls) / max(len(matches), 1)
+        return CheckResult(
+            passed=passed, score=score,
+            reasoning=f"Found {len(valid_urls)} valid URL(s) out of {len(matches)} candidates",
+            cost=0.0, latency_ms=0, metric_name="is_valid_url",
+            input_preview=output[:200],
+        )
+
+    _STRUCTURE_DETECTORS: dict[str, str] = {
+        "headers": r'^#{1,6}\s+\S',
+        "bullet_points": r'^[\s]*[-*+]\s+\S',
+        "numbered_lists": r'^[\s]*\d+\.\s+\S',
+        "code_blocks": r'^```',
+        "blockquotes": r'^>\s+',
+        "bold": r'\*\*\S.*?\S\*\*|__\S.*?\S__',
+        "italic": r'(?<!\*)\*(?!\*)(?:\S.*?\S|\S)\*(?!\*)|(?<!_)_(?!_)(?:\S.*?\S|\S)_(?!_)',
+        "links": r'\[.+?\]\(.+?\)',
+        "tables": r'\|.+\|',
+    }
+
+    def has_structure(self, output: str, elements: list[str]) -> CheckResult:
+        """Check that output has specific structural elements.
+
+        Supported elements: headers, bullet_points, numbered_lists,
+        code_blocks, blockquotes, bold, italic, links, tables.
+
+        Args:
+            output: The text to check for structure.
+            elements: List of structural element names to require.
+
+        Returns:
+            CheckResult with pass/fail based on element presence.
+        """
+        if not elements:
+            return CheckResult(
+                passed=True, score=1.0,
+                reasoning="No structural elements required",
+                cost=0.0, latency_ms=0, metric_name="has_structure",
+                input_preview=output[:200],
+            )
+
+        found: list[str] = []
+        missing: list[str] = []
+        for elem in elements:
+            pattern = self._STRUCTURE_DETECTORS.get(elem)
+            if pattern is None:
+                missing.append(f"{elem} (unknown element)")
+                continue
+            if re.search(pattern, output, re.MULTILINE):
+                found.append(elem)
+            else:
+                missing.append(elem)
+
+        passed = len(missing) == 0
+        score = len(found) / max(len(elements), 1)
+        if missing:
+            reasoning = f"Missing structural elements: {', '.join(missing)}"
+        else:
+            reasoning = f"All {len(elements)} structural elements found: {', '.join(found)}"
+        return CheckResult(
+            passed=passed, score=score, reasoning=reasoning,
+            cost=0.0, latency_ms=0, metric_name="has_structure",
             input_preview=output[:200],
         )

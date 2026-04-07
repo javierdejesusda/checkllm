@@ -1,13 +1,10 @@
 """Tests for all new production-readiness features."""
 import json
-from pathlib import Path
 
-import pytest
 
 from checkllm.check import CheckCollector
 from checkllm.config import CheckllmConfig
 from checkllm.deterministic import DeterministicChecks
-from checkllm.models import CheckResult
 
 
 class TestExactMatch:

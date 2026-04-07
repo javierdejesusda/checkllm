@@ -26,8 +26,8 @@ import logging
 import time
 from abc import ABC, abstractmethod
 from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
-from dataclasses import dataclass, field
-from typing import Any, Awaitable, Callable, Coroutine, TypeVar
+from dataclasses import dataclass
+from typing import Any, Callable, Coroutine, TypeVar
 
 logger = logging.getLogger("checkllm.engines")
 

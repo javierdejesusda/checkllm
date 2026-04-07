@@ -1,5 +1,4 @@
 """Tests for fluent assertion chaining."""
-import pytest
 from checkllm.check import CheckCollector
 from checkllm.config import CheckllmConfig
 from checkllm.testing import MockJudge

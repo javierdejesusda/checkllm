@@ -1,5 +1,5 @@
 """Tests for auto-detection integration in CheckCollector."""
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 import pytest
 from checkllm.check import CheckCollector
 from checkllm.config import CheckllmConfig

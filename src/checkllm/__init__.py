@@ -40,7 +40,22 @@ from checkllm.resilience import (
     TokenBucketRateLimiter,
     with_retry,
 )
+from checkllm.observe import (
+    observe,
+    get_trace as get_observe_trace,
+    clear_trace,
+    start_trace,
+    end_trace,
+)
+from checkllm.observe import Span as ObserveSpan, Trace as ObserveTrace
 from checkllm.tracing import Span, Tracer, get_tracer, trace
+from checkllm.trajectory import (
+    TraceSpan,
+    TraceValidator,
+    TrajectoryValidator,
+    validate_trace,
+    validate_trajectory,
+)
 
 # Imports that may require optional dependencies (openai, etc.)
 try:
@@ -76,10 +91,22 @@ try:
     from checkllm.judge import AnthropicJudge, OpenAIJudge
     from checkllm.providers import (
         AzureOpenAIJudge,
+        BedrockJudge,
+        CohereJudge,
         CustomHTTPJudge,
+        DeepSeekJudge,
+        FireworksJudge,
         GeminiJudge,
+        GroqJudge,
         LiteLLMJudge,
+        MistralJudge,
         OllamaJudge,
+        OpenAICompatibleJudge,
+        OpenRouterJudge,
+        PerplexityJudge,
+        TogetherJudge,
+        VLLMJudge,
+        XAIJudge,
         create_judge,
     )
     from checkllm.pytest_plugin import dataset
@@ -93,12 +120,15 @@ try:
         load_benchmark,
     )
     from checkllm.redteam import (
+        COMPLIANCE_MAPPINGS,
         AttackResult,
         AttackStrategy,
+        CompliancePreset,
         OWASPCategory,
         RedTeamer,
         VulnerabilityReport,
         VulnerabilityType,
+        get_compliance_vulnerabilities,
         get_owasp_mapping,
         get_vulnerabilities_by_owasp,
     )
@@ -107,6 +137,20 @@ try:
         ComplianceReport,
         ComplianceRequirement,
         generate_compliance_report,
+    )
+    from checkllm.frameworks import (
+        ComplianceFramework as ComplianceFrameworkV2,
+        FrameworkDefinition,
+        FrameworkRequirement,
+        get_framework_definition,
+        get_framework_summary,
+        list_frameworks,
+    )
+    from checkllm.compliance_scanner import (
+        ComplianceReport as ComplianceReportV2,
+        ComplianceScanner,
+        RequirementResult,
+        scan_multiple_frameworks,
     )
     from checkllm.arena import Arena, ArenaCandidate, ArenaResult
     from checkllm.metrics.dag import DAGEvalResult, DAGMetric, DAGNode
@@ -124,6 +168,62 @@ try:
     from checkllm.optimize import OptimizationResult, PromptOptimizer, PromptVariant
     from checkllm.testing import MockJudge, assert_all_passed, assert_score_above, make_collector
     from checkllm.yaml_config import EvalConfig, YamlEvalRunner, load_eval_config
+    # New: Metric alignment
+    from checkllm.alignment import AlignmentResult, HumanLabel, MetricAligner
+    # New: Dual-judge metrics
+    from checkllm.dual_judge import (
+        AggregationMethod,
+        DualJudge,
+        DualJudgeMetric,
+        DualJudgeResult,
+    )
+    # New: Advanced red team strategies
+    from checkllm.strategies import (
+        ConversationTurn,
+        CrescendoStrategy,
+        GOATStrategy,
+        HydraStrategy,
+        MultiTurnAttackResult,
+        MultiTurnMischief,
+        MultiTurnStrategy,
+    )
+    # New: Poisoned RAG document generation
+    from checkllm.rag_poison import (
+        PoisonedDocGenerator,
+        PoisonedDocument,
+        PoisonType,
+    )
+    # New: Industry compliance
+    from checkllm.industry_compliance import (
+        Industry,
+        IndustryComplianceReport,
+        IndustryComplianceRunner,
+        IndustryPlugin,
+    )
+    # New: Adaptive guardrails
+    from checkllm.adaptive_guardrails import (
+        AdaptiveGuardrail,
+        AdaptiveValidationResult,
+        GuardrailRule,
+    )
+    # New: DPO export
+    from checkllm.dpo import (
+        DPODataset,
+        DPOExporter,
+        DPOPair,
+        DPOStats,
+        ExportFormat,
+    )
+    # New: Model security audit
+    from checkllm.model_audit import (
+        AuditResult,
+        ModelAuditor,
+        SecurityFinding,
+        SeverityLevel,
+    )
+    # New: CI/CD integration
+    from checkllm.cicd.github_action import GitHubActionGenerator
+    from checkllm.cicd.gitlab_ci import GitLabCIGenerator
 except ImportError:
     pass  # Optional dependencies not installed
 
@@ -214,13 +314,25 @@ __all__ = [
     # Judge backends
     "AnthropicJudge",
     "AzureOpenAIJudge",
+    "BedrockJudge",
+    "CohereJudge",
     "CustomHTTPJudge",
+    "DeepSeekJudge",
+    "FireworksJudge",
     "GeminiJudge",
+    "GroqJudge",
     "JudgeBackend",
     "JudgeConfigError",
     "LiteLLMJudge",
+    "MistralJudge",
     "OllamaJudge",
+    "OpenAICompatibleJudge",
     "OpenAIJudge",
+    "OpenRouterJudge",
+    "PerplexityJudge",
+    "TogetherJudge",
+    "VLLMJudge",
+    "XAIJudge",
     "create_judge",
     # Programmatic API
     "Evaluator",
@@ -241,10 +353,13 @@ __all__ = [
     # Red teaming
     "AttackResult",
     "AttackStrategy",
+    "COMPLIANCE_MAPPINGS",
+    "CompliancePreset",
     "OWASPCategory",
     "RedTeamer",
     "VulnerabilityReport",
     "VulnerabilityType",
+    "get_compliance_vulnerabilities",
     "get_owasp_mapping",
     "get_vulnerabilities_by_owasp",
     # Compliance reporting
@@ -252,6 +367,17 @@ __all__ = [
     "ComplianceReport",
     "ComplianceRequirement",
     "generate_compliance_report",
+    # Compliance frameworks (V2)
+    "ComplianceFrameworkV2",
+    "ComplianceReportV2",
+    "ComplianceScanner",
+    "FrameworkDefinition",
+    "FrameworkRequirement",
+    "RequirementResult",
+    "get_framework_definition",
+    "get_framework_summary",
+    "list_frameworks",
+    "scan_multiple_frameworks",
     # Arena A/B testing
     "Arena",
     "ArenaCandidate",
@@ -295,6 +421,12 @@ __all__ = [
     "Tracer",
     "get_tracer",
     "trace",
+    # Trajectory / trace evaluation
+    "TraceSpan",
+    "TraceValidator",
+    "TrajectoryValidator",
+    "validate_trace",
+    "validate_trajectory",
     # YAML config
     "EvalConfig",
     "YamlEvalRunner",
@@ -305,6 +437,58 @@ __all__ = [
     "ComparisonView",
     "build_comparison_view",
     "check_alerts",
+    # Metric alignment
+    "AlignmentResult",
+    "HumanLabel",
+    "MetricAligner",
+    # Dual-judge
+    "AggregationMethod",
+    "DualJudge",
+    "DualJudgeMetric",
+    "DualJudgeResult",
+    # @observe decorator
+    "ObserveSpan",
+    "ObserveTrace",
+    "observe",
+    "get_observe_trace",
+    "clear_trace",
+    "start_trace",
+    "end_trace",
+    # Advanced red team strategies
+    "ConversationTurn",
+    "CrescendoStrategy",
+    "GOATStrategy",
+    "HydraStrategy",
+    "MultiTurnAttackResult",
+    "MultiTurnMischief",
+    "MultiTurnStrategy",
+    # Poisoned RAG documents
+    "PoisonedDocGenerator",
+    "PoisonedDocument",
+    "PoisonType",
+    # Industry compliance
+    "Industry",
+    "IndustryComplianceReport",
+    "IndustryComplianceRunner",
+    "IndustryPlugin",
+    # Adaptive guardrails
+    "AdaptiveGuardrail",
+    "AdaptiveValidationResult",
+    "GuardrailRule",
+    # DPO export
+    "DPODataset",
+    "DPOExporter",
+    "DPOPair",
+    "DPOStats",
+    "ExportFormat",
+    # Model security audit
+    "AuditResult",
+    "ModelAuditor",
+    "SecurityFinding",
+    "SeverityLevel",
+    # CI/CD integration
+    "GitHubActionGenerator",
+    "GitLabCIGenerator",
     # Version
     "__version__",
 ]

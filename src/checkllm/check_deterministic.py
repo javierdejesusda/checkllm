@@ -233,3 +233,122 @@ class DeterministicChecksMixin:
         self.results.append(result)
         self._fire_after_hook(result)
         return result
+
+    def icontains(self, output: str, substring: str) -> CheckResult:
+        self._fire_before_hook("icontains", {"output": output, "substring": substring})
+        result = self._deterministic.icontains(output, substring)
+        self.results.append(result)
+        self._fire_after_hook(result)
+        return result
+
+    def icontains_any(self, output: str, substrings: list[str]) -> CheckResult:
+        self._fire_before_hook("icontains_any", {"output": output, "substrings": substrings})
+        result = self._deterministic.icontains_any(output, substrings)
+        self.results.append(result)
+        self._fire_after_hook(result)
+        return result
+
+    def icontains_all(self, output: str, substrings: list[str]) -> CheckResult:
+        self._fire_before_hook("icontains_all", {"output": output, "substrings": substrings})
+        result = self._deterministic.icontains_all(output, substrings)
+        self.results.append(result)
+        self._fire_after_hook(result)
+        return result
+
+    def is_html(self, output: str) -> CheckResult:
+        self._fire_before_hook("is_html", {"output": output})
+        result = self._deterministic.is_html(output)
+        self.results.append(result)
+        self._fire_after_hook(result)
+        return result
+
+    def contains_html(self, output: str) -> CheckResult:
+        self._fire_before_hook("contains_html", {"output": output})
+        result = self._deterministic.contains_html(output)
+        self.results.append(result)
+        self._fire_after_hook(result)
+        return result
+
+    def is_xml(self, output: str) -> CheckResult:
+        self._fire_before_hook("is_xml", {"output": output})
+        result = self._deterministic.is_xml(output)
+        self.results.append(result)
+        self._fire_after_hook(result)
+        return result
+
+    def contains_xml(self, output: str) -> CheckResult:
+        self._fire_before_hook("contains_xml", {"output": output})
+        result = self._deterministic.contains_xml(output)
+        self.results.append(result)
+        self._fire_after_hook(result)
+        return result
+
+    def is_refusal(self, output: str) -> CheckResult:
+        self._fire_before_hook("is_refusal", {"output": output})
+        result = self._deterministic.is_refusal(output)
+        self.results.append(result)
+        self._fire_after_hook(result)
+        return result
+
+    def levenshtein(self, output: str, reference: str, threshold: float = 0.7) -> CheckResult:
+        self._fire_before_hook("levenshtein", {"output": output, "reference": reference, "threshold": threshold})
+        result = self._deterministic.levenshtein(output, reference, threshold)
+        self.results.append(result)
+        self._fire_after_hook(result)
+        return result
+
+    def meteor(self, output: str, reference: str, threshold: float = 0.5) -> CheckResult:
+        self._fire_before_hook("meteor", {"output": output, "reference": reference, "threshold": threshold})
+        result = self._deterministic.meteor(output, reference, threshold)
+        self.results.append(result)
+        self._fire_after_hook(result)
+        return result
+
+    def perplexity_check(self, output: str, max_perplexity: float = 50.0) -> CheckResult:
+        self._fire_before_hook("perplexity_check", {"output": output, "max_perplexity": max_perplexity})
+        result = self._deterministic.perplexity_check(output, max_perplexity)
+        self.results.append(result)
+        self._fire_after_hook(result)
+        return result
+
+    def is_valid_yaml(self, output: str) -> CheckResult:
+        self._fire_before_hook("is_valid_yaml", {"output": output})
+        result = self._deterministic.is_valid_yaml(output)
+        self.results.append(result)
+        self._fire_after_hook(result)
+        return result
+
+    def has_citations(self, output: str, min_count: int = 1) -> CheckResult:
+        self._fire_before_hook("has_citations", {"output": output, "min_count": min_count})
+        result = self._deterministic.has_citations(output, min_count)
+        self.results.append(result)
+        self._fire_after_hook(result)
+        return result
+
+    def no_repetition(self, output: str, max_ngram_repeat: int = 3) -> CheckResult:
+        self._fire_before_hook("no_repetition", {"output": output, "max_ngram_repeat": max_ngram_repeat})
+        result = self._deterministic.no_repetition(output, max_ngram_repeat)
+        self.results.append(result)
+        self._fire_after_hook(result)
+        return result
+
+    def semantic_similarity(self, output: str, reference: str, threshold: float = 0.7) -> CheckResult:
+        self._fire_before_hook("semantic_similarity", {"output": output, "reference": reference, "threshold": threshold})
+        result = self._deterministic.semantic_similarity(output, reference, threshold)
+        self.results.append(result)
+        self._fire_after_hook(result)
+        return result
+
+    def is_valid_url(self, output: str) -> CheckResult:
+        self._fire_before_hook("is_valid_url", {"output": output})
+        result = self._deterministic.is_valid_url(output)
+        self.results.append(result)
+        self._fire_after_hook(result)
+        return result
+
+    def has_structure(self, output: str, elements: list[str]) -> CheckResult:
+        self._fire_before_hook("has_structure", {"output": output, "elements": elements})
+        result = self._deterministic.has_structure(output, elements)
+        self.results.append(result)
+        self._fire_after_hook(result)
+        return result

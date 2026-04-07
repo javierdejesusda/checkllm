@@ -1,6 +1,5 @@
 """Verify the checkllm hook system works with pluggy."""
 import pluggy
-import pytest
 
 from checkllm.hookspecs import CheckllmHookSpec, hookimpl
 from checkllm.models import CheckResult

@@ -6,20 +6,30 @@ from typing import Any, Callable
 
 from checkllm.metrics.answer_completeness import AnswerCompletenessMetric
 from checkllm.metrics.bias import BiasMetric
+from checkllm.metrics.citation_accuracy import CitationAccuracyMetric
+from checkllm.metrics.code_correctness import CodeCorrectnessMetric
+from checkllm.metrics.comparative_quality import ComparativeQualityMetric
 from checkllm.metrics.consistency import ConsistencyMetric
+from checkllm.metrics.context_entity_recall import ContextEntityRecallMetric
 from checkllm.metrics.context_relevance import ContextRelevanceMetric
 from checkllm.metrics.contextual_precision import ContextualPrecisionMetric
 from checkllm.metrics.contextual_recall import ContextualRecallMetric
 from checkllm.metrics.conversation_completeness import ConversationCompletenessMetric
+from checkllm.metrics.factual_correctness import FactualCorrectnessMetric
 from checkllm.metrics.faithfulness import FaithfulnessMetric
 from checkllm.metrics.g_eval import GEvalMetric
 from checkllm.metrics.groundedness import GroundednessMetric
+from checkllm.metrics.instruction_completeness import InstructionCompletenessMetric
 from checkllm.metrics.instruction_following import InstructionFollowingMetric
 from checkllm.metrics.knowledge_retention import KnowledgeRetentionMetric
+from checkllm.metrics.noise_sensitivity import NoiseSensitivityMetric
+from checkllm.metrics.response_completeness import ResponseCompletenessMetric
 from checkllm.metrics.role_adherence import RoleAdherenceMetric
+from checkllm.metrics.sql_equivalence import SQLEquivalenceMetric
 from checkllm.metrics.summarization import SummarizationMetric
 from checkllm.metrics.task_completion import TaskCompletionMetric
 from checkllm.metrics.tool_accuracy import ToolAccuracyMetric
+from checkllm.metrics.topic_adherence import TopicAdherenceMetric
 from checkllm.models import CheckResult
 
 logger = logging.getLogger("checkllm.metrics")

@@ -1,4 +1,3 @@
-from io import StringIO
 
 from checkllm.models import CheckResult
 from checkllm.regression.compare import RegressionItem

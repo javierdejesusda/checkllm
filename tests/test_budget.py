@@ -1,11 +1,10 @@
 """Tests for cost budget enforcement."""
-from unittest.mock import AsyncMock
 
 import pytest
 
 from checkllm.check import CheckCollector
 from checkllm.config import CheckllmConfig
-from checkllm.models import CheckResult, JudgeResponse
+from checkllm.models import CheckResult
 
 
 class TestCostBudget:

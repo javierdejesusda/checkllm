@@ -18,7 +18,6 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-from checkllm.judge import JudgeBackend
 from checkllm.models import JudgeResponse
 
 

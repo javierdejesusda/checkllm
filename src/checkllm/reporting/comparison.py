@@ -1,7 +1,7 @@
 """A/B comparison reports — compare two sets of check results side-by-side."""
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from io import StringIO
 from pathlib import Path
 

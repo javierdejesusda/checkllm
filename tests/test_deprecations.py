@@ -1,7 +1,6 @@
 """Verify deprecation warning infrastructure."""
 import warnings
 
-import pytest
 
 from checkllm.deprecations import (
     CheckllmDeprecationWarning,

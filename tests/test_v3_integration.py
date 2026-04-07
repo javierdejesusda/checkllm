@@ -1,13 +1,10 @@
 """Integration tests for v3.0-alpha features."""
-from unittest.mock import patch
-import pytest
 from checkllm.check import CheckCollector
 from checkllm.config import CheckllmConfig
 from checkllm.testing import MockJudge
-from checkllm.discovery import detect_judge_backend, format_no_judge_error
+from checkllm.discovery import format_no_judge_error
 from checkllm.errors import format_budget_error, format_missing_dependency_error
-from checkllm.estimator import estimate_check_cost, CostEstimate
-from checkllm.chain import AssertionChain
+from checkllm.estimator import estimate_check_cost
 
 
 def test_full_fluent_chain_with_mock_judge():

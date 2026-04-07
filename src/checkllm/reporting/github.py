@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
 
 from checkllm.models import CheckResult
 from checkllm.reporting.comparison import ComparisonReport, _paired_rows, _summary_stats
@@ -45,7 +44,7 @@ def generate_pr_comment(
     for test_name, checks in results.items():
         test_failed = sum(1 for c in checks if not c.passed)
         badge = "✅ PASS" if test_failed == 0 else f"❌ {test_failed} FAILED"
-        lines.append(f"<details>")
+        lines.append("<details>")
         lines.append(f"<summary><strong>{test_name}</strong> — {badge}</summary>")
         lines.append("")
         lines.append("| Status | Metric | Score | Reasoning | Cost |")

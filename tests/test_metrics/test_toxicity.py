@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock
 import pytest
 
 from checkllm.metrics.toxicity import ToxicityMetric
-from checkllm.models import CheckResult, JudgeResponse
+from checkllm.models import JudgeResponse
 
 
 class TestToxicityMetric:

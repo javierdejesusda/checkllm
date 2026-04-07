@@ -1,5 +1,4 @@
 """Tests for the judge response caching system."""
-from pathlib import Path
 
 import pytest
 

@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 from checkllm.config import CheckllmConfig, load_config

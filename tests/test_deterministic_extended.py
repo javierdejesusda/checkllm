@@ -1,5 +1,4 @@
 """Tests for new deterministic checks: similarity, readability, word_count, etc."""
-import pytest
 
 from checkllm.deterministic import DeterministicChecks, _levenshtein_ratio, _flesch_kincaid_grade
 

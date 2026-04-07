@@ -100,6 +100,74 @@ class AssertionChain:
         self._collector.none_of(self._output, substrings)
         return self
 
+    def icontains(self, substring: str) -> AssertionChain:
+        self._collector.icontains(self._output, substring)
+        return self
+
+    def icontains_any(self, substrings: list[str]) -> AssertionChain:
+        self._collector.icontains_any(self._output, substrings)
+        return self
+
+    def icontains_all(self, substrings: list[str]) -> AssertionChain:
+        self._collector.icontains_all(self._output, substrings)
+        return self
+
+    def is_html(self) -> AssertionChain:
+        self._collector.is_html(self._output)
+        return self
+
+    def contains_html(self) -> AssertionChain:
+        self._collector.contains_html(self._output)
+        return self
+
+    def is_xml(self) -> AssertionChain:
+        self._collector.is_xml(self._output)
+        return self
+
+    def contains_xml(self) -> AssertionChain:
+        self._collector.contains_xml(self._output)
+        return self
+
+    def is_refusal(self) -> AssertionChain:
+        self._collector.is_refusal(self._output)
+        return self
+
+    def levenshtein(self, reference: str, threshold: float = 0.7) -> AssertionChain:
+        self._collector.levenshtein(self._output, reference, threshold)
+        return self
+
+    def meteor(self, reference: str, threshold: float = 0.5) -> AssertionChain:
+        self._collector.meteor(self._output, reference, threshold)
+        return self
+
+    def perplexity_check(self, max_perplexity: float = 50.0) -> AssertionChain:
+        self._collector.perplexity_check(self._output, max_perplexity)
+        return self
+
+    def is_valid_yaml(self) -> AssertionChain:
+        self._collector.is_valid_yaml(self._output)
+        return self
+
+    def has_citations(self, min_count: int = 1) -> AssertionChain:
+        self._collector.has_citations(self._output, min_count)
+        return self
+
+    def no_repetition(self, max_ngram_repeat: int = 3) -> AssertionChain:
+        self._collector.no_repetition(self._output, max_ngram_repeat)
+        return self
+
+    def semantic_similarity(self, reference: str, threshold: float = 0.7) -> AssertionChain:
+        self._collector.semantic_similarity(self._output, reference, threshold)
+        return self
+
+    def is_valid_url(self) -> AssertionChain:
+        self._collector.is_valid_url(self._output)
+        return self
+
+    def has_structure(self, elements: list[str]) -> AssertionChain:
+        self._collector.has_structure(self._output, elements)
+        return self
+
     # --- LLM judge checks ---
 
     def scores_above(self, metric: str, threshold: float, **kwargs: Any) -> AssertionChain:

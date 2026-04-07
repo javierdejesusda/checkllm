@@ -1,5 +1,4 @@
 """Tests for the interactive checkllm init command."""
-from pathlib import Path
 from unittest.mock import patch
 from typer.testing import CliRunner
 from checkllm.cli import app

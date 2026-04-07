@@ -1,7 +1,9 @@
 """Multi-provider judge backends for checkllm.
 
 Provides judge implementations for Google Gemini, Azure OpenAI, Ollama,
-LiteLLM, and arbitrary HTTP endpoints, plus a ``create_judge`` factory.
+LiteLLM, Cohere, Mistral, AWS Bedrock, and OpenAI-compatible endpoints
+(DeepSeek, Groq, Together, Fireworks, Perplexity, vLLM, OpenRouter, X.AI),
+plus a ``create_judge`` factory.
 """
 
 from __future__ import annotations
@@ -556,7 +558,549 @@ class CustomHTTPJudge:
         return f"CustomHTTPJudge(url={self._url!r})"
 
 
-# ---------------------------------------------------------------------------
+class OpenAICompatibleJudge:
+    """Judge backend for any OpenAI-compatible API endpoint.
+
+    Uses httpx to call the ``/chat/completions`` endpoint directly, avoiding
+    the need for provider-specific SDKs.  Subclasses only need to set
+    defaults for *model*, *api_key*, and *base_url*.
+    """
+
+    def __init__(
+        self,
+        model: str,
+        api_key: str | None,
+        base_url: str,
+        timeout: float = 60.0,
+        extra_headers: dict[str, str] | None = None,
+    ) -> None:
+        self.model = model
+        self.total_cost: float = 0.0
+        self.last_cost: float = 0.0
+        self._api_key = api_key
+        self._base_url = base_url.rstrip("/")
+        self._timeout = timeout
+        self._extra_headers = extra_headers or {}
+
+    @_transient_retry
+    async def evaluate(
+        self, prompt: str, system_prompt: str | None = None
+    ) -> JudgeResponse:
+        """Send a chat-completion request and parse the judge response."""
+        import httpx
+
+        messages: list[dict[str, str]] = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({
+            "role": "user",
+            "content": (
+                f"{prompt}\n\n"
+                'Respond with JSON only: '
+                '{"score": <float 0-1>, "reasoning": "<explanation>"}'
+            ),
+        })
+
+        headers: dict[str, str] = {
+            "Content-Type": "application/json",
+            **self._extra_headers,
+        }
+        if self._api_key:
+            headers["Authorization"] = f"Bearer {self._api_key}"
+
+        payload: dict[str, Any] = {
+            "model": self.model,
+            "messages": messages,
+            "temperature": 0.0,
+        }
+
+        url = f"{self._base_url}/chat/completions"
+        async with httpx.AsyncClient(timeout=self._timeout) as client:
+            resp = await client.post(url, json=payload, headers=headers)
+            resp.raise_for_status()
+            data = resp.json()
+
+        raw_output = data["choices"][0]["message"]["content"] or ""
+
+        cost = 0.0
+        usage = data.get("usage")
+        if usage:
+            prompt_tokens = usage.get("prompt_tokens", 0)
+            completion_tokens = usage.get("completion_tokens", 0)
+            cost = estimate_cost(self.model, prompt_tokens, completion_tokens)
+        self.last_cost = cost
+        self.total_cost += cost
+
+        score, reasoning = _parse_judge_json(raw_output)
+
+        return JudgeResponse(
+            score=score,
+            reasoning=reasoning,
+            raw_output=raw_output,
+            cost=cost,
+        )
+
+    def __repr__(self) -> str:
+        return (
+            f"{type(self).__name__}(model={self.model!r}, "
+            f"base_url={self._base_url!r}, "
+            f"total_cost=${self.total_cost:.4f})"
+        )
+
+
+class DeepSeekJudge(OpenAICompatibleJudge):
+    """DeepSeek judge using their OpenAI-compatible API."""
+
+    def __init__(
+        self,
+        model: str = "deepseek-chat",
+        api_key: str | None = None,
+        **kwargs: Any,
+    ) -> None:
+        resolved_key = api_key or os.environ.get("DEEPSEEK_API_KEY")
+        if not resolved_key:
+            raise JudgeConfigError(
+                "DeepSeek API key not found. Set DEEPSEEK_API_KEY or "
+                "pass api_key= to DeepSeekJudge()."
+            )
+        super().__init__(
+            model=model,
+            api_key=resolved_key,
+            base_url="https://api.deepseek.com/v1",
+            **kwargs,
+        )
+
+
+class GroqJudge(OpenAICompatibleJudge):
+    """Groq judge using their OpenAI-compatible API."""
+
+    def __init__(
+        self,
+        model: str = "llama-3.3-70b-versatile",
+        api_key: str | None = None,
+        **kwargs: Any,
+    ) -> None:
+        resolved_key = api_key or os.environ.get("GROQ_API_KEY")
+        if not resolved_key:
+            raise JudgeConfigError(
+                "Groq API key not found. Set GROQ_API_KEY or "
+                "pass api_key= to GroqJudge()."
+            )
+        super().__init__(
+            model=model,
+            api_key=resolved_key,
+            base_url="https://api.groq.com/openai/v1",
+            **kwargs,
+        )
+
+
+class TogetherJudge(OpenAICompatibleJudge):
+    """Together AI judge using their OpenAI-compatible API."""
+
+    def __init__(
+        self,
+        model: str = "meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo",
+        api_key: str | None = None,
+        **kwargs: Any,
+    ) -> None:
+        resolved_key = api_key or os.environ.get("TOGETHER_API_KEY")
+        if not resolved_key:
+            raise JudgeConfigError(
+                "Together API key not found. Set TOGETHER_API_KEY or "
+                "pass api_key= to TogetherJudge()."
+            )
+        super().__init__(
+            model=model,
+            api_key=resolved_key,
+            base_url="https://api.together.xyz/v1",
+            **kwargs,
+        )
+
+
+class FireworksJudge(OpenAICompatibleJudge):
+    """Fireworks AI judge using their OpenAI-compatible API."""
+
+    def __init__(
+        self,
+        model: str = "accounts/fireworks/models/llama-v3p1-70b-instruct",
+        api_key: str | None = None,
+        **kwargs: Any,
+    ) -> None:
+        resolved_key = api_key or os.environ.get("FIREWORKS_API_KEY")
+        if not resolved_key:
+            raise JudgeConfigError(
+                "Fireworks API key not found. Set FIREWORKS_API_KEY or "
+                "pass api_key= to FireworksJudge()."
+            )
+        super().__init__(
+            model=model,
+            api_key=resolved_key,
+            base_url="https://api.fireworks.ai/inference/v1",
+            **kwargs,
+        )
+
+
+class PerplexityJudge(OpenAICompatibleJudge):
+    """Perplexity AI judge using their OpenAI-compatible API."""
+
+    def __init__(
+        self,
+        model: str = "llama-3.1-sonar-large-128k-online",
+        api_key: str | None = None,
+        **kwargs: Any,
+    ) -> None:
+        resolved_key = api_key or os.environ.get("PERPLEXITY_API_KEY")
+        if not resolved_key:
+            raise JudgeConfigError(
+                "Perplexity API key not found. Set PERPLEXITY_API_KEY or "
+                "pass api_key= to PerplexityJudge()."
+            )
+        super().__init__(
+            model=model,
+            api_key=resolved_key,
+            base_url="https://api.perplexity.ai",
+            **kwargs,
+        )
+
+
+class VLLMJudge(OpenAICompatibleJudge):
+    """Judge backed by a local vLLM server (OpenAI-compatible API)."""
+
+    def __init__(
+        self,
+        model: str = "default",
+        api_key: str | None = None,
+        base_url: str | None = None,
+        **kwargs: Any,
+    ) -> None:
+        resolved_url = (
+            base_url
+            or os.environ.get("VLLM_BASE_URL")
+            or "http://localhost:8000/v1"
+        )
+        super().__init__(
+            model=model,
+            api_key=api_key,
+            base_url=resolved_url,
+            **kwargs,
+        )
+
+
+class OpenRouterJudge(OpenAICompatibleJudge):
+    """OpenRouter judge using their OpenAI-compatible API."""
+
+    def __init__(
+        self,
+        model: str = "anthropic/claude-3.5-sonnet",
+        api_key: str | None = None,
+        **kwargs: Any,
+    ) -> None:
+        resolved_key = api_key or os.environ.get("OPENROUTER_API_KEY")
+        if not resolved_key:
+            raise JudgeConfigError(
+                "OpenRouter API key not found. Set OPENROUTER_API_KEY or "
+                "pass api_key= to OpenRouterJudge()."
+            )
+        super().__init__(
+            model=model,
+            api_key=resolved_key,
+            base_url="https://openrouter.ai/api/v1",
+            **kwargs,
+        )
+
+
+class XAIJudge(OpenAICompatibleJudge):
+    """X.AI / Grok judge using their OpenAI-compatible API."""
+
+    def __init__(
+        self,
+        model: str = "grok-2-latest",
+        api_key: str | None = None,
+        **kwargs: Any,
+    ) -> None:
+        resolved_key = api_key or os.environ.get("XAI_API_KEY")
+        if not resolved_key:
+            raise JudgeConfigError(
+                "X.AI API key not found. Set XAI_API_KEY or "
+                "pass api_key= to XAIJudge()."
+            )
+        super().__init__(
+            model=model,
+            api_key=resolved_key,
+            base_url="https://api.x.ai/v1",
+            **kwargs,
+        )
+
+
+class CohereJudge:
+    """Cohere-based LLM judge using the ``cohere`` SDK."""
+
+    def __init__(
+        self,
+        model: str = "command-r-plus",
+        api_key: str | None = None,
+    ) -> None:
+        self.model = model
+        self.total_cost: float = 0.0
+        self.last_cost: float = 0.0
+
+        resolved_key = api_key or os.environ.get("COHERE_API_KEY")
+        if not resolved_key:
+            raise JudgeConfigError(
+                "Cohere API key not found. Set COHERE_API_KEY or "
+                "pass api_key= to CohereJudge()."
+            )
+
+        try:
+            import cohere  # type: ignore[import-untyped]
+        except ImportError:
+            raise JudgeConfigError(
+                "cohere package not installed. Install it with:\n"
+                "  pip install cohere"
+            )
+
+        self._client = cohere.AsyncClientV2(api_key=resolved_key)
+
+    @_transient_retry
+    async def evaluate(
+        self, prompt: str, system_prompt: str | None = None
+    ) -> JudgeResponse:
+        """Evaluate using the Cohere chat endpoint."""
+        messages: list[dict[str, str]] = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({
+            "role": "user",
+            "content": (
+                f"{prompt}\n\n"
+                'Respond with JSON only: '
+                '{"score": <float 0-1>, "reasoning": "<explanation>"}'
+            ),
+        })
+
+        response = await self._client.chat(
+            model=self.model,
+            messages=messages,
+            temperature=0.0,
+        )
+
+        raw_output = ""
+        if response.message and response.message.content:
+            raw_output = response.message.content[0].text or ""
+
+        cost = 0.0
+        usage = getattr(response, "usage", None)
+        if usage:
+            billed_input = getattr(usage, "billed_units", None)
+            if billed_input:
+                input_tokens = getattr(billed_input, "input_tokens", 0) or 0
+                output_tokens = getattr(billed_input, "output_tokens", 0) or 0
+                cost = estimate_cost(self.model, input_tokens, output_tokens)
+        self.last_cost = cost
+        self.total_cost += cost
+
+        score, reasoning = _parse_judge_json(raw_output)
+
+        return JudgeResponse(
+            score=score,
+            reasoning=reasoning,
+            raw_output=raw_output,
+            cost=cost,
+        )
+
+    def __repr__(self) -> str:
+        return (
+            f"CohereJudge(model={self.model!r}, "
+            f"total_cost=${self.total_cost:.4f})"
+        )
+
+
+class MistralJudge:
+    """Mistral AI judge using the ``mistralai`` SDK."""
+
+    def __init__(
+        self,
+        model: str = "mistral-large-latest",
+        api_key: str | None = None,
+    ) -> None:
+        self.model = model
+        self.total_cost: float = 0.0
+        self.last_cost: float = 0.0
+
+        resolved_key = api_key or os.environ.get("MISTRAL_API_KEY")
+        if not resolved_key:
+            raise JudgeConfigError(
+                "Mistral API key not found. Set MISTRAL_API_KEY or "
+                "pass api_key= to MistralJudge()."
+            )
+
+        try:
+            from mistralai import Mistral  # type: ignore[import-untyped]
+        except ImportError:
+            raise JudgeConfigError(
+                "mistralai package not installed. Install it with:\n"
+                "  pip install mistralai"
+            )
+
+        self._client = Mistral(api_key=resolved_key)
+
+    @_transient_retry
+    async def evaluate(
+        self, prompt: str, system_prompt: str | None = None
+    ) -> JudgeResponse:
+        """Evaluate using the Mistral chat completions endpoint."""
+        messages: list[dict[str, str]] = []
+        if system_prompt:
+            messages.append({"role": "system", "content": system_prompt})
+        messages.append({
+            "role": "user",
+            "content": (
+                f"{prompt}\n\n"
+                'Respond with JSON only: '
+                '{"score": <float 0-1>, "reasoning": "<explanation>"}'
+            ),
+        })
+
+        response = await self._client.chat.complete_async(
+            model=self.model,
+            messages=messages,
+            temperature=0.0,
+        )
+
+        raw_output = ""
+        if response and response.choices:
+            raw_output = response.choices[0].message.content or ""
+
+        cost = 0.0
+        if response and response.usage:
+            cost = estimate_cost(
+                self.model,
+                response.usage.prompt_tokens,
+                response.usage.completion_tokens,
+            )
+        self.last_cost = cost
+        self.total_cost += cost
+
+        score, reasoning = _parse_judge_json(raw_output)
+
+        return JudgeResponse(
+            score=score,
+            reasoning=reasoning,
+            raw_output=raw_output,
+            cost=cost,
+        )
+
+    def __repr__(self) -> str:
+        return (
+            f"MistralJudge(model={self.model!r}, "
+            f"total_cost=${self.total_cost:.4f})"
+        )
+
+
+class BedrockJudge:
+    """AWS Bedrock judge using ``boto3``."""
+
+    def __init__(
+        self,
+        model: str = "anthropic.claude-3-sonnet-20240229-v1:0",
+        region: str | None = None,
+    ) -> None:
+        self.model = model
+        self.total_cost: float = 0.0
+        self.last_cost: float = 0.0
+
+        try:
+            import boto3  # type: ignore[import-untyped]
+        except ImportError:
+            raise JudgeConfigError(
+                "boto3 package not installed. Install it with:\n"
+                "  pip install boto3"
+            )
+
+        resolved_region = region or os.environ.get("AWS_REGION", "us-east-1")
+        self._client = boto3.client(
+            "bedrock-runtime", region_name=resolved_region
+        )
+
+    @_transient_retry
+    async def evaluate(
+        self, prompt: str, system_prompt: str | None = None
+    ) -> JudgeResponse:
+        """Evaluate using AWS Bedrock's invoke-model API.
+
+        Note: boto3 is synchronous, so we run the call in the current thread
+        to keep the interface async-compatible.
+        """
+        import asyncio
+
+        loop = asyncio.get_event_loop()
+        return await loop.run_in_executor(
+            None, self._invoke, prompt, system_prompt
+        )
+
+    def _invoke(
+        self, prompt: str, system_prompt: str | None
+    ) -> JudgeResponse:
+        """Synchronous Bedrock invocation."""
+        messages = []
+        if system_prompt:
+            messages.append({"role": "user", "content": system_prompt})
+            messages.append({"role": "assistant", "content": "Understood."})
+        messages.append({
+            "role": "user",
+            "content": (
+                f"{prompt}\n\n"
+                'Respond with JSON only: '
+                '{"score": <float 0-1>, "reasoning": "<explanation>"}'
+            ),
+        })
+
+        body: dict[str, Any] = {
+            "anthropic_version": "bedrock-2023-05-31",
+            "max_tokens": 1024,
+            "temperature": 0.0,
+            "messages": messages,
+        }
+
+        response = self._client.invoke_model(
+            modelId=self.model,
+            contentType="application/json",
+            accept="application/json",
+            body=json.dumps(body),
+        )
+
+        response_body = json.loads(response["body"].read())
+        raw_output = ""
+        if response_body.get("content"):
+            raw_output = response_body["content"][0].get("text", "")
+
+        cost = 0.0
+        usage = response_body.get("usage")
+        if usage:
+            cost = estimate_cost(
+                self.model,
+                usage.get("input_tokens", 0),
+                usage.get("output_tokens", 0),
+            )
+        self.last_cost = cost
+        self.total_cost += cost
+
+        score, reasoning = _parse_judge_json(raw_output)
+
+        return JudgeResponse(
+            score=score,
+            reasoning=reasoning,
+            raw_output=raw_output,
+            cost=cost,
+        )
+
+    def __repr__(self) -> str:
+        return (
+            f"BedrockJudge(model={self.model!r}, "
+            f"total_cost=${self.total_cost:.4f})"
+        )
+
+
 # Factory
 # ---------------------------------------------------------------------------
 
@@ -567,7 +1111,9 @@ def create_judge(backend: str, **kwargs: Any) -> JudgeBackend:
     ----------
     backend:
         One of "openai", "anthropic", "gemini", "azure", "ollama",
-        "litellm", or "custom".
+        "litellm", "custom", "cohere", "mistral", "deepseek", "groq",
+        "together", "fireworks", "perplexity", "vllm", "bedrock",
+        "openrouter", or "xai".
     **kwargs:
         Forwarded to the backend constructor.
 
@@ -585,6 +1131,17 @@ def create_judge(backend: str, **kwargs: Any) -> JudgeBackend:
         "ollama": OllamaJudge,
         "litellm": LiteLLMJudge,
         "custom": CustomHTTPJudge,
+        "cohere": CohereJudge,
+        "mistral": MistralJudge,
+        "deepseek": DeepSeekJudge,
+        "groq": GroqJudge,
+        "together": TogetherJudge,
+        "fireworks": FireworksJudge,
+        "perplexity": PerplexityJudge,
+        "vllm": VLLMJudge,
+        "bedrock": BedrockJudge,
+        "openrouter": OpenRouterJudge,
+        "xai": XAIJudge,
     }
 
     cls = _backends.get(backend)

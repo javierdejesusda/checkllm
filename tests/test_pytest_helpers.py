@@ -1,5 +1,4 @@
 """Tests for pytest helper fixtures."""
-import pytest
 from checkllm.pytest_helpers import _BudgetTracker
 from checkllm.check import CheckCollector
 from checkllm.config import CheckllmConfig

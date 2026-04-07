@@ -2,7 +2,6 @@
 import pytest
 
 from checkllm.testing import MockJudge, make_collector, assert_all_passed, assert_score_above
-from checkllm.models import JudgeResponse
 
 
 class TestMockJudge:

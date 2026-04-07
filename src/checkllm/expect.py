@@ -15,7 +15,7 @@ Usage::
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any, Type
+from typing import TYPE_CHECKING, Type
 
 from pydantic import BaseModel
 

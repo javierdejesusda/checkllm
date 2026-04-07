@@ -2,7 +2,7 @@
 from unittest.mock import patch, MagicMock
 import pluggy
 import pytest
-from checkllm.metrics import MetricRegistry, _global_registry
+from checkllm.metrics import MetricRegistry
 from checkllm.models import CheckResult
 
 
