@@ -11,7 +11,7 @@ from pydantic import BaseModel
 from checkllm.cache import JudgeCache, _cache_key
 from checkllm.config import CheckllmConfig
 from checkllm.deterministic import DeterministicChecks
-from checkllm.judge import JudgeBackend, JudgeConfigError, OpenAIJudge
+from checkllm.judge import JudgeBackend, JudgeConfigError
 from checkllm.logging_config import setup_logging
 from checkllm.metrics.answer_completeness import AnswerCompletenessMetric
 from checkllm.metrics.bias import BiasMetric
@@ -133,6 +133,7 @@ class CheckCollector:
                 from checkllm.providers import AzureOpenAIJudge
                 self._judge = AzureOpenAIJudge(deployment=model)
             else:
+                from checkllm.judge import OpenAIJudge
                 self._judge = OpenAIJudge(model=model)
         return self._judge
 

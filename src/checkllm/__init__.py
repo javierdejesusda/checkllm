@@ -1,5 +1,6 @@
 """checkllm - Test LLM-powered applications with the same rigor as traditional software."""
 
+# Always-available imports (no openai dependency)
 from checkllm.agents import (
     AgentStep,
     AgentTestCase,
@@ -9,32 +10,10 @@ from checkllm.agents import (
     validate_tool_order,
     validate_trajectory_length,
 )
-from checkllm.api import Evaluator, check_output, evaluate, parse_check_shorthand
-from checkllm.batch import BatchEvaluator, BatchJob, BatchStatus
-from checkllm.cache import JudgeCache
 from checkllm.chain import AssertionChain
-from checkllm.consensus import AggregationStrategy, ConsensusJudge, ConsensusResult, consensus
 from checkllm.conversation import ConversationalTestCase, Turn
 from checkllm.datasets.case import Case
-from checkllm.discovery import detect_judge_backend, format_no_judge_error
-from checkllm.embeddings import (
-    CachedEmbeddings,
-    OpenAIEmbeddings,
-    batch_semantic_similarity,
-    cosine_similarity,
-    semantic_similarity,
-)
-from checkllm.engines import (
-    AsyncEngine,
-    EngineType,
-    HybridEngine,
-    ProcessPoolEngine,
-    ThreadPoolEngine,
-    create_engine,
-)
 from checkllm.errors import format_budget_error, format_missing_dependency_error
-from checkllm.estimator import CostEstimate, estimate_check_cost, estimate_from_test_file
-from checkllm.experiments import ExperimentComparison, ExperimentRun, ExperimentTracker
 from checkllm.guardrails import (
     CheckSpec,
     Guard,
@@ -43,26 +22,9 @@ from checkllm.guardrails import (
     ValidationResult,
     guardrail,
 )
-from checkllm.history import RunHistory
-from checkllm.judge import AnthropicJudge, JudgeBackend, JudgeConfigError, OpenAIJudge
+from checkllm.judge import JudgeBackend, JudgeConfigError
 from checkllm.metrics import metric
 from checkllm.models import CheckFailedError, CheckResult, JudgeResponse
-from checkllm.providers import (
-    AzureOpenAIJudge,
-    CustomHTTPJudge,
-    GeminiJudge,
-    LiteLLMJudge,
-    OllamaJudge,
-    create_judge,
-)
-from checkllm.pytest_plugin import dataset
-from checkllm.redteam import (
-    AttackResult,
-    AttackStrategy,
-    RedTeamer,
-    VulnerabilityReport,
-    VulnerabilityType,
-)
 from checkllm.resilience import (
     CircuitBreaker,
     CircuitOpenError,
@@ -72,11 +34,61 @@ from checkllm.resilience import (
     TokenBucketRateLimiter,
     with_retry,
 )
-from checkllm.streaming import StreamingCheckpoint, StreamingEvaluator
-from checkllm.synthesizer import EvolutionStrategy, SynthesisConfig, Synthesizer
-from checkllm.testing import MockJudge, assert_all_passed, assert_score_above, make_collector
 from checkllm.tracing import Span, Tracer, get_tracer, trace
-from checkllm.yaml_config import EvalConfig, YamlEvalRunner, load_eval_config
+
+# Imports that may require optional dependencies (openai, etc.)
+try:
+    from checkllm.api import Evaluator, check_output, evaluate, parse_check_shorthand
+    from checkllm.batch import BatchEvaluator, BatchJob, BatchStatus
+    from checkllm.cache import JudgeCache
+    from checkllm.consensus import (
+        AggregationStrategy,
+        ConsensusJudge,
+        ConsensusResult,
+        consensus,
+    )
+    from checkllm.discovery import detect_judge_backend, format_no_judge_error
+    from checkllm.embeddings import (
+        CachedEmbeddings,
+        OpenAIEmbeddings,
+        batch_semantic_similarity,
+        cosine_similarity,
+        semantic_similarity,
+    )
+    from checkllm.engines import (
+        AsyncEngine,
+        EngineType,
+        HybridEngine,
+        ProcessPoolEngine,
+        ThreadPoolEngine,
+        create_engine,
+    )
+    from checkllm.estimator import CostEstimate, estimate_check_cost, estimate_from_test_file
+    from checkllm.experiments import ExperimentComparison, ExperimentRun, ExperimentTracker
+    from checkllm.history import RunHistory
+    from checkllm.judge import AnthropicJudge, OpenAIJudge
+    from checkllm.providers import (
+        AzureOpenAIJudge,
+        CustomHTTPJudge,
+        GeminiJudge,
+        LiteLLMJudge,
+        OllamaJudge,
+        create_judge,
+    )
+    from checkllm.pytest_plugin import dataset
+    from checkllm.redteam import (
+        AttackResult,
+        AttackStrategy,
+        RedTeamer,
+        VulnerabilityReport,
+        VulnerabilityType,
+    )
+    from checkllm.streaming import StreamingCheckpoint, StreamingEvaluator
+    from checkllm.synthesizer import EvolutionStrategy, SynthesisConfig, Synthesizer
+    from checkllm.testing import MockJudge, assert_all_passed, assert_score_above, make_collector
+    from checkllm.yaml_config import EvalConfig, YamlEvalRunner, load_eval_config
+except ImportError:
+    pass  # Optional dependencies not installed
 
 __version__ = "3.2.0"
 
