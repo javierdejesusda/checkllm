@@ -226,7 +226,32 @@ class CheckCollector(DeterministicChecksMixin, JudgeChecksMixin):
         self._cache.put(key, metric_name, model, result)
 
         self.results.append(result)
+        self._fire_after_hook(result)
         return result
+
+    def _fire_before_hook(self, metric_name: str, kwargs: dict) -> dict:
+        """Fire the before_check hook, returning potentially modified kwargs."""
+        from checkllm.hookspecs import plugin_manager
+        pm = plugin_manager()
+        results = pm.hook.checkllm_before_check(
+            metric_name=metric_name, kwargs=kwargs,
+        )
+        for r in results:
+            if r is not None:
+                return r
+        return kwargs
+
+    def _fire_after_hook(self, result) -> None:
+        """Fire after_check and on_failure hooks."""
+        from checkllm.hookspecs import plugin_manager
+        pm = plugin_manager()
+        pm.hook.checkllm_after_check(
+            result=result, metric_name=result.metric_name,
+        )
+        if not result.passed:
+            pm.hook.checkllm_on_failure(
+                result=result, metric_name=result.metric_name,
+            )
 
     async def _run_judge_async(self, coro) -> CheckResult:
         """Run a single judge call with semaphore limiting."""

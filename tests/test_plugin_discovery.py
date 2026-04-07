@@ -1,5 +1,6 @@
 """Tests for community metric plugin discovery."""
 from unittest.mock import patch, MagicMock
+import pluggy
 import pytest
 from checkllm.metrics import MetricRegistry, _global_registry
 from checkllm.models import CheckResult
@@ -57,3 +58,19 @@ def test_entry_point_errors_are_silenced():
 
     with patch("importlib.metadata.entry_points", return_value=[bad_ep]):
         reg.load_entry_points()  # Should not raise
+
+
+class TestPluginDiscovery:
+    def test_plugin_manager_loads_without_error(self):
+        from checkllm.hookspecs import get_plugin_manager
+        pm = get_plugin_manager()
+        assert isinstance(pm, pluggy.PluginManager)
+
+    def test_hookspecs_registered(self):
+        from checkllm.hookspecs import get_plugin_manager
+        pm = get_plugin_manager()
+        assert pm.parse_hookimpl_opts is not None
+
+    def test_entry_point_group_name(self):
+        from checkllm.hookspecs import PROJECT_NAME
+        assert PROJECT_NAME == "checkllm"
