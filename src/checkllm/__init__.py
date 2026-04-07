@@ -44,6 +44,7 @@ from checkllm.tracing import Span, Tracer, get_tracer, trace
 
 # Imports that may require optional dependencies (openai, etc.)
 try:
+    from checkllm.compare import ComparisonResult, MatrixResult, ProviderMatrix
     from checkllm.api import Evaluator, check_output, evaluate, parse_check_shorthand
     from checkllm.batch import BatchEvaluator, BatchJob, BatchStatus
     from checkllm.cache import JudgeCache
@@ -116,6 +117,10 @@ __all__ = [
     "BatchEvaluator",
     "BatchJob",
     "BatchStatus",
+    # Compare / provider matrix
+    "ComparisonResult",
+    "MatrixResult",
+    "ProviderMatrix",
     # Chain
     "AssertionChain",
     # Consensus
