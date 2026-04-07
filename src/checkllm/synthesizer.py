@@ -60,6 +60,7 @@ class EvolutionStrategy(str, Enum):
     CONDITIONAL = "conditional"
     ADVERSARIAL = "adversarial"
     COMPARATIVE = "comparative"
+    KNOWLEDGE_GRAPH = "knowledge_graph"
 
 
 # ---------------------------------------------------------------------------
@@ -96,6 +97,11 @@ _STRATEGY_INSTRUCTIONS: dict[EvolutionStrategy, str] = {
         "multiple items, concepts, or approaches. The answer should involve "
         "analyzing trade-offs or similarities and differences."
     ),
+    EvolutionStrategy.KNOWLEDGE_GRAPH: (
+        "Generate questions that traverse relationships between entities and "
+        "concepts identified in the source material. Questions should require "
+        "reasoning across connected facts and named entities."
+    ),
 }
 
 _DIFFICULTY_MAP: dict[EvolutionStrategy, str] = {
@@ -105,6 +111,7 @@ _DIFFICULTY_MAP: dict[EvolutionStrategy, str] = {
     EvolutionStrategy.CONDITIONAL: "hard",
     EvolutionStrategy.ADVERSARIAL: "hard",
     EvolutionStrategy.COMPARATIVE: "medium",
+    EvolutionStrategy.KNOWLEDGE_GRAPH: "medium",
 }
 
 
@@ -117,6 +124,36 @@ class SynthesisConfig(BaseModel):
     )
     max_retries: int = Field(default=3, ge=1)
     temperature: float = Field(default=0.7, ge=0.0, le=2.0)
+
+
+class KnowledgeNode(BaseModel):
+    """A node in a knowledge graph built from document chunks."""
+
+    content: str
+    summary: str = ""
+    entities: list[str] = Field(default_factory=list)
+    themes: list[str] = Field(default_factory=list)
+    connections: list[int] = Field(default_factory=list)
+
+
+class KnowledgeGraph(BaseModel):
+    """A knowledge graph built from document chunks for test generation."""
+
+    nodes: list[KnowledgeNode] = Field(default_factory=list)
+    document_name: str = ""
+
+    def connected_pairs(self) -> list[tuple[int, int]]:
+        """Return pairs of connected node indices.
+
+        Returns:
+            A list of (i, j) tuples where i < j and the nodes are connected.
+        """
+        pairs: list[tuple[int, int]] = []
+        for i, node in enumerate(self.nodes):
+            for j in node.connections:
+                if j > i:
+                    pairs.append((i, j))
+        return pairs
 
 
 # ---------------------------------------------------------------------------
@@ -380,6 +417,179 @@ class Synthesizer:
         )
         return evolved
 
+    async def build_knowledge_graph(
+        self,
+        document: str,
+        chunk_size: int = 500,
+        document_name: str = "",
+    ) -> KnowledgeGraph:
+        """Build a KnowledgeGraph from a document by extracting entities and themes.
+
+        Splits the document into chunks, extracts entities and themes from each
+        chunk via the judge, then connects chunks that share common entities or
+        themes.
+
+        Args:
+            document: The source document text to analyze.
+            chunk_size: Approximate character size for each chunk.
+            document_name: Optional label for the resulting graph.
+
+        Returns:
+            A KnowledgeGraph with nodes and their inter-chunk connections.
+        """
+        chunks = self._split_into_chunks(document, chunk_size)
+        nodes: list[KnowledgeNode] = []
+
+        for chunk in chunks:
+            extraction_prompt = (
+                f"Extract entities and themes from the following text.\n\n"
+                f"Text:\n{chunk}\n\n"
+                f"Respond with JSON only:\n"
+                f'{{"entities": ["entity1", ...], "themes": ["theme1", ...], "summary": "..."}}'
+            )
+            try:
+                response = await self.judge.evaluate(prompt=extraction_prompt)
+                raw = response.reasoning or response.raw_output or "{}"
+                raw = raw.strip()
+                for fence in ("```json", "```"):
+                    if raw.startswith(fence):
+                        raw = raw[len(fence):]
+                    if raw.endswith("```"):
+                        raw = raw[:-3]
+                raw = raw.strip()
+                parsed = json.loads(raw)
+                entities = [str(e) for e in parsed.get("entities", [])]
+                themes = [str(t) for t in parsed.get("themes", [])]
+                summary = str(parsed.get("summary", ""))
+            except (json.JSONDecodeError, ValueError, KeyError):
+                entities = []
+                themes = []
+                summary = ""
+
+            nodes.append(KnowledgeNode(
+                content=chunk,
+                summary=summary,
+                entities=entities,
+                themes=themes,
+            ))
+
+        # Build connections between nodes sharing entities or themes
+        for i, node_i in enumerate(nodes):
+            shared_entities = set(node_i.entities)
+            shared_themes = set(node_i.themes)
+            for j, node_j in enumerate(nodes):
+                if i == j:
+                    continue
+                if (
+                    shared_entities & set(node_j.entities)
+                    or shared_themes & set(node_j.themes)
+                ):
+                    if j not in node_i.connections:
+                        node_i.connections.append(j)
+
+        return KnowledgeGraph(nodes=nodes, document_name=document_name)
+
+    async def generate_from_knowledge_graph(
+        self,
+        kg: KnowledgeGraph,
+        count: int = 10,
+    ) -> list[Case]:
+        """Generate test cases from a KnowledgeGraph.
+
+        Uses single-hop questions from individual nodes and multi-hop questions
+        that span connected node pairs. Falls back to single-hop when no
+        connected pairs exist.
+
+        Args:
+            kg: The KnowledgeGraph to generate from.
+            count: Number of test cases to attempt to generate.
+
+        Returns:
+            A list of Case objects derived from the knowledge graph.
+        """
+        if not kg.nodes:
+            return []
+
+        pairs = kg.connected_pairs()
+        cases: list[Case] = []
+        tasks: list[asyncio.Task[list[Case]]] = []
+        strategy = EvolutionStrategy.KNOWLEDGE_GRAPH
+
+        for i in range(count):
+            use_multi_hop = pairs and (i % 2 == 1)
+            if use_multi_hop:
+                pair_idx = i % len(pairs)
+                a, b = pairs[pair_idx]
+                context = (
+                    f"Passage A: {kg.nodes[a].content}\n\n"
+                    f"Passage B: {kg.nodes[b].content}"
+                )
+                prompt_text = (
+                    f"Generate a multi-hop question-answer pair that requires "
+                    f"information from BOTH passages below.\n\n{context}\n\n"
+                    f'Respond with JSON: {{"question": "...", "answer": "...", "context": "..."}}'
+                )
+            else:
+                node_idx = i % len(kg.nodes)
+                context = kg.nodes[node_idx].content
+                prompt_text = (
+                    f"Generate a question-answer pair from the following passage.\n\n"
+                    f"Passage: {context}\n\n"
+                    f'Respond with JSON: {{"question": "...", "answer": "...", "context": "..."}}'
+                )
+
+            tasks.append(asyncio.ensure_future(
+                self._generate_kg_case(prompt_text, strategy)
+            ))
+
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        for result in results:
+            if isinstance(result, BaseException):
+                logger.warning("KG case generation failed: %s", result)
+                continue
+            if result is not None:
+                cases.append(result)
+
+        return cases
+
+    async def _generate_kg_case(
+        self, prompt: str, strategy: EvolutionStrategy
+    ) -> Case | None:
+        """Generate a single Case from a knowledge-graph prompt.
+
+        Args:
+            prompt: The prompt describing what case to generate.
+            strategy: The evolution strategy to tag on the case metadata.
+
+        Returns:
+            A Case object, or None if parsing fails.
+        """
+        try:
+            response = await self.judge.evaluate(prompt=prompt)
+            raw = response.reasoning or response.raw_output or "{}"
+            raw = raw.strip()
+            for fence in ("```json", "```"):
+                if raw.startswith(fence):
+                    raw = raw[len(fence):]
+                if raw.endswith("```"):
+                    raw = raw[:-3]
+            raw = raw.strip()
+            parsed = json.loads(raw)
+            question = str(parsed.get("question", ""))
+            answer = str(parsed.get("answer", ""))
+            context = str(parsed.get("context", ""))
+            if not question:
+                return None
+            return Case(
+                input=question,
+                expected=answer,
+                context=context,
+                metadata={"strategy": strategy.value, "difficulty": "medium"},
+            )
+        except (json.JSONDecodeError, ValueError, KeyError, TypeError) as exc:
+            logger.warning("Failed to parse KG case: %s", exc)
+            return None
+
     # ------------------------------------------------------------------
     # Internal generation
     # ------------------------------------------------------------------
@@ -539,6 +749,38 @@ class Synthesizer:
     # ------------------------------------------------------------------
     # Helpers
     # ------------------------------------------------------------------
+
+    @staticmethod
+    def _split_into_chunks(document: str, chunk_size: int) -> list[str]:
+        """Split a document into chunks of approximately chunk_size characters.
+
+        Splits on whitespace boundaries to avoid cutting words mid-way.
+
+        Args:
+            document: The document text to split.
+            chunk_size: Target character count per chunk.
+
+        Returns:
+            A list of non-empty text chunks.
+        """
+        if not document:
+            return []
+        words = document.split()
+        chunks: list[str] = []
+        current: list[str] = []
+        current_len = 0
+        for word in words:
+            word_len = len(word) + 1  # +1 for space
+            if current_len + word_len > chunk_size and current:
+                chunks.append(" ".join(current))
+                current = [word]
+                current_len = word_len
+            else:
+                current.append(word)
+                current_len += word_len
+        if current:
+            chunks.append(" ".join(current))
+        return chunks
 
     @staticmethod
     def _combine_documents(documents: list[str]) -> str:
