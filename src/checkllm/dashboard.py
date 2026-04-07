@@ -14,6 +14,7 @@ Or via the CLI::
 """
 from __future__ import annotations
 
+import datetime
 import http.server
 import json
 import logging
@@ -22,9 +23,168 @@ import webbrowser
 from pathlib import Path
 from typing import Any
 
+from pydantic import BaseModel, Field
+
 from checkllm.history import RunHistory, RunRecord, RunSummary
 
 logger = logging.getLogger("checkllm.dashboard")
+
+
+class ComparisonView(BaseModel):
+    """Comparison data for dashboard visualization."""
+
+    snapshot_a: str
+    snapshot_b: str
+    metrics_diff: dict[str, float] = Field(default_factory=dict)
+    improved: list[str] = Field(default_factory=list)
+    regressed: list[str] = Field(default_factory=list)
+    unchanged: list[str] = Field(default_factory=list)
+
+
+class AlertConfig(BaseModel):
+    """Configuration for dashboard alerting."""
+
+    enabled: bool = False
+    webhook_url: str | None = None
+    min_score_threshold: float = 0.5
+    alert_on_regression: bool = True
+    alert_on_failure: bool = True
+
+
+class AlertEvent(BaseModel):
+    """A triggered alert event."""
+
+    event_type: str
+    metric_name: str
+    details: str
+    score: float | None = None
+    threshold: float | None = None
+    timestamp: str = ""
+
+
+def build_comparison_view(
+    results_a: dict[str, list],
+    results_b: dict[str, list],
+    label_a: str = "baseline",
+    label_b: str = "current",
+) -> ComparisonView:
+    """Build a comparison view from two result sets.
+
+    Args:
+        results_a: Mapping of test node IDs to lists of check results for
+            snapshot A (baseline).
+        results_b: Mapping of test node IDs to lists of check results for
+            snapshot B (current).
+        label_a: Human-readable label for snapshot A.
+        label_b: Human-readable label for snapshot B.
+
+    Returns:
+        A ComparisonView populated with per-metric score diffs and
+        classified lists of improved, regressed, and unchanged metrics.
+    """
+    def _avg_scores(results: dict[str, list]) -> dict[str, float]:
+        totals: dict[str, list[float]] = {}
+        for checks in results.values():
+            for check in checks:
+                if hasattr(check, "metric_name"):
+                    name = check.metric_name
+                    score = check.score
+                elif isinstance(check, dict):
+                    name = check.get("metric_name", "unknown")
+                    score = check.get("score", 0.0)
+                else:
+                    continue
+                if score is not None:
+                    totals.setdefault(name, []).append(score)
+        return {name: sum(vals) / len(vals) for name, vals in totals.items()}
+
+    avgs_a = _avg_scores(results_a)
+    avgs_b = _avg_scores(results_b)
+
+    all_metrics = set(avgs_a) | set(avgs_b)
+    metrics_diff: dict[str, float] = {}
+    improved: list[str] = []
+    regressed: list[str] = []
+    unchanged: list[str] = []
+
+    for metric_name in sorted(all_metrics):
+        score_a = avgs_a.get(metric_name, 0.0)
+        score_b = avgs_b.get(metric_name, 0.0)
+        diff = round(score_b - score_a, 6)
+        metrics_diff[metric_name] = diff
+        if diff > 0:
+            improved.append(metric_name)
+        elif diff < 0:
+            regressed.append(metric_name)
+        else:
+            unchanged.append(metric_name)
+
+    return ComparisonView(
+        snapshot_a=label_a,
+        snapshot_b=label_b,
+        metrics_diff=metrics_diff,
+        improved=improved,
+        regressed=regressed,
+        unchanged=unchanged,
+    )
+
+
+def check_alerts(
+    results: dict[str, list],
+    config: AlertConfig,
+) -> list[AlertEvent]:
+    """Check results against alert configuration and return triggered alerts.
+
+    Args:
+        results: Mapping of test node IDs to lists of CheckResult objects.
+        config: AlertConfig controlling which conditions trigger events.
+
+    Returns:
+        List of AlertEvent instances for every triggered condition.
+    """
+    events: list[AlertEvent] = []
+    timestamp = datetime.datetime.now(datetime.timezone.utc).isoformat()
+
+    for node_id, checks in results.items():
+        for check in checks:
+            if hasattr(check, "metric_name"):
+                metric_name = check.metric_name
+                passed = check.passed
+                score = check.score
+                threshold = check.threshold
+            elif isinstance(check, dict):
+                metric_name = check.get("metric_name", "unknown")
+                passed = check.get("passed", True)
+                score = check.get("score")
+                threshold = check.get("threshold")
+            else:
+                continue
+
+            if config.alert_on_failure and not passed:
+                events.append(AlertEvent(
+                    event_type="failure",
+                    metric_name=metric_name,
+                    details=f"Check failed in {node_id}",
+                    score=score,
+                    threshold=threshold,
+                    timestamp=timestamp,
+                ))
+
+            if score is not None and score < config.min_score_threshold:
+                events.append(AlertEvent(
+                    event_type="threshold_breach",
+                    metric_name=metric_name,
+                    details=(
+                        f"Score {score:.2f} below threshold"
+                        f" {config.min_score_threshold:.2f}"
+                    ),
+                    score=score,
+                    threshold=config.min_score_threshold,
+                    timestamp=timestamp,
+                ))
+
+    return events
+
 
 # ---------------------------------------------------------------------------
 # HTML template — complete self-contained page

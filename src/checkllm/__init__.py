@@ -127,6 +127,14 @@ try:
 except ImportError:
     pass  # Optional dependencies not installed
 
+from checkllm.dashboard import (
+    AlertConfig,
+    AlertEvent,
+    ComparisonView,
+    build_comparison_view,
+    check_alerts,
+)
+
 __version__ = "4.0.0"
 
 __all__ = [
@@ -291,6 +299,12 @@ __all__ = [
     "EvalConfig",
     "YamlEvalRunner",
     "load_eval_config",
+    # Dashboard comparison and alerting
+    "AlertConfig",
+    "AlertEvent",
+    "ComparisonView",
+    "build_comparison_view",
+    "check_alerts",
     # Version
     "__version__",
 ]
