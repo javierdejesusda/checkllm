@@ -1,0 +1,769 @@
+"""Mixin providing LLM-as-judge check methods for CheckCollector."""
+from __future__ import annotations
+
+import asyncio
+from typing import Any
+
+from checkllm.cache import _cache_key
+from checkllm.models import CheckResult
+
+
+class JudgeChecksMixin:
+    """LLM judge check methods (sync and async) for CheckCollector."""
+
+    def hallucination(
+        self,
+        output: str,
+        context: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.hallucination import HallucinationMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = HallucinationMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="hallucination",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output, context=context),
+            cache_kwargs={"output": output, "context": context, "threshold": str(t)},
+            runs=runs,
+        )
+
+    def relevance(
+        self,
+        output: str,
+        query: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.relevance import RelevanceMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = RelevanceMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="relevance",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output, query=query),
+            cache_kwargs={"output": output, "query": query, "threshold": str(t)},
+            runs=runs,
+        )
+
+    def toxicity(
+        self,
+        output: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.toxicity import ToxicityMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = ToxicityMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="toxicity",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output),
+            cache_kwargs={"output": output, "threshold": str(t)},
+            runs=runs,
+        )
+
+    def rubric(
+        self,
+        output: str,
+        criteria: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.rubric import RubricMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = RubricMetric(judge=self._get_judge())
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="rubric",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output, criteria=criteria, threshold=t),
+            cache_kwargs={"output": output, "criteria": criteria, "threshold": str(t)},
+            runs=runs,
+        )
+
+    def fluency(
+        self,
+        output: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.fluency import FluencyMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = FluencyMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="fluency",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output),
+            cache_kwargs={"output": output, "threshold": str(t)},
+            runs=runs,
+        )
+
+    def coherence(
+        self,
+        output: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.coherence import CoherenceMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = CoherenceMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="coherence",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output),
+            cache_kwargs={"output": output, "threshold": str(t)},
+            runs=runs,
+        )
+
+    def sentiment(
+        self,
+        output: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.sentiment import SentimentMetric
+        t = threshold if threshold is not None else 0.5  # neutral default
+        metric = SentimentMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="sentiment",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output),
+            cache_kwargs={"output": output, "threshold": str(t)},
+            runs=runs,
+        )
+
+    def correctness(
+        self,
+        output: str,
+        expected: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.correctness import CorrectnessMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = CorrectnessMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="correctness",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output, expected=expected),
+            cache_kwargs={"output": output, "expected": expected, "threshold": str(t)},
+            runs=runs,
+        )
+
+    def faithfulness(
+        self,
+        output: str,
+        context: str,
+        query: str | None = None,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.faithfulness import FaithfulnessMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = FaithfulnessMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        cache_kw = {"output": output, "context": context, "threshold": str(t)}
+        if query:
+            cache_kw["query"] = query
+        return self._cached_judge_check(
+            metric_name="faithfulness",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output, context=context, query=query),
+            cache_kwargs=cache_kw,
+            runs=runs,
+        )
+
+    def context_relevance(
+        self,
+        context: str,
+        query: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.context_relevance import ContextRelevanceMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = ContextRelevanceMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="context_relevance",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(context=context, query=query),
+            cache_kwargs={"context": context, "query": query, "threshold": str(t)},
+            runs=runs,
+        )
+
+    def answer_completeness(
+        self,
+        output: str,
+        query: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.answer_completeness import AnswerCompletenessMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = AnswerCompletenessMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="answer_completeness",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output, query=query),
+            cache_kwargs={"output": output, "query": query, "threshold": str(t)},
+            runs=runs,
+        )
+
+    def instruction_following(
+        self,
+        output: str,
+        instructions: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.instruction_following import InstructionFollowingMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = InstructionFollowingMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="instruction_following",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output, instructions=instructions),
+            cache_kwargs={"output": output, "instructions": instructions, "threshold": str(t)},
+            runs=runs,
+        )
+
+    def summarization(
+        self,
+        output: str,
+        source: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.summarization import SummarizationMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = SummarizationMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="summarization",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output, source=source),
+            cache_kwargs={"output": output, "source": source, "threshold": str(t)},
+            runs=runs,
+        )
+
+    def bias(
+        self,
+        output: str,
+        categories: list[str] | None = None,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.bias import BiasMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = BiasMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        cache_kw = {"output": output, "threshold": str(t)}
+        if categories:
+            cache_kw["categories"] = ",".join(categories)
+        return self._cached_judge_check(
+            metric_name="bias",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output, categories=categories),
+            cache_kwargs=cache_kw,
+            runs=runs,
+        )
+
+    def consistency(
+        self,
+        outputs: list[str],
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.consistency import ConsistencyMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = ConsistencyMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="consistency",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(outputs=outputs),
+            cache_kwargs={"outputs": "|".join(outputs), "threshold": str(t)},
+            runs=runs,
+        )
+
+    def groundedness(
+        self,
+        output: str,
+        sources: list[str],
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.groundedness import GroundednessMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = GroundednessMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="groundedness",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output, sources=sources),
+            cache_kwargs={"output": output, "sources": "|".join(sources), "threshold": str(t)},
+            runs=runs,
+        )
+
+    def g_eval(
+        self,
+        output: str,
+        criteria: str,
+        steps: list[str] | None = None,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.g_eval import GEvalMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = GEvalMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        cache_kw = {"output": output, "criteria": criteria, "threshold": str(t)}
+        if steps:
+            cache_kw["steps"] = "|".join(steps)
+        return self._cached_judge_check(
+            metric_name="g_eval",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output, criteria=criteria, steps=steps),
+            cache_kwargs=cache_kw,
+            runs=runs,
+        )
+
+    def contextual_precision(
+        self,
+        output: str,
+        context: list[str],
+        query: str,
+        expected: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.contextual_precision import ContextualPrecisionMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = ContextualPrecisionMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="contextual_precision",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output, context=context, query=query, expected=expected),
+            cache_kwargs={"output": output, "context": "|".join(context), "query": query, "expected": expected, "threshold": str(t)},
+            runs=runs,
+        )
+
+    def contextual_recall(
+        self,
+        output: str,
+        context: list[str],
+        expected: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.contextual_recall import ContextualRecallMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = ContextualRecallMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="contextual_recall",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output, context=context, expected=expected),
+            cache_kwargs={"output": output, "context": "|".join(context), "expected": expected, "threshold": str(t)},
+            runs=runs,
+        )
+
+    def task_completion(
+        self,
+        output: str,
+        task_description: str,
+        constraints: list[str] | None = None,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.task_completion import TaskCompletionMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = TaskCompletionMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        cache_kw = {"output": output, "task_description": task_description, "threshold": str(t)}
+        if constraints:
+            cache_kw["constraints"] = "|".join(constraints)
+        return self._cached_judge_check(
+            metric_name="task_completion",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output, task_description=task_description, constraints=constraints),
+            cache_kwargs=cache_kw,
+            runs=runs,
+        )
+
+    def role_adherence(
+        self,
+        output: str,
+        role_description: str,
+        query: str | None = None,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.role_adherence import RoleAdherenceMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = RoleAdherenceMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        cache_kw = {"output": output, "role_description": role_description, "threshold": str(t)}
+        if query:
+            cache_kw["query"] = query
+        return self._cached_judge_check(
+            metric_name="role_adherence",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output, role_description=role_description, query=query),
+            cache_kwargs=cache_kw,
+            runs=runs,
+        )
+
+    def tool_accuracy(
+        self,
+        output: str,
+        expected_tools: list[dict[str, object]],
+        query: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.tool_accuracy import ToolAccuracyMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = ToolAccuracyMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        import json as _json
+        return self._cached_judge_check(
+            metric_name="tool_accuracy",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output, expected_tools=expected_tools, query=query),
+            cache_kwargs={"output": output, "expected_tools": _json.dumps(expected_tools, sort_keys=True), "query": query, "threshold": str(t)},
+            runs=runs,
+        )
+
+    def knowledge_retention(
+        self,
+        conversation: Any,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.knowledge_retention import KnowledgeRetentionMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = KnowledgeRetentionMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        transcript = conversation.format_transcript()
+        return self._cached_judge_check(
+            metric_name="knowledge_retention",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(conversation=conversation),
+            cache_kwargs={"transcript": transcript, "threshold": str(t)},
+            runs=runs,
+        )
+
+    def conversation_completeness(
+        self,
+        conversation: Any,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.conversation_completeness import ConversationCompletenessMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = ConversationCompletenessMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        transcript = conversation.format_transcript()
+        return self._cached_judge_check(
+            metric_name="conversation_completeness",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(conversation=conversation),
+            cache_kwargs={"transcript": transcript, "threshold": str(t)},
+            runs=runs,
+        )
+
+    # --- Async LLM-as-judge checks ---
+
+    async def ahallucination(
+        self, output: str, context: str, threshold: float | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.hallucination import HallucinationMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = HallucinationMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+
+        model = getattr(self._get_judge(), "model", "unknown")
+        key = _cache_key("hallucination", model, output=output, context=context, threshold=str(t))
+        cached = self._cache.get(key)
+        if cached is not None:
+            self.results.append(cached)
+            return cached
+
+        if not self._check_budget():
+            result = self._make_budget_skip_result("hallucination")
+            self.results.append(result)
+            return result
+
+        async with self._semaphore:
+            result = await metric.evaluate(output=output, context=context)
+        self._track_cost(result)
+        self._cache.put(key, "hallucination", model, result)
+        self.results.append(result)
+        return result
+
+    async def arelevance(
+        self, output: str, query: str, threshold: float | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.relevance import RelevanceMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = RelevanceMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+
+        model = getattr(self._get_judge(), "model", "unknown")
+        key = _cache_key("relevance", model, output=output, query=query, threshold=str(t))
+        cached = self._cache.get(key)
+        if cached is not None:
+            self.results.append(cached)
+            return cached
+
+        if not self._check_budget():
+            result = self._make_budget_skip_result("relevance")
+            self.results.append(result)
+            return result
+
+        async with self._semaphore:
+            result = await metric.evaluate(output=output, query=query)
+        self._track_cost(result)
+        self._cache.put(key, "relevance", model, result)
+        self.results.append(result)
+        return result
+
+    async def atoxicity(
+        self, output: str, threshold: float | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.toxicity import ToxicityMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = ToxicityMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+
+        model = getattr(self._get_judge(), "model", "unknown")
+        key = _cache_key("toxicity", model, output=output, threshold=str(t))
+        cached = self._cache.get(key)
+        if cached is not None:
+            self.results.append(cached)
+            return cached
+
+        if not self._check_budget():
+            result = self._make_budget_skip_result("toxicity")
+            self.results.append(result)
+            return result
+
+        async with self._semaphore:
+            result = await metric.evaluate(output=output)
+        self._track_cost(result)
+        self._cache.put(key, "toxicity", model, result)
+        self.results.append(result)
+        return result
+
+    async def arubric(
+        self, output: str, criteria: str, threshold: float | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.rubric import RubricMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = RubricMetric(judge=self._get_judge())
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+
+        model = getattr(self._get_judge(), "model", "unknown")
+        key = _cache_key("rubric", model, output=output, criteria=criteria, threshold=str(t))
+        cached = self._cache.get(key)
+        if cached is not None:
+            self.results.append(cached)
+            return cached
+
+        if not self._check_budget():
+            result = self._make_budget_skip_result("rubric")
+            self.results.append(result)
+            return result
+
+        async with self._semaphore:
+            result = await metric.evaluate(output=output, criteria=criteria, threshold=t)
+        self._track_cost(result)
+        self._cache.put(key, "rubric", model, result)
+        self.results.append(result)
+        return result
+
+    async def afluency(
+        self, output: str, threshold: float | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.fluency import FluencyMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = FluencyMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+
+        model = getattr(self._get_judge(), "model", "unknown")
+        key = _cache_key("fluency", model, output=output, threshold=str(t))
+        cached = self._cache.get(key)
+        if cached is not None:
+            self.results.append(cached)
+            return cached
+
+        if not self._check_budget():
+            result = self._make_budget_skip_result("fluency")
+            self.results.append(result)
+            return result
+
+        async with self._semaphore:
+            result = await metric.evaluate(output=output)
+        self._track_cost(result)
+        self._cache.put(key, "fluency", model, result)
+        self.results.append(result)
+        return result
+
+    async def acoherence(
+        self, output: str, threshold: float | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.coherence import CoherenceMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = CoherenceMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+
+        model = getattr(self._get_judge(), "model", "unknown")
+        key = _cache_key("coherence", model, output=output, threshold=str(t))
+        cached = self._cache.get(key)
+        if cached is not None:
+            self.results.append(cached)
+            return cached
+
+        if not self._check_budget():
+            result = self._make_budget_skip_result("coherence")
+            self.results.append(result)
+            return result
+
+        async with self._semaphore:
+            result = await metric.evaluate(output=output)
+        self._track_cost(result)
+        self._cache.put(key, "coherence", model, result)
+        self.results.append(result)
+        return result
+
+    async def asentiment(
+        self, output: str, threshold: float | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.sentiment import SentimentMetric
+        t = threshold if threshold is not None else 0.5
+        metric = SentimentMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+
+        model = getattr(self._get_judge(), "model", "unknown")
+        key = _cache_key("sentiment", model, output=output, threshold=str(t))
+        cached = self._cache.get(key)
+        if cached is not None:
+            self.results.append(cached)
+            return cached
+
+        if not self._check_budget():
+            result = self._make_budget_skip_result("sentiment")
+            self.results.append(result)
+            return result
+
+        async with self._semaphore:
+            result = await metric.evaluate(output=output)
+        self._track_cost(result)
+        self._cache.put(key, "sentiment", model, result)
+        self.results.append(result)
+        return result
+
+    async def acorrectness(
+        self, output: str, expected: str, threshold: float | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.correctness import CorrectnessMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = CorrectnessMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+
+        model = getattr(self._get_judge(), "model", "unknown")
+        key = _cache_key("correctness", model, output=output, expected=expected, threshold=str(t))
+        cached = self._cache.get(key)
+        if cached is not None:
+            self.results.append(cached)
+            return cached
+
+        if not self._check_budget():
+            result = self._make_budget_skip_result("correctness")
+            self.results.append(result)
+            return result
+
+        async with self._semaphore:
+            result = await metric.evaluate(output=output, expected=expected)
+        self._track_cost(result)
+        self._cache.put(key, "correctness", model, result)
+        self.results.append(result)
+        return result
