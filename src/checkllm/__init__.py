@@ -83,12 +83,24 @@ try:
         create_judge,
     )
     from checkllm.pytest_plugin import dataset
+    from checkllm.benchmarks import (
+        BenchmarkDataset,
+        BenchmarkResult,
+        BenchmarkRunner,
+        BenchmarkSample,
+        BenchmarkSuite,
+        list_benchmarks,
+        load_benchmark,
+    )
     from checkllm.redteam import (
         AttackResult,
         AttackStrategy,
+        OWASPCategory,
         RedTeamer,
         VulnerabilityReport,
         VulnerabilityType,
+        get_owasp_mapping,
+        get_vulnerabilities_by_owasp,
     )
     from checkllm.streaming import StreamingCheckpoint, StreamingEvaluator
     from checkllm.synthesizer import EvolutionStrategy, SynthesisConfig, Synthesizer
@@ -192,12 +204,23 @@ __all__ = [
     # Pytest integration
     "dataset",
     "metric",
+    # Benchmarks
+    "BenchmarkDataset",
+    "BenchmarkResult",
+    "BenchmarkRunner",
+    "BenchmarkSample",
+    "BenchmarkSuite",
+    "list_benchmarks",
+    "load_benchmark",
     # Red teaming
     "AttackResult",
     "AttackStrategy",
+    "OWASPCategory",
     "RedTeamer",
     "VulnerabilityReport",
     "VulnerabilityType",
+    "get_owasp_mapping",
+    "get_vulnerabilities_by_owasp",
     # Resilience
     "CircuitBreaker",
     "CircuitOpenError",
