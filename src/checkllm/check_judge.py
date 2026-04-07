@@ -582,6 +582,215 @@ class JudgeChecksMixin:
             input_preview=conversation.format_transcript()[:200],
         )
 
+    def plan_quality(
+        self,
+        plan: str,
+        task: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.plan_quality import PlanQualityMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = PlanQualityMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="plan_quality",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(plan=plan, task=task),
+            cache_kwargs={"plan": plan, "task": task, "threshold": str(t)},
+            runs=runs,
+            threshold=t,
+            input_preview=plan,
+        )
+
+    def goal_accuracy(
+        self,
+        output: str,
+        goal: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.goal_accuracy import GoalAccuracyMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = GoalAccuracyMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="goal_accuracy",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output, goal=goal),
+            cache_kwargs={"output": output, "goal": goal, "threshold": str(t)},
+            runs=runs,
+            threshold=t,
+            input_preview=output,
+        )
+
+    def step_efficiency(
+        self,
+        steps: list[str],
+        task: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.step_efficiency import StepEfficiencyMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = StepEfficiencyMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="step_efficiency",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(steps=steps, task=task),
+            cache_kwargs={"steps": "|".join(steps), "task": task, "threshold": str(t)},
+            runs=runs,
+            threshold=t,
+            input_preview=steps[0] if steps else None,
+        )
+
+    def argument_correctness(
+        self,
+        tool_calls: str,
+        expected_calls: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.argument_correctness import ArgumentCorrectnessMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = ArgumentCorrectnessMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="argument_correctness",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(tool_calls=tool_calls, expected_calls=expected_calls),
+            cache_kwargs={"tool_calls": tool_calls, "expected_calls": expected_calls, "threshold": str(t)},
+            runs=runs,
+            threshold=t,
+            input_preview=tool_calls,
+        )
+
+    def plan_adherence(
+        self,
+        plan: str,
+        execution_trace: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.plan_adherence import PlanAdherenceMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = PlanAdherenceMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="plan_adherence",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(plan=plan, execution_trace=execution_trace),
+            cache_kwargs={"plan": plan, "execution_trace": execution_trace, "threshold": str(t)},
+            runs=runs,
+            threshold=t,
+            input_preview=plan,
+        )
+
+    def pii_detection(
+        self,
+        output: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.pii_detection import PIIDetectionMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = PIIDetectionMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="pii_detection",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output),
+            cache_kwargs={"output": output, "threshold": str(t)},
+            runs=runs,
+            threshold=t,
+            input_preview=output,
+        )
+
+    def misuse_detection(
+        self,
+        output: str,
+        intended_scope: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.misuse_detection import MisuseDetectionMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = MisuseDetectionMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="misuse_detection",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output, intended_scope=intended_scope),
+            cache_kwargs={"output": output, "intended_scope": intended_scope, "threshold": str(t)},
+            runs=runs,
+            threshold=t,
+            input_preview=output,
+        )
+
+    def role_violation(
+        self,
+        output: str,
+        role_description: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.role_violation import RoleViolationMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = RoleViolationMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="role_violation",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output, role_description=role_description),
+            cache_kwargs={"output": output, "role_description": role_description, "threshold": str(t)},
+            runs=runs,
+            threshold=t,
+            input_preview=output,
+        )
+
+    def non_advice(
+        self,
+        output: str,
+        restricted_domains: list[str] | None = None,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.non_advice import NonAdviceMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = NonAdviceMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        cache_kw = {"output": output, "threshold": str(t)}
+        if restricted_domains:
+            cache_kw["restricted_domains"] = ",".join(restricted_domains)
+        return self._cached_judge_check(
+            metric_name="non_advice",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(output=output, restricted_domains=restricted_domains),
+            cache_kwargs=cache_kw,
+            runs=runs,
+            threshold=t,
+            input_preview=output,
+        )
+
     # --- Async LLM-as-judge checks ---
 
     async def ahallucination(
