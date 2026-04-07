@@ -192,6 +192,8 @@ class CheckCollector(DeterministicChecksMixin, JudgeChecksMixin):
         coro_factory,
         cache_kwargs: dict,
         runs: int | None = None,
+        threshold: float | None = None,
+        input_preview: str | None = None,
     ) -> CheckResult:
         """Run an LLM judge check with caching and budget enforcement."""
         # Budget gate
@@ -213,6 +215,12 @@ class CheckCollector(DeterministicChecksMixin, JudgeChecksMixin):
         # Execute
         result = self._run_with_repeats(coro_factory, runs)
         self._track_cost(result)
+
+        # Attach diagnostic context
+        if threshold is not None and result.threshold is None:
+            result.threshold = threshold
+        if input_preview is not None and result.input_preview is None:
+            result.input_preview = input_preview[:200]
 
         # Store in cache
         self._cache.put(key, metric_name, model, result)

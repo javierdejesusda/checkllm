@@ -81,6 +81,7 @@ class DeterministicChecks:
             cost=0.0,
             latency_ms=0,
             metric_name="contains",
+            input_preview=output[:200],
         )
 
     def not_contains(self, output: str, substring: str) -> CheckResult:
@@ -92,6 +93,7 @@ class DeterministicChecks:
             cost=0.0,
             latency_ms=0,
             metric_name="not_contains",
+            input_preview=output[:200],
         )
 
     def max_tokens(self, output: str, limit: int) -> CheckResult:
@@ -105,6 +107,7 @@ class DeterministicChecks:
             cost=0.0,
             latency_ms=0,
             metric_name="max_tokens",
+            input_preview=output[:200],
         )
 
     def min_tokens(self, output: str, minimum: int) -> CheckResult:
@@ -118,6 +121,7 @@ class DeterministicChecks:
             cost=0.0,
             latency_ms=0,
             metric_name="min_tokens",
+            input_preview=output[:200],
         )
 
     def word_count(self, output: str, min_words: int | None = None, max_words: int | None = None) -> CheckResult:
@@ -150,6 +154,7 @@ class DeterministicChecks:
             cost=0.0,
             latency_ms=0,
             metric_name="word_count",
+            input_preview=output[:200],
         )
 
     def char_count(self, output: str, min_chars: int | None = None, max_chars: int | None = None) -> CheckResult:
@@ -182,6 +187,7 @@ class DeterministicChecks:
             cost=0.0,
             latency_ms=0,
             metric_name="char_count",
+            input_preview=output[:200],
         )
 
     def latency(self, actual_ms: int | float, max_ms: int | float) -> CheckResult:
@@ -217,6 +223,7 @@ class DeterministicChecks:
                 cost=0.0,
                 latency_ms=0,
                 metric_name="json_schema",
+                input_preview=output[:200],
             )
         except (json.JSONDecodeError, ValidationError) as e:
             return CheckResult(
@@ -226,6 +233,7 @@ class DeterministicChecks:
                 cost=0.0,
                 latency_ms=0,
                 metric_name="json_schema",
+                input_preview=output[:200],
             )
 
     def regex(self, output: str, pattern: str) -> CheckResult:
@@ -238,6 +246,7 @@ class DeterministicChecks:
             cost=0.0,
             latency_ms=0,
             metric_name="regex",
+            input_preview=output[:200],
         )
 
     def exact_match(self, output: str, expected: str, ignore_case: bool = False) -> CheckResult:
@@ -250,6 +259,7 @@ class DeterministicChecks:
             cost=0.0,
             latency_ms=0,
             metric_name="exact_match",
+            input_preview=output[:200],
         )
 
     def starts_with(self, output: str, prefix: str) -> CheckResult:
@@ -261,6 +271,7 @@ class DeterministicChecks:
             cost=0.0,
             latency_ms=0,
             metric_name="starts_with",
+            input_preview=output[:200],
         )
 
     def ends_with(self, output: str, suffix: str) -> CheckResult:
@@ -272,6 +283,7 @@ class DeterministicChecks:
             cost=0.0,
             latency_ms=0,
             metric_name="ends_with",
+            input_preview=output[:200],
         )
 
     def similarity(self, output: str, expected: str, threshold: float = 0.8, ignore_case: bool = False) -> CheckResult:
@@ -286,6 +298,8 @@ class DeterministicChecks:
             cost=0.0,
             latency_ms=0,
             metric_name="similarity",
+            input_preview=output[:200],
+            threshold=threshold,
         )
 
     def readability(self, output: str, max_grade: float | None = None, min_grade: float | None = None) -> CheckResult:
@@ -324,6 +338,7 @@ class DeterministicChecks:
             cost=0.0,
             latency_ms=0,
             metric_name="readability",
+            input_preview=output[:200],
         )
 
     def sentence_count(self, output: str, min_sentences: int | None = None, max_sentences: int | None = None) -> CheckResult:
@@ -359,6 +374,7 @@ class DeterministicChecks:
             cost=0.0,
             latency_ms=0,
             metric_name="sentence_count",
+            input_preview=output[:200],
         )
 
     # --- Compound checks ---
@@ -376,6 +392,7 @@ class DeterministicChecks:
         return CheckResult(
             passed=passed, score=score, reasoning=reasoning,
             cost=0.0, latency_ms=0, metric_name="all_of",
+            input_preview=output[:200],
         )
 
     def any_of(self, output: str, substrings: list[str]) -> CheckResult:
@@ -390,6 +407,7 @@ class DeterministicChecks:
         return CheckResult(
             passed=passed, score=score, reasoning=reasoning,
             cost=0.0, latency_ms=0, metric_name="any_of",
+            input_preview=output[:200],
         )
 
     def none_of(self, output: str, substrings: list[str]) -> CheckResult:
@@ -404,6 +422,7 @@ class DeterministicChecks:
         return CheckResult(
             passed=passed, score=score, reasoning=reasoning,
             cost=0.0, latency_ms=0, metric_name="none_of",
+            input_preview=output[:200],
         )
 
     # --- Code / structure validation ---
@@ -415,12 +434,14 @@ class DeterministicChecks:
             return CheckResult(
                 passed=True, score=1.0, reasoning="Valid JSON",
                 cost=0.0, latency_ms=0, metric_name="is_json",
+                input_preview=output[:200],
             )
         except json.JSONDecodeError as e:
             return CheckResult(
                 passed=False, score=0.0,
                 reasoning=f"Invalid JSON: {e}",
                 cost=0.0, latency_ms=0, metric_name="is_json",
+                input_preview=output[:200],
             )
 
     def is_valid_python(self, output: str) -> CheckResult:
@@ -440,12 +461,14 @@ class DeterministicChecks:
             return CheckResult(
                 passed=True, score=1.0, reasoning="Valid Python syntax",
                 cost=0.0, latency_ms=0, metric_name="is_valid_python",
+                input_preview=output[:200],
             )
         except SyntaxError as e:
             return CheckResult(
                 passed=False, score=0.0,
                 reasoning=f"Syntax error: {e.msg} (line {e.lineno})",
                 cost=0.0, latency_ms=0, metric_name="is_valid_python",
+                input_preview=output[:200],
             )
 
     # --- PII detection ---
@@ -487,6 +510,7 @@ class DeterministicChecks:
             cost=0.0,
             latency_ms=0,
             metric_name="no_pii",
+            input_preview=output[:200],
         )
 
     # --- Language detection (heuristic) ---
@@ -510,6 +534,7 @@ class DeterministicChecks:
                 passed=False, score=0.0,
                 reasoning=f"Unsupported language '{expected}'. Supported: {', '.join(sorted(self._COMMON_WORDS))}",
                 cost=0.0, latency_ms=0, metric_name="language",
+                input_preview=output[:200],
             )
 
         words = set(re.findall(r"\b[a-zA-ZÀ-ÿ]+\b", output.lower()))
@@ -517,6 +542,7 @@ class DeterministicChecks:
             return CheckResult(
                 passed=False, score=0.0, reasoning="No words found in output",
                 cost=0.0, latency_ms=0, metric_name="language",
+                input_preview=output[:200],
             )
 
         scores: dict[str, float] = {}
@@ -535,6 +561,7 @@ class DeterministicChecks:
             cost=0.0,
             latency_ms=0,
             metric_name="language",
+            input_preview=output[:200],
         )
 
     # --- Numeric comparison ---
@@ -554,6 +581,7 @@ class DeterministicChecks:
                 passed=False, score=0.0,
                 reasoning=f"No number found in output",
                 cost=0.0, latency_ms=0, metric_name="greater_than",
+                input_preview=output[:200],
             )
         passed = value > threshold
         score = min(1.0, value / max(abs(threshold), 0.001)) if passed else max(0.0, value / max(abs(threshold), 0.001))
@@ -561,6 +589,7 @@ class DeterministicChecks:
             passed=passed, score=min(1.0, max(0.0, score)),
             reasoning=f"Value: {value}, must be > {threshold}",
             cost=0.0, latency_ms=0, metric_name="greater_than",
+            input_preview=output[:200],
         )
 
     def less_than(self, output: str, threshold: float) -> CheckResult:
@@ -571,6 +600,7 @@ class DeterministicChecks:
                 passed=False, score=0.0,
                 reasoning=f"No number found in output",
                 cost=0.0, latency_ms=0, metric_name="less_than",
+                input_preview=output[:200],
             )
         passed = value < threshold
         score = min(1.0, threshold / max(abs(value), 0.001)) if passed else max(0.0, threshold / max(abs(value), 0.001))
@@ -578,6 +608,7 @@ class DeterministicChecks:
             passed=passed, score=min(1.0, max(0.0, score)),
             reasoning=f"Value: {value}, must be < {threshold}",
             cost=0.0, latency_ms=0, metric_name="less_than",
+            input_preview=output[:200],
         )
 
     def between(self, output: str, low: float, high: float) -> CheckResult:
@@ -588,6 +619,7 @@ class DeterministicChecks:
                 passed=False, score=0.0,
                 reasoning=f"No number found in output",
                 cost=0.0, latency_ms=0, metric_name="between",
+                input_preview=output[:200],
             )
         passed = low <= value <= high
         if passed:
@@ -600,6 +632,7 @@ class DeterministicChecks:
             passed=passed, score=score,
             reasoning=f"Value: {value}, must be in [{low}, {high}]",
             cost=0.0, latency_ms=0, metric_name="between",
+            input_preview=output[:200],
         )
 
     # --- Text similarity metrics ---
@@ -614,6 +647,8 @@ class DeterministicChecks:
                 passed=False, score=0.0,
                 reasoning="Empty output or reference",
                 cost=0.0, latency_ms=0, metric_name="bleu",
+                input_preview=output[:200],
+                threshold=threshold,
             )
 
         # Compute modified n-gram precisions for n=1..4
@@ -624,6 +659,8 @@ class DeterministicChecks:
                 passed=False, score=0.0,
                 reasoning="Output too short to compute BLEU",
                 cost=0.0, latency_ms=0, metric_name="bleu",
+                input_preview=output[:200],
+                threshold=threshold,
             )
 
         for n in range(1, max_n + 1):
@@ -644,6 +681,8 @@ class DeterministicChecks:
                     passed=passed, score=score,
                     reasoning=f"BLEU: {score:.4f} (threshold: {threshold}) — zero {n}-gram matches",
                     cost=0.0, latency_ms=0, metric_name="bleu",
+                    input_preview=output[:200],
+                    threshold=threshold,
                 )
             log_avg += (1.0 / max_n) * math.log(numerator / denominator)
 
@@ -659,6 +698,8 @@ class DeterministicChecks:
             passed=passed, score=score,
             reasoning=f"BLEU: {score:.4f} (threshold: {threshold}, BP: {bp:.4f})",
             cost=0.0, latency_ms=0, metric_name="bleu",
+            input_preview=output[:200],
+            threshold=threshold,
         )
 
     def rouge_l(self, output: str, reference: str, threshold: float = 0.5) -> CheckResult:
@@ -671,6 +712,8 @@ class DeterministicChecks:
                 passed=False, score=0.0,
                 reasoning="Empty output or reference",
                 cost=0.0, latency_ms=0, metric_name="rouge_l",
+                input_preview=output[:200],
+                threshold=threshold,
             )
 
         # Compute LCS length using dynamic programming
@@ -701,6 +744,8 @@ class DeterministicChecks:
             passed=passed, score=score,
             reasoning=f"ROUGE-L F1: {score:.4f} (P: {precision:.4f}, R: {recall:.4f}, threshold: {threshold})",
             cost=0.0, latency_ms=0, metric_name="rouge_l",
+            input_preview=output[:200],
+            threshold=threshold,
         )
 
     # --- JSON field-level assertion ---
@@ -714,6 +759,7 @@ class DeterministicChecks:
                 passed=False, score=0.0,
                 reasoning=f"Invalid JSON: {e}",
                 cost=0.0, latency_ms=0, metric_name="json_field",
+                input_preview=output[:200],
             )
 
         # Navigate to field using dot notation
@@ -731,12 +777,14 @@ class DeterministicChecks:
                         passed=False, score=0.0,
                         reasoning=f"Field path '{field_path}' not found — invalid list index '{part}'",
                         cost=0.0, latency_ms=0, metric_name="json_field",
+                        input_preview=output[:200],
                     )
             else:
                 return CheckResult(
                     passed=False, score=0.0,
                     reasoning=f"Field path '{field_path}' not found at segment '{part}'",
                     cost=0.0, latency_ms=0, metric_name="json_field",
+                    input_preview=output[:200],
                 )
 
         # Evaluate condition or check equality
@@ -749,6 +797,7 @@ class DeterministicChecks:
                 passed=passed, score=1.0 if passed else 0.0,
                 reasoning=f"Field '{field_path}' = {current!r}, expected {expected!r}",
                 cost=0.0, latency_ms=0, metric_name="json_field",
+                input_preview=output[:200],
             )
 
         # No condition and no expected — just check that the field exists
@@ -756,6 +805,7 @@ class DeterministicChecks:
             passed=True, score=1.0,
             reasoning=f"Field '{field_path}' exists with value: {current!r}",
             cost=0.0, latency_ms=0, metric_name="json_field",
+            input_preview=output[:200],
         )
 
     def _eval_json_condition(self, value: Any, condition: str, field_path: str) -> CheckResult:
@@ -870,6 +920,7 @@ class DeterministicChecks:
                 passed=False, score=0.0,
                 reasoning="Empty SQL statement",
                 cost=0.0, latency_ms=0, metric_name="is_valid_sql",
+                input_preview=output[:200],
             )
 
         errors: list[str] = []
@@ -921,12 +972,14 @@ class DeterministicChecks:
                 passed=False, score=max(0.0, 1.0 - len(errors) * 0.25),
                 reasoning=f"SQL validation errors: {'; '.join(errors)}",
                 cost=0.0, latency_ms=0, metric_name="is_valid_sql",
+                input_preview=output[:200],
             )
 
         return CheckResult(
             passed=True, score=1.0,
             reasoning="Valid SQL syntax (basic validation passed)",
             cost=0.0, latency_ms=0, metric_name="is_valid_sql",
+            input_preview=output[:200],
         )
 
     # --- Markdown validation ---
@@ -944,6 +997,7 @@ class DeterministicChecks:
                 passed=False, score=0.0,
                 reasoning="Empty output",
                 cost=0.0, latency_ms=0, metric_name="is_valid_markdown",
+                input_preview=output[:200],
             )
 
         errors: list[str] = []
@@ -991,4 +1045,5 @@ class DeterministicChecks:
             passed=passed, score=score,
             reasoning=reasoning,
             cost=0.0, latency_ms=0, metric_name="is_valid_markdown",
+            input_preview=output[:200],
         )

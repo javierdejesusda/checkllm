@@ -30,6 +30,8 @@ class JudgeChecksMixin:
             coro_factory=lambda: metric.evaluate(output=output, context=context),
             cache_kwargs={"output": output, "context": context, "threshold": str(t)},
             runs=runs,
+            threshold=t,
+            input_preview=output,
         )
 
     def relevance(
@@ -51,6 +53,8 @@ class JudgeChecksMixin:
             coro_factory=lambda: metric.evaluate(output=output, query=query),
             cache_kwargs={"output": output, "query": query, "threshold": str(t)},
             runs=runs,
+            threshold=t,
+            input_preview=output,
         )
 
     def toxicity(
@@ -71,6 +75,8 @@ class JudgeChecksMixin:
             coro_factory=lambda: metric.evaluate(output=output),
             cache_kwargs={"output": output, "threshold": str(t)},
             runs=runs,
+            threshold=t,
+            input_preview=output,
         )
 
     def rubric(
@@ -92,6 +98,8 @@ class JudgeChecksMixin:
             coro_factory=lambda: metric.evaluate(output=output, criteria=criteria, threshold=t),
             cache_kwargs={"output": output, "criteria": criteria, "threshold": str(t)},
             runs=runs,
+            threshold=t,
+            input_preview=output,
         )
 
     def fluency(
@@ -112,6 +120,8 @@ class JudgeChecksMixin:
             coro_factory=lambda: metric.evaluate(output=output),
             cache_kwargs={"output": output, "threshold": str(t)},
             runs=runs,
+            threshold=t,
+            input_preview=output,
         )
 
     def coherence(
@@ -132,6 +142,8 @@ class JudgeChecksMixin:
             coro_factory=lambda: metric.evaluate(output=output),
             cache_kwargs={"output": output, "threshold": str(t)},
             runs=runs,
+            threshold=t,
+            input_preview=output,
         )
 
     def sentiment(
@@ -152,6 +164,8 @@ class JudgeChecksMixin:
             coro_factory=lambda: metric.evaluate(output=output),
             cache_kwargs={"output": output, "threshold": str(t)},
             runs=runs,
+            threshold=t,
+            input_preview=output,
         )
 
     def correctness(
@@ -173,6 +187,8 @@ class JudgeChecksMixin:
             coro_factory=lambda: metric.evaluate(output=output, expected=expected),
             cache_kwargs={"output": output, "expected": expected, "threshold": str(t)},
             runs=runs,
+            threshold=t,
+            input_preview=output,
         )
 
     def faithfulness(
@@ -198,6 +214,8 @@ class JudgeChecksMixin:
             coro_factory=lambda: metric.evaluate(output=output, context=context, query=query),
             cache_kwargs=cache_kw,
             runs=runs,
+            threshold=t,
+            input_preview=output,
         )
 
     def context_relevance(
@@ -219,6 +237,8 @@ class JudgeChecksMixin:
             coro_factory=lambda: metric.evaluate(context=context, query=query),
             cache_kwargs={"context": context, "query": query, "threshold": str(t)},
             runs=runs,
+            threshold=t,
+            input_preview=context,
         )
 
     def answer_completeness(
@@ -240,6 +260,8 @@ class JudgeChecksMixin:
             coro_factory=lambda: metric.evaluate(output=output, query=query),
             cache_kwargs={"output": output, "query": query, "threshold": str(t)},
             runs=runs,
+            threshold=t,
+            input_preview=output,
         )
 
     def instruction_following(
@@ -261,6 +283,8 @@ class JudgeChecksMixin:
             coro_factory=lambda: metric.evaluate(output=output, instructions=instructions),
             cache_kwargs={"output": output, "instructions": instructions, "threshold": str(t)},
             runs=runs,
+            threshold=t,
+            input_preview=output,
         )
 
     def summarization(
@@ -282,6 +306,8 @@ class JudgeChecksMixin:
             coro_factory=lambda: metric.evaluate(output=output, source=source),
             cache_kwargs={"output": output, "source": source, "threshold": str(t)},
             runs=runs,
+            threshold=t,
+            input_preview=output,
         )
 
     def bias(
@@ -306,6 +332,8 @@ class JudgeChecksMixin:
             coro_factory=lambda: metric.evaluate(output=output, categories=categories),
             cache_kwargs=cache_kw,
             runs=runs,
+            threshold=t,
+            input_preview=output,
         )
 
     def consistency(
@@ -326,6 +354,8 @@ class JudgeChecksMixin:
             coro_factory=lambda: metric.evaluate(outputs=outputs),
             cache_kwargs={"outputs": "|".join(outputs), "threshold": str(t)},
             runs=runs,
+            threshold=t,
+            input_preview=outputs[0] if outputs else None,
         )
 
     def groundedness(
@@ -347,6 +377,8 @@ class JudgeChecksMixin:
             coro_factory=lambda: metric.evaluate(output=output, sources=sources),
             cache_kwargs={"output": output, "sources": "|".join(sources), "threshold": str(t)},
             runs=runs,
+            threshold=t,
+            input_preview=output,
         )
 
     def g_eval(
@@ -372,6 +404,8 @@ class JudgeChecksMixin:
             coro_factory=lambda: metric.evaluate(output=output, criteria=criteria, steps=steps),
             cache_kwargs=cache_kw,
             runs=runs,
+            threshold=t,
+            input_preview=output,
         )
 
     def contextual_precision(
@@ -395,6 +429,8 @@ class JudgeChecksMixin:
             coro_factory=lambda: metric.evaluate(output=output, context=context, query=query, expected=expected),
             cache_kwargs={"output": output, "context": "|".join(context), "query": query, "expected": expected, "threshold": str(t)},
             runs=runs,
+            threshold=t,
+            input_preview=output,
         )
 
     def contextual_recall(
@@ -417,6 +453,8 @@ class JudgeChecksMixin:
             coro_factory=lambda: metric.evaluate(output=output, context=context, expected=expected),
             cache_kwargs={"output": output, "context": "|".join(context), "expected": expected, "threshold": str(t)},
             runs=runs,
+            threshold=t,
+            input_preview=output,
         )
 
     def task_completion(
@@ -442,6 +480,8 @@ class JudgeChecksMixin:
             coro_factory=lambda: metric.evaluate(output=output, task_description=task_description, constraints=constraints),
             cache_kwargs=cache_kw,
             runs=runs,
+            threshold=t,
+            input_preview=output,
         )
 
     def role_adherence(
@@ -467,6 +507,8 @@ class JudgeChecksMixin:
             coro_factory=lambda: metric.evaluate(output=output, role_description=role_description, query=query),
             cache_kwargs=cache_kw,
             runs=runs,
+            threshold=t,
+            input_preview=output,
         )
 
     def tool_accuracy(
@@ -490,6 +532,8 @@ class JudgeChecksMixin:
             coro_factory=lambda: metric.evaluate(output=output, expected_tools=expected_tools, query=query),
             cache_kwargs={"output": output, "expected_tools": _json.dumps(expected_tools, sort_keys=True), "query": query, "threshold": str(t)},
             runs=runs,
+            threshold=t,
+            input_preview=output,
         )
 
     def knowledge_retention(
@@ -511,6 +555,8 @@ class JudgeChecksMixin:
             coro_factory=lambda: metric.evaluate(conversation=conversation),
             cache_kwargs={"transcript": transcript, "threshold": str(t)},
             runs=runs,
+            threshold=t,
+            input_preview=conversation.format_transcript()[:200],
         )
 
     def conversation_completeness(
@@ -532,6 +578,8 @@ class JudgeChecksMixin:
             coro_factory=lambda: metric.evaluate(conversation=conversation),
             cache_kwargs={"transcript": transcript, "threshold": str(t)},
             runs=runs,
+            threshold=t,
+            input_preview=conversation.format_transcript()[:200],
         )
 
     # --- Async LLM-as-judge checks ---
