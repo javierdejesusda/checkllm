@@ -103,6 +103,14 @@ class OpenAIJudge:
         self.total_cost: float = 0.0
         self.last_cost: float = 0.0
 
+        try:
+            from openai import AsyncOpenAI
+        except ImportError:
+            raise JudgeConfigError(
+                "openai package not installed — pip install checkllm[openai]"
+                " (or pip install checkllm[all] for everything)"
+            )
+
         resolved_key = api_key or os.environ.get("OPENAI_API_KEY")
         if not resolved_key:
             raise JudgeConfigError(
@@ -111,7 +119,6 @@ class OpenAIJudge:
                 "  export OPENAI_API_KEY=sk-..."
             )
 
-        from openai import AsyncOpenAI
         self._client = AsyncOpenAI(api_key=resolved_key)
 
     @_api_retry
