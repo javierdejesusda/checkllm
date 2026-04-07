@@ -791,6 +791,255 @@ class JudgeChecksMixin:
             input_preview=output,
         )
 
+    def image_coherence(
+        self,
+        image_description: str,
+        text_context: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.image_coherence import ImageCoherenceMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = ImageCoherenceMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="image_coherence",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(
+                image_description=image_description, text_context=text_context
+            ),
+            cache_kwargs={
+                "image_description": image_description,
+                "text_context": text_context,
+                "threshold": str(t),
+            },
+            runs=runs,
+            threshold=t,
+            input_preview=image_description,
+        )
+
+    def image_helpfulness(
+        self,
+        image_description: str,
+        query: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.image_helpfulness import ImageHelpfulnessMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = ImageHelpfulnessMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="image_helpfulness",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(
+                image_description=image_description, query=query
+            ),
+            cache_kwargs={
+                "image_description": image_description,
+                "query": query,
+                "threshold": str(t),
+            },
+            runs=runs,
+            threshold=t,
+            input_preview=image_description,
+        )
+
+    def image_relevance(
+        self,
+        image_description: str,
+        query: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.image_relevance import ImageRelevanceMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = ImageRelevanceMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="image_relevance",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(
+                image_description=image_description, query=query
+            ),
+            cache_kwargs={
+                "image_description": image_description,
+                "query": query,
+                "threshold": str(t),
+            },
+            runs=runs,
+            threshold=t,
+            input_preview=image_description,
+        )
+
+    def multimodal_faithfulness(
+        self,
+        image_description: str,
+        text_output: str,
+        source_context: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.multimodal_faithfulness import MultimodalFaithfulnessMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = MultimodalFaithfulnessMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="multimodal_faithfulness",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(
+                image_description=image_description,
+                text_output=text_output,
+                source_context=source_context,
+            ),
+            cache_kwargs={
+                "image_description": image_description,
+                "text_output": text_output,
+                "source_context": source_context,
+                "threshold": str(t),
+            },
+            runs=runs,
+            threshold=t,
+            input_preview=image_description,
+        )
+
+    def text_to_image(
+        self,
+        image_description: str,
+        original_prompt: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.text_to_image import TextToImageMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = TextToImageMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="text_to_image",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(
+                image_description=image_description, original_prompt=original_prompt
+            ),
+            cache_kwargs={
+                "image_description": image_description,
+                "original_prompt": original_prompt,
+                "threshold": str(t),
+            },
+            runs=runs,
+            threshold=t,
+            input_preview=image_description,
+        )
+
+    def mcp_task_completion(
+        self,
+        output: str,
+        task: str,
+        tools_used: list[str],
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.mcp_task_completion import MCPTaskCompletionMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = MCPTaskCompletionMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="mcp_task_completion",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(
+                output=output, task=task, tools_used=tools_used
+            ),
+            cache_kwargs={
+                "output": output,
+                "task": task,
+                "tools_used": ",".join(tools_used),
+                "threshold": str(t),
+            },
+            runs=runs,
+            threshold=t,
+            input_preview=output,
+        )
+
+    def mcp_use(
+        self,
+        output: str,
+        tools_available: list[str],
+        tools_used: list[str],
+        query: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.mcp_use import MCPUseMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = MCPUseMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="mcp_use",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(
+                output=output,
+                tools_available=tools_available,
+                tools_used=tools_used,
+                query=query,
+            ),
+            cache_kwargs={
+                "output": output,
+                "tools_available": ",".join(tools_available),
+                "tools_used": ",".join(tools_used),
+                "query": query,
+                "threshold": str(t),
+            },
+            runs=runs,
+            threshold=t,
+            input_preview=output,
+        )
+
+    def multi_turn_mcp_use(
+        self,
+        conversation_trace: str,
+        tools_available: list[str],
+        tools_used: list[str],
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.multi_turn_mcp_use import MultiTurnMCPUseMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = MultiTurnMCPUseMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="multi_turn_mcp_use",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(
+                conversation_trace=conversation_trace,
+                tools_available=tools_available,
+                tools_used=tools_used,
+            ),
+            cache_kwargs={
+                "conversation_trace": conversation_trace,
+                "tools_available": ",".join(tools_available),
+                "tools_used": ",".join(tools_used),
+                "threshold": str(t),
+            },
+            runs=runs,
+            threshold=t,
+            input_preview=conversation_trace,
+        )
+
     # --- Async LLM-as-judge checks ---
 
     async def ahallucination(
