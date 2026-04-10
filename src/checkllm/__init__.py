@@ -282,6 +282,28 @@ try:
     # New: CI/CD integration
     from checkllm.cicd.github_action import GitHubActionGenerator
     from checkllm.cicd.gitlab_ci import GitLabCIGenerator
+    # Phase 6: Comprehensive compliance frameworks
+    from checkllm.compliance_frameworks import (
+        ComplianceFramework as ComplianceFrameworkV3,
+        ComplianceReport as ComplianceReportV3,
+        ComplianceScanner as ComplianceScannerV3,
+        FrameworkMapping,
+        FrameworkRequirement as FrameworkRequirementV3,
+        MultiFrameworkReport,
+        RequirementResult as RequirementResultV3,
+        get_framework_mapping,
+        list_all_frameworks,
+    )
+    # Phase 6: YAML-based evaluation
+    from checkllm.yaml_eval import (
+        AssertionConfig as YAMLAssertionConfig,
+        JudgeConfig as YAMLJudgeConfig,
+        TestConfig as YAMLTestConfig,
+        YAMLEvalConfig,
+        YAMLEvalResult,
+        YAMLEvaluator,
+        load_yaml_eval_config,
+    )
 except ImportError:
     pass  # Optional dependencies not installed
 
@@ -578,6 +600,24 @@ __all__ = [
     "SummaryExtractor",
     "SynthesizedSample",
     "ThemeExtractor",
+    # Comprehensive compliance frameworks
+    "ComplianceFrameworkV3",
+    "ComplianceReportV3",
+    "ComplianceScannerV3",
+    "FrameworkMapping",
+    "FrameworkRequirementV3",
+    "MultiFrameworkReport",
+    "RequirementResultV3",
+    "get_framework_mapping",
+    "list_all_frameworks",
+    # YAML evaluation
+    "YAMLAssertionConfig",
+    "YAMLEvalConfig",
+    "YAMLEvalResult",
+    "YAMLEvaluator",
+    "YAMLJudgeConfig",
+    "YAMLTestConfig",
+    "load_yaml_eval_config",
     # Version
     "__version__",
 ]

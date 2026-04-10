@@ -668,6 +668,82 @@ def estimate(
     console.print(f"\n[dim]Files scanned: {len(files)}[/]")
 
 
+@app.command(name="eval-yaml")
+def eval_yaml(
+    config: str = typer.Argument(help="Path to YAML config file"),
+    budget: Optional[float] = typer.Option(None, "--budget", help="Override budget (USD)"),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Parse config and show plan without running"),
+):
+    """Run evaluation from a YAML configuration file.
+
+    Supports promptfoo-style YAML configs with prompts, providers, test
+    cases, and assertions.  Both deterministic and LLM-as-judge assertion
+    types are available.
+
+    Example::
+
+        checkllm eval-yaml checkllm.yaml
+        checkllm eval-yaml tests/eval.yml --budget 2.0
+    """
+    import asyncio as _asyncio
+
+    from checkllm.yaml_eval import YAMLEvaluator
+
+    evaluator = YAMLEvaluator()
+
+    try:
+        cfg = evaluator.load_config(config)
+    except FileNotFoundError:
+        console.print(f"[bold red]Config file not found: {config}[/]")
+        raise typer.Exit(code=1)
+    except ValueError as exc:
+        console.print(f"[bold red]Invalid config: {exc}[/]")
+        raise typer.Exit(code=1)
+
+    if budget is not None:
+        cfg.settings.budget = budget
+
+    console.print(f"[bold]YAML Evaluation: {cfg.description or config}[/]")
+    console.print(f"[dim]Tests: {len(cfg.tests)} | Prompts: {len(cfg.prompts) or 1} | Providers: {len(cfg.providers) or 1}[/]")
+    console.print(f"[dim]Judge: {cfg.judge.backend}{'/' + cfg.judge.model if cfg.judge.model else ''}[/]")
+
+    total_assertions = sum(len(t.assert_) for t in cfg.tests)
+    total_combos = (len(cfg.prompts) or 1) * (len(cfg.providers) or 1)
+    console.print(f"[dim]Total assertion runs: {total_assertions * total_combos}[/]")
+
+    if cfg.settings.budget:
+        console.print(f"[dim]Budget: ${cfg.settings.budget:.2f}[/]")
+
+    if dry_run:
+        console.print("\n[bold green]Dry run complete. Config is valid.[/]")
+        raise typer.Exit(code=0)
+
+    console.print()
+
+    try:
+        loop = _asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+
+    if loop and loop.is_running():
+        import concurrent.futures
+        with concurrent.futures.ThreadPoolExecutor() as pool:
+            result = pool.submit(_asyncio.run, evaluator.run_from_config(cfg)).result()
+    else:
+        result = _asyncio.run(evaluator.run_from_config(cfg))
+
+    console.print(result.summary())
+    console.print()
+    console.print(f"[dim]Total cost: ${result.cost:.4f} | Duration: {result.duration_ms:.0f}ms[/]")
+
+    if result.failed > 0:
+        console.print(f"\n[bold red]{result.failed} assertion(s) failed[/]")
+        raise typer.Exit(code=1)
+    else:
+        console.print(f"\n[bold green]All {result.passed} assertion(s) passed[/]")
+        raise typer.Exit(code=0)
+
+
 @app.command()
 def init(
     path: str = typer.Argument(".", help="Directory to initialize"),
