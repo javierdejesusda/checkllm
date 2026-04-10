@@ -298,7 +298,7 @@ try:
     from checkllm.yaml_eval import (
         AssertionConfig as YAMLAssertionConfig,
         JudgeConfig as YAMLJudgeConfig,
-        TestConfig as YAMLTestConfig,
+        EvalTestConfig as YAMLTestConfig,
         YAMLEvalConfig,
         YAMLEvalResult,
         YAMLEvaluator,

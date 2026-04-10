@@ -88,7 +88,7 @@ class AssertionConfig(BaseModel):
         populate_by_name = True
 
 
-class TestConfig(BaseModel):
+class EvalTestConfig(BaseModel):
     """A single test case with variables and assertions.
 
     Attributes:
@@ -137,7 +137,7 @@ class YAMLEvalConfig(BaseModel):
     judge: JudgeConfig = Field(default_factory=JudgeConfig)
     prompts: list[str] = Field(default_factory=list)
     providers: list[str] = Field(default_factory=list)
-    tests: list[TestConfig] = Field(default_factory=list)
+    tests: list[EvalTestConfig] = Field(default_factory=list)
     settings: EvalSettings = Field(default_factory=EvalSettings)
 
 
@@ -271,7 +271,7 @@ def load_yaml_eval_config(path: str | Path) -> YAMLEvalConfig:
     config_data["providers"] = data.get("providers", [])
 
     tests_raw = data.get("tests", [])
-    tests: list[TestConfig] = []
+    tests: list[EvalTestConfig] = []
     for t in tests_raw:
         if not isinstance(t, dict):
             continue
@@ -286,7 +286,7 @@ def load_yaml_eval_config(path: str | Path) -> YAMLEvalConfig:
             if isinstance(a, dict):
                 assertions.append(AssertionConfig(**a))
         test_kwargs["assert_"] = assertions
-        tests.append(TestConfig(**test_kwargs))
+        tests.append(EvalTestConfig(**test_kwargs))
     config_data["tests"] = tests
 
     settings_data = data.get("settings")
@@ -567,7 +567,7 @@ class YAMLEvaluator:
         self,
         assertion: AssertionConfig,
         output: str,
-        test: TestConfig,
+        test: EvalTestConfig,
         judge: Any,
         settings: EvalSettings,
     ) -> CheckResult:

@@ -369,7 +369,7 @@ class TestComplianceScannerNoJudge:
         async def target(prompt: str) -> str:
             return "test response"
 
-        result = asyncio.get_event_loop().run_until_complete(
+        result = asyncio.new_event_loop().run_until_complete(
             scanner.scan(target=target)
         )
         assert isinstance(result, MultiFrameworkReport)
@@ -386,7 +386,7 @@ class TestComplianceScannerNoJudge:
         async def target(prompt: str) -> str:
             return "test"
 
-        report = asyncio.get_event_loop().run_until_complete(
+        report = asyncio.new_event_loop().run_until_complete(
             scanner.scan_single(target=target, framework=ComplianceFramework.COPPA)
         )
         assert isinstance(report, ComplianceReport)
@@ -400,7 +400,7 @@ class TestComplianceScannerNoJudge:
         async def target(prompt: str) -> str:
             return "test"
 
-        result = asyncio.get_event_loop().run_until_complete(
+        result = asyncio.new_event_loop().run_until_complete(
             scanner.scan(
                 target=target,
                 frameworks=[

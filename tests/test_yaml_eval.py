@@ -12,7 +12,7 @@ from checkllm.yaml_eval import (
     AssertionConfig,
     EvalSettings,
     JudgeConfig,
-    TestConfig,
+    EvalTestConfig,
     YAMLEvalConfig,
     YAMLEvalResult,
     YAMLEvaluator,
@@ -85,17 +85,17 @@ class TestAssertionConfig:
         assert a.threshold == 0.9
 
 
-class TestTestConfig:
-    """Tests for TestConfig."""
+class TestEvalTestConfig:
+    """Tests for EvalTestConfig."""
 
     def test_defaults(self):
-        t = TestConfig()
+        t = EvalTestConfig()
         assert t.vars == {}
         assert t.assert_ == []
         assert t.description == ""
 
     def test_with_vars_and_assertions(self):
-        t = TestConfig(
+        t = EvalTestConfig(
             vars={"query": "Hello"},
             assert_=[
                 AssertionConfig(type="contains", value="hello"),
@@ -304,7 +304,7 @@ class TestYAMLEvaluator:
             prompts=["{{query}}"],
             providers=["default"],
             tests=[
-                TestConfig(
+                EvalTestConfig(
                     vars={"query": "What is 2+2?"},
                     assert_=[
                         AssertionConfig(type="contains", value="4"),
@@ -321,7 +321,7 @@ class TestYAMLEvaluator:
             new_callable=AsyncMock,
             return_value="The answer is 4.",
         ):
-            result = asyncio.get_event_loop().run_until_complete(
+            result = asyncio.new_event_loop().run_until_complete(
                 evaluator.run_from_config(config)
             )
 
@@ -337,7 +337,7 @@ class TestYAMLEvaluator:
         config = YAMLEvalConfig(
             description="Fail test",
             tests=[
-                TestConfig(
+                EvalTestConfig(
                     vars={"query": "test"},
                     assert_=[
                         AssertionConfig(type="contains", value="nonexistent_string"),
@@ -354,7 +354,7 @@ class TestYAMLEvaluator:
             new_callable=AsyncMock,
             return_value="Hello world",
         ):
-            result = asyncio.get_event_loop().run_until_complete(
+            result = asyncio.new_event_loop().run_until_complete(
                 evaluator.run_from_config(config)
             )
 
@@ -367,7 +367,7 @@ class TestYAMLEvaluator:
         """Test the no_pii deterministic assertion."""
         config = YAMLEvalConfig(
             tests=[
-                TestConfig(
+                EvalTestConfig(
                     vars={"query": "test"},
                     assert_=[
                         AssertionConfig(type="no_pii"),
@@ -384,7 +384,7 @@ class TestYAMLEvaluator:
             new_callable=AsyncMock,
             return_value="This is a clean response with no personal data.",
         ):
-            result = asyncio.get_event_loop().run_until_complete(
+            result = asyncio.new_event_loop().run_until_complete(
                 evaluator.run_from_config(config)
             )
 
@@ -395,7 +395,7 @@ class TestYAMLEvaluator:
         """Test the max_tokens deterministic assertion."""
         config = YAMLEvalConfig(
             tests=[
-                TestConfig(
+                EvalTestConfig(
                     vars={"query": "test"},
                     assert_=[
                         AssertionConfig(type="max_tokens", value=10),
@@ -412,7 +412,7 @@ class TestYAMLEvaluator:
             new_callable=AsyncMock,
             return_value="Short response.",
         ):
-            result = asyncio.get_event_loop().run_until_complete(
+            result = asyncio.new_event_loop().run_until_complete(
                 evaluator.run_from_config(config)
             )
 
@@ -422,7 +422,7 @@ class TestYAMLEvaluator:
         """Test running multiple assertions on one test case."""
         config = YAMLEvalConfig(
             tests=[
-                TestConfig(
+                EvalTestConfig(
                     vars={"query": "price check"},
                     assert_=[
                         AssertionConfig(type="contains", value="price"),
@@ -441,7 +441,7 @@ class TestYAMLEvaluator:
             new_callable=AsyncMock,
             return_value="The price is $9.99.",
         ):
-            result = asyncio.get_event_loop().run_until_complete(
+            result = asyncio.new_event_loop().run_until_complete(
                 evaluator.run_from_config(config)
             )
 
@@ -453,11 +453,11 @@ class TestYAMLEvaluator:
         """Test running multiple test cases."""
         config = YAMLEvalConfig(
             tests=[
-                TestConfig(
+                EvalTestConfig(
                     vars={"query": "test1"},
                     assert_=[AssertionConfig(type="contains", value="hello")],
                 ),
-                TestConfig(
+                EvalTestConfig(
                     vars={"query": "test2"},
                     assert_=[AssertionConfig(type="contains", value="world")],
                 ),
@@ -472,7 +472,7 @@ class TestYAMLEvaluator:
             new_callable=AsyncMock,
             return_value="hello world",
         ):
-            result = asyncio.get_event_loop().run_until_complete(
+            result = asyncio.new_event_loop().run_until_complete(
                 evaluator.run_from_config(config)
             )
 
@@ -485,7 +485,7 @@ class TestYAMLEvaluator:
         config = YAMLEvalConfig(
             prompts=["Answer this: {{query}}"],
             tests=[
-                TestConfig(
+                EvalTestConfig(
                     vars={"query": "What is AI?"},
                     assert_=[AssertionConfig(type="contains", value="AI")],
                 ),
@@ -500,7 +500,7 @@ class TestYAMLEvaluator:
             return "AI is artificial intelligence."
 
         with patch.object(evaluator, "_generate_output", side_effect=mock_generate):
-            asyncio.get_event_loop().run_until_complete(
+            asyncio.new_event_loop().run_until_complete(
                 evaluator.run_from_config(config)
             )
 
@@ -511,7 +511,7 @@ class TestYAMLEvaluator:
         """Test that unknown assertion types result in failure."""
         config = YAMLEvalConfig(
             tests=[
-                TestConfig(
+                EvalTestConfig(
                     vars={"query": "test"},
                     assert_=[AssertionConfig(type="nonexistent_check")],
                 ),
@@ -526,7 +526,7 @@ class TestYAMLEvaluator:
             new_callable=AsyncMock,
             return_value="output",
         ):
-            result = asyncio.get_event_loop().run_until_complete(
+            result = asyncio.new_event_loop().run_until_complete(
                 evaluator.run_from_config(config)
             )
 
@@ -537,7 +537,7 @@ class TestYAMLEvaluator:
         """Test that LLM assertions fail gracefully without a judge."""
         config = YAMLEvalConfig(
             tests=[
-                TestConfig(
+                EvalTestConfig(
                     vars={"query": "test"},
                     assert_=[AssertionConfig(type="relevance", threshold=0.8)],
                 ),
@@ -556,7 +556,7 @@ class TestYAMLEvaluator:
             "_create_judge",
             return_value=None,
         ):
-            result = asyncio.get_event_loop().run_until_complete(
+            result = asyncio.new_event_loop().run_until_complete(
                 evaluator.run_from_config(config)
             )
 
@@ -568,7 +568,7 @@ class TestYAMLEvaluator:
         """Test that costs are accumulated across assertions."""
         config = YAMLEvalConfig(
             tests=[
-                TestConfig(
+                EvalTestConfig(
                     vars={"query": "test"},
                     assert_=[
                         AssertionConfig(type="contains", value="a"),
@@ -586,7 +586,7 @@ class TestYAMLEvaluator:
             new_callable=AsyncMock,
             return_value="a and b",
         ):
-            result = asyncio.get_event_loop().run_until_complete(
+            result = asyncio.new_event_loop().run_until_complete(
                 evaluator.run_from_config(config)
             )
 
