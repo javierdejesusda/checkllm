@@ -165,7 +165,22 @@ try:
         SynthesisConfig,
         Synthesizer,
     )
-    from checkllm.optimize import OptimizationResult, PromptOptimizer, PromptVariant
+    from checkllm.optimize import (
+        COPROOptimizer,
+        MIPROv2Optimizer,
+        OptimizationResult,
+        PromptOptimizer,
+        PromptVariant,
+        SIMBAOptimizer,
+        create_optimizer,
+    )
+    from checkllm.multilingual import (
+        PromptAdapter,
+        PromptTemplate,
+        SupportedLanguage,
+        TranslatedPrompt,
+        detect_language,
+    )
     from checkllm.testing import MockJudge, assert_all_passed, assert_score_above, make_collector
     from checkllm.yaml_config import EvalConfig, YamlEvalRunner, load_eval_config
     # New: Metric alignment
@@ -405,9 +420,19 @@ __all__ = [
     "KnowledgeGraph",
     "KnowledgeNode",
     # Prompt optimization
+    "COPROOptimizer",
+    "MIPROv2Optimizer",
     "OptimizationResult",
     "PromptOptimizer",
     "PromptVariant",
+    "SIMBAOptimizer",
+    "create_optimizer",
+    # Multilingual
+    "PromptAdapter",
+    "PromptTemplate",
+    "SupportedLanguage",
+    "TranslatedPrompt",
+    "detect_language",
     # Synthesizer
     "EvolutionStrategy",
     "SynthesisConfig",
