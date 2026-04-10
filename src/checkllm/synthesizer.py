@@ -60,6 +60,7 @@ class EvolutionStrategy(str, Enum):
     ADVERSARIAL = "adversarial"
     COMPARATIVE = "comparative"
     KNOWLEDGE_GRAPH = "knowledge_graph"
+    KNOWLEDGE_GRAPH_V2 = "knowledge_graph_v2"
 
 
 # ---------------------------------------------------------------------------
@@ -101,6 +102,12 @@ _STRATEGY_INSTRUCTIONS: dict[EvolutionStrategy, str] = {
         "concepts identified in the source material. Questions should require "
         "reasoning across connected facts and named entities."
     ),
+    EvolutionStrategy.KNOWLEDGE_GRAPH_V2: (
+        "Generate questions using a full knowledge graph pipeline with entity "
+        "extraction, theme analysis, and multi-hop reasoning across connected "
+        "document chunks. Produces single-hop, multi-hop abstract, and "
+        "multi-hop specific question types."
+    ),
 }
 
 _DIFFICULTY_MAP: dict[EvolutionStrategy, str] = {
@@ -111,6 +118,7 @@ _DIFFICULTY_MAP: dict[EvolutionStrategy, str] = {
     EvolutionStrategy.ADVERSARIAL: "hard",
     EvolutionStrategy.COMPARATIVE: "medium",
     EvolutionStrategy.KNOWLEDGE_GRAPH: "medium",
+    EvolutionStrategy.KNOWLEDGE_GRAPH_V2: "medium",
 }
 
 
@@ -415,6 +423,45 @@ class Synthesizer:
             self._total_cost,
         )
         return evolved
+
+    async def from_documents_kg(
+        self,
+        documents: list[str],
+        num_cases: int | None = None,
+        synthesizers: dict[str, float] | None = None,
+        personas: int | list[Any] | None = None,
+    ) -> list[Case]:
+        """Generate test cases using the KG-based pipeline.
+
+        Delegates to :class:`~checkllm.knowledge_graph.KGTestGenerator` for
+        full knowledge graph construction, entity/theme extraction, and
+        multi-hop question synthesis.
+
+        Args:
+            documents: A list of document texts to generate questions from.
+            num_cases: Total number of cases to generate. Defaults to
+                ``config.num_cases``.
+            synthesizers: Mapping of synthesizer names to weight proportions
+                (e.g. ``{"single_hop": 0.5, "multi_hop_abstract": 0.5}``).
+                Passed directly to
+                :meth:`~checkllm.knowledge_graph.KGTestGenerator.generate`.
+            personas: Either an int to auto-generate that many personas, or
+                a list of Persona objects, or None.
+
+        Returns:
+            A list of Case objects generated via the KG pipeline.
+        """
+        from checkllm.knowledge_graph import KGTestGenerator
+
+        num_cases = num_cases or self.config.num_cases
+        generator = KGTestGenerator(judge=self.judge)
+        samples = await generator.generate(
+            documents=documents,
+            num_samples=num_cases,
+            synthesizers=synthesizers,
+            personas=personas,
+        )
+        return generator.to_cases(samples)
 
     async def build_knowledge_graph(
         self,
