@@ -352,3 +352,45 @@ class DeterministicChecksMixin:
         self.results.append(result)
         self._fire_after_hook(result)
         return result
+
+    def gleu(self, output: str, reference: str, threshold: float = 0.5) -> CheckResult:
+        self._fire_before_hook("gleu", {"output": output, "reference": reference, "threshold": threshold})
+        result = self._deterministic.gleu(output, reference, threshold)
+        self.results.append(result)
+        self._fire_after_hook(result)
+        return result
+
+    def chrf(self, output: str, reference: str, threshold: float = 0.5) -> CheckResult:
+        self._fire_before_hook("chrf", {"output": output, "reference": reference, "threshold": threshold})
+        result = self._deterministic.chrf(output, reference, threshold)
+        self.results.append(result)
+        self._fire_after_hook(result)
+        return result
+
+    def latency_check(self, start_time: float, end_time: float, max_ms: float = 5000.0) -> CheckResult:
+        self._fire_before_hook("latency_check", {"start_time": start_time, "end_time": end_time, "max_ms": max_ms})
+        result = self._deterministic.latency_check(start_time, end_time, max_ms)
+        self.results.append(result)
+        self._fire_after_hook(result)
+        return result
+
+    def cost_check(self, input_tokens: int, output_tokens: int, model: str, max_cost: float = 1.0) -> CheckResult:
+        self._fire_before_hook("cost_check", {"input_tokens": input_tokens, "output_tokens": output_tokens, "model": model, "max_cost": max_cost})
+        result = self._deterministic.cost_check(input_tokens, output_tokens, model, max_cost)
+        self.results.append(result)
+        self._fire_after_hook(result)
+        return result
+
+    def string_distance(self, output: str, reference: str, method: str = "levenshtein", threshold: float = 0.7) -> CheckResult:
+        self._fire_before_hook("string_distance", {"output": output, "reference": reference, "method": method, "threshold": threshold})
+        result = self._deterministic.string_distance(output, reference, method, threshold)
+        self.results.append(result)
+        self._fire_after_hook(result)
+        return result
+
+    def exact_match_strict(self, output: str, reference: str, ignore_case: bool = False, ignore_whitespace: bool = False) -> CheckResult:
+        self._fire_before_hook("exact_match_strict", {"output": output, "reference": reference, "ignore_case": ignore_case, "ignore_whitespace": ignore_whitespace})
+        result = self._deterministic.exact_match_strict(output, reference, ignore_case, ignore_whitespace)
+        self.results.append(result)
+        self._fire_after_hook(result)
+        return result

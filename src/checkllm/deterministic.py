@@ -14,6 +14,103 @@ from pydantic import BaseModel, ValidationError
 from checkllm.models import CheckResult
 
 
+def _hamming_ratio(s1: str, s2: str) -> float:
+    """Compute Hamming similarity ratio for equal-length strings.
+
+    If strings differ in length, pads the shorter one with null characters.
+
+    Args:
+        s1: First string.
+        s2: Second string.
+
+    Returns:
+        Similarity ratio from 0.0 to 1.0.
+    """
+    max_len = max(len(s1), len(s2))
+    if max_len == 0:
+        return 1.0
+    s1_padded = s1.ljust(max_len, "\0")
+    s2_padded = s2.ljust(max_len, "\0")
+    matches = sum(c1 == c2 for c1, c2 in zip(s1_padded, s2_padded))
+    return matches / max_len
+
+
+def _jaro_similarity(s1: str, s2: str) -> float:
+    """Compute Jaro similarity between two strings.
+
+    Args:
+        s1: First string.
+        s2: Second string.
+
+    Returns:
+        Jaro similarity from 0.0 to 1.0.
+    """
+    if s1 == s2:
+        return 1.0
+    len1, len2 = len(s1), len(s2)
+    if len1 == 0 or len2 == 0:
+        return 0.0
+
+    match_distance = max(len1, len2) // 2 - 1
+    if match_distance < 0:
+        match_distance = 0
+
+    s1_matches = [False] * len1
+    s2_matches = [False] * len2
+
+    matches = 0
+    transpositions = 0
+
+    for i in range(len1):
+        start = max(0, i - match_distance)
+        end = min(i + match_distance + 1, len2)
+        for j in range(start, end):
+            if s2_matches[j] or s1[i] != s2[j]:
+                continue
+            s1_matches[i] = True
+            s2_matches[j] = True
+            matches += 1
+            break
+
+    if matches == 0:
+        return 0.0
+
+    k = 0
+    for i in range(len1):
+        if not s1_matches[i]:
+            continue
+        while not s2_matches[k]:
+            k += 1
+        if s1[i] != s2[k]:
+            transpositions += 1
+        k += 1
+
+    return (
+        matches / len1 + matches / len2 + (matches - transpositions / 2) / matches
+    ) / 3.0
+
+
+def _jaro_winkler_similarity(s1: str, s2: str, p: float = 0.1) -> float:
+    """Compute Jaro-Winkler similarity between two strings.
+
+    Args:
+        s1: First string.
+        s2: Second string.
+        p: Scaling factor for common prefix bonus (max 0.25).
+
+    Returns:
+        Jaro-Winkler similarity from 0.0 to 1.0.
+    """
+    jaro = _jaro_similarity(s1, s2)
+    prefix_len = 0
+    for i in range(min(len(s1), len(s2), 4)):
+        if s1[i] == s2[i]:
+            prefix_len += 1
+        else:
+            break
+    return jaro + prefix_len * p * (1.0 - jaro)
+
+
 def _levenshtein_ratio(s1: str, s2: str) -> float:
     """Compute Levenshtein similarity ratio (0.0 = completely different, 1.0 = identical)."""
     if s1 == s2:
@@ -1752,5 +1849,306 @@ class DeterministicChecks:
         return CheckResult(
             passed=passed, score=score, reasoning=reasoning,
             cost=0.0, latency_ms=0, metric_name="has_structure",
+            input_preview=output[:200],
+        )
+
+    def gleu(self, output: str, reference: str, threshold: float = 0.5) -> CheckResult:
+        """Google GLEU score (sentence-level BLEU variant).
+
+        Computes matching n-grams (1-4), calculates precision and recall
+        for each order, and returns the minimum of precision and recall
+        averaged across n-gram orders.
+
+        Args:
+            output: The model output.
+            reference: The reference text.
+            threshold: Minimum score to pass (0.0-1.0).
+
+        Returns:
+            CheckResult with GLEU score.
+        """
+        out_tokens = output.lower().split()
+        ref_tokens = reference.lower().split()
+
+        if not out_tokens or not ref_tokens:
+            return CheckResult(
+                passed=False, score=0.0,
+                reasoning="Empty output or reference for GLEU computation",
+                cost=0.0, latency_ms=0, metric_name="gleu",
+                input_preview=output[:200],
+                threshold=threshold,
+            )
+
+        max_n = min(4, len(out_tokens), len(ref_tokens))
+        if max_n == 0:
+            return CheckResult(
+                passed=False, score=0.0,
+                reasoning="Texts too short for GLEU computation",
+                cost=0.0, latency_ms=0, metric_name="gleu",
+                input_preview=output[:200],
+                threshold=threshold,
+            )
+
+        gleu_scores: list[float] = []
+        for n in range(1, max_n + 1):
+            out_ngrams: Counter[tuple[str, ...]] = Counter(
+                tuple(out_tokens[i:i + n]) for i in range(len(out_tokens) - n + 1)
+            )
+            ref_ngrams: Counter[tuple[str, ...]] = Counter(
+                tuple(ref_tokens[i:i + n]) for i in range(len(ref_tokens) - n + 1)
+            )
+
+            clipped = {
+                ng: min(count, ref_ngrams.get(ng, 0))
+                for ng, count in out_ngrams.items()
+            }
+            match_count = sum(clipped.values())
+            out_total = sum(out_ngrams.values())
+            ref_total = sum(ref_ngrams.values())
+
+            precision = match_count / out_total if out_total > 0 else 0.0
+            recall = match_count / ref_total if ref_total > 0 else 0.0
+            gleu_scores.append(min(precision, recall))
+
+        score = sum(gleu_scores) / len(gleu_scores) if gleu_scores else 0.0
+        score = max(0.0, min(1.0, score))
+        passed = score >= threshold
+        return CheckResult(
+            passed=passed, score=score,
+            reasoning=f"GLEU: {score:.4f} (threshold: {threshold})",
+            cost=0.0, latency_ms=0, metric_name="gleu",
+            input_preview=output[:200],
+            threshold=threshold,
+        )
+
+    def chrf(self, output: str, reference: str, threshold: float = 0.5) -> CheckResult:
+        """Character n-gram F-score (ChrF).
+
+        Uses character n-grams of order 1-6, computing precision, recall,
+        and F-beta score with beta=2 (recall-weighted).
+
+        Args:
+            output: The model output.
+            reference: The reference text.
+            threshold: Minimum score to pass (0.0-1.0).
+
+        Returns:
+            CheckResult with ChrF score.
+        """
+        if not output.strip() or not reference.strip():
+            return CheckResult(
+                passed=False, score=0.0,
+                reasoning="Empty output or reference for ChrF computation",
+                cost=0.0, latency_ms=0, metric_name="chrf",
+                input_preview=output[:200],
+                threshold=threshold,
+            )
+
+        beta = 2.0
+        max_n = 6
+        precisions: list[float] = []
+        recalls: list[float] = []
+
+        for n in range(1, max_n + 1):
+            out_ngrams: Counter[str] = Counter(
+                output[i:i + n] for i in range(len(output) - n + 1)
+            )
+            ref_ngrams: Counter[str] = Counter(
+                reference[i:i + n] for i in range(len(reference) - n + 1)
+            )
+
+            clipped = {
+                ng: min(count, ref_ngrams.get(ng, 0))
+                for ng, count in out_ngrams.items()
+            }
+            match_count = sum(clipped.values())
+            out_total = sum(out_ngrams.values())
+            ref_total = sum(ref_ngrams.values())
+
+            precisions.append(match_count / out_total if out_total > 0 else 0.0)
+            recalls.append(match_count / ref_total if ref_total > 0 else 0.0)
+
+        avg_p = sum(precisions) / len(precisions) if precisions else 0.0
+        avg_r = sum(recalls) / len(recalls) if recalls else 0.0
+
+        if avg_p + avg_r == 0:
+            score = 0.0
+        else:
+            score = (1 + beta ** 2) * avg_p * avg_r / (beta ** 2 * avg_p + avg_r)
+
+        score = max(0.0, min(1.0, score))
+        passed = score >= threshold
+        return CheckResult(
+            passed=passed, score=score,
+            reasoning=f"ChrF: {score:.4f} (P: {avg_p:.4f}, R: {avg_r:.4f}, threshold: {threshold})",
+            cost=0.0, latency_ms=0, metric_name="chrf",
+            input_preview=output[:200],
+            threshold=threshold,
+        )
+
+    def latency_check(
+        self, start_time: float, end_time: float, max_ms: float = 5000.0
+    ) -> CheckResult:
+        """Assert that LLM response latency is under a threshold.
+
+        Takes start and end timestamps (as seconds from time.time() or
+        time.perf_counter()) and checks that elapsed milliseconds are
+        within the allowed maximum.
+
+        Args:
+            start_time: Start timestamp in seconds.
+            end_time: End timestamp in seconds.
+            max_ms: Maximum allowed latency in milliseconds.
+
+        Returns:
+            CheckResult with latency assessment.
+        """
+        elapsed_ms = (end_time - start_time) * 1000.0
+        passed = elapsed_ms <= max_ms
+        score = min(1.0, max_ms / max(elapsed_ms, 0.001))
+        return CheckResult(
+            passed=passed,
+            score=max(0.0, min(1.0, score)),
+            reasoning=f"Latency: {elapsed_ms:.1f}ms, limit: {max_ms}ms",
+            cost=0.0,
+            latency_ms=0,
+            metric_name="latency_check",
+        )
+
+    def cost_check(
+        self,
+        input_tokens: int,
+        output_tokens: int,
+        model: str,
+        max_cost: float = 1.0,
+    ) -> CheckResult:
+        """Assert that a single LLM call cost is under a threshold.
+
+        Uses the pricing table from checkllm.judge to estimate cost.
+
+        Args:
+            input_tokens: Number of input/prompt tokens.
+            output_tokens: Number of output/completion tokens.
+            model: Model identifier (e.g. "gpt-4o", "claude-sonnet-4-6").
+            max_cost: Maximum allowed cost in USD.
+
+        Returns:
+            CheckResult with cost assessment.
+        """
+        from checkllm.judge import (
+            _OPENAI_PRICES,
+            _ANTHROPIC_PRICES,
+            _DEFAULT_PRICE,
+        )
+
+        all_prices = {**_OPENAI_PRICES, **_ANTHROPIC_PRICES}
+        input_price, output_price = all_prices.get(model, _DEFAULT_PRICE)
+        actual_cost = input_tokens * input_price + output_tokens * output_price
+
+        passed = actual_cost <= max_cost
+        score = min(1.0, max_cost / max(actual_cost, 1e-10))
+        return CheckResult(
+            passed=passed,
+            score=max(0.0, min(1.0, score)),
+            reasoning=(
+                f"Estimated cost: ${actual_cost:.6f} for {input_tokens} input + "
+                f"{output_tokens} output tokens on {model} (max: ${max_cost:.4f})"
+            ),
+            cost=0.0,
+            latency_ms=0,
+            metric_name="cost_check",
+        )
+
+    def string_distance(
+        self,
+        output: str,
+        reference: str,
+        method: str = "levenshtein",
+        threshold: float = 0.7,
+    ) -> CheckResult:
+        """Multi-method string distance computation.
+
+        Supports levenshtein, hamming, jaro, and jaro_winkler methods.
+
+        Args:
+            output: The model output.
+            reference: The reference text.
+            method: Distance method to use.
+            threshold: Minimum similarity to pass (0.0-1.0).
+
+        Returns:
+            CheckResult with string distance score.
+        """
+        method_lower = method.lower()
+        methods = {
+            "levenshtein": _levenshtein_ratio,
+            "hamming": _hamming_ratio,
+            "jaro": _jaro_similarity,
+            "jaro_winkler": _jaro_winkler_similarity,
+        }
+
+        func = methods.get(method_lower)
+        if func is None:
+            return CheckResult(
+                passed=False, score=0.0,
+                reasoning=(
+                    f"Unknown string distance method '{method}'. "
+                    f"Supported: {', '.join(sorted(methods))}"
+                ),
+                cost=0.0, latency_ms=0, metric_name="string_distance",
+                input_preview=output[:200],
+            )
+
+        ratio = func(output, reference)
+        ratio = max(0.0, min(1.0, ratio))
+        passed = ratio >= threshold
+        return CheckResult(
+            passed=passed, score=ratio,
+            reasoning=f"String distance ({method}): {ratio:.4f} (threshold: {threshold})",
+            cost=0.0, latency_ms=0, metric_name="string_distance",
+            input_preview=output[:200],
+            threshold=threshold,
+        )
+
+    def exact_match_strict(
+        self,
+        output: str,
+        reference: str,
+        ignore_case: bool = False,
+        ignore_whitespace: bool = False,
+    ) -> CheckResult:
+        """Exact match with configurable case and whitespace handling.
+
+        Unlike the basic exact_match which always strips leading/trailing
+        whitespace, this variant provides explicit control over both case
+        sensitivity and whitespace normalization.
+
+        Args:
+            output: The model output.
+            reference: The reference text.
+            ignore_case: Whether to ignore case differences.
+            ignore_whitespace: Whether to normalize all whitespace.
+
+        Returns:
+            CheckResult with exact match result.
+        """
+        a, b = output, reference
+        if ignore_case:
+            a, b = a.lower(), b.lower()
+        if ignore_whitespace:
+            a = " ".join(a.split())
+            b = " ".join(b.split())
+
+        passed = a == b
+        return CheckResult(
+            passed=passed,
+            score=1.0 if passed else 0.0,
+            reasoning=(
+                f"Exact match {'succeeded' if passed else 'failed'} "
+                f"(ignore_case={ignore_case}, ignore_whitespace={ignore_whitespace})"
+            ),
+            cost=0.0,
+            latency_ms=0,
+            metric_name="exact_match_strict",
             input_preview=output[:200],
         )

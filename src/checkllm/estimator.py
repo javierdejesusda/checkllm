@@ -15,7 +15,8 @@ _DETERMINISTIC_CHECKS = {
     "json_schema", "json_field", "is_valid_sql", "is_valid_markdown",
     "readability", "language", "bleu", "rouge_l", "all_of", "any_of",
     "none_of", "no_pii", "greater_than", "less_than", "between",
-    "latency", "cost",
+    "latency", "cost", "meteor", "gleu", "chrf", "perplexity_check",
+    "latency_check", "cost_check", "string_distance", "exact_match_strict",
 }
 
 # Average tokens per judge call (prompt + completion estimate)
