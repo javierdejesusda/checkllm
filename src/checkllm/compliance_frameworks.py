@@ -2735,7 +2735,8 @@ class ComplianceScanner:
         failed = sum(1 for r in results if r.status == "failed")
         skipped = sum(1 for r in results if r.status == "skipped")
         total = len(results)
-        score = passed / total if total > 0 else 0.0
+        evaluated = passed + failed
+        score = passed / evaluated if evaluated > 0 else 0.0
 
         return ComplianceReport(
             framework=framework,

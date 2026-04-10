@@ -1312,17 +1312,14 @@ class KGTestGenerator:
                 )
             return personas
         except (json.JSONDecodeError, ValueError, KeyError):
+            levels = ["beginner", "intermediate", "expert"]
             return [
                 Persona(
                     name=f"User {i + 1}",
                     description="A general user",
-                    expertise_level=level,
+                    expertise_level=levels[i % len(levels)],
                 )
-                for i, level in enumerate(
-                    ["beginner", "intermediate", "expert", "beginner", "expert"][
-                        :num_personas
-                    ]
-                )
+                for i in range(num_personas)
             ]
 
     async def generate(
@@ -1380,13 +1377,21 @@ class KGTestGenerator:
         total_weight = sum(synthesizers.values())
         all_samples: list[SynthesizedSample] = []
 
-        for synth_name, weight in synthesizers.items():
+        synth_items = list(synthesizers.items())
+        remaining = num_samples
+        for idx, (synth_name, weight) in enumerate(synth_items):
             synth = _SYNTHESIZER_MAP.get(synth_name)
             if synth is None:
                 logger.warning("Unknown synthesizer: %s", synth_name)
                 continue
 
-            count = max(1, round(num_samples * weight / total_weight))
+            if idx == len(synth_items) - 1:
+                count = remaining
+            else:
+                count = max(1, round(num_samples * weight / total_weight))
+                count = min(count, remaining)
+            remaining -= count
+
             style = styles[len(all_samples) % len(styles)]
             length = lengths[len(all_samples) % len(lengths)]
             persona = None

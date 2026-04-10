@@ -32,20 +32,28 @@ class ToolCallF1Metric:
         """
         start = time.perf_counter_ns()
 
-        predicted_set = set(predicted_tools)
-        expected_set = set(expected_tools)
+        from collections import Counter
 
-        true_positives = len(predicted_set & expected_set)
+        predicted_counts = Counter(predicted_tools)
+        expected_counts = Counter(expected_tools)
 
-        if len(predicted_set) > 0:
-            precision = true_positives / len(predicted_set)
+        true_positives = sum(
+            min(predicted_counts[k], expected_counts[k])
+            for k in predicted_counts
+            if k in expected_counts
+        )
+        total_predicted = len(predicted_tools)
+        total_expected = len(expected_tools)
+
+        if total_predicted > 0:
+            precision = true_positives / total_predicted
         else:
             precision = 0.0
 
-        if len(expected_set) > 0:
-            recall = true_positives / len(expected_set)
+        if total_expected > 0:
+            recall = true_positives / total_expected
         else:
-            recall = 1.0 if len(predicted_set) == 0 else 0.0
+            recall = 1.0 if total_predicted == 0 else 0.0
 
         if precision + recall > 0:
             f1 = 2 * precision * recall / (precision + recall)
@@ -54,9 +62,12 @@ class ToolCallF1Metric:
 
         elapsed_ms = (time.perf_counter_ns() - start) // 1_000_000
 
+        predicted_set = set(predicted_tools)
+        expected_set = set(expected_tools)
+
         reasoning = (
-            f"Precision: {precision:.2f} ({true_positives}/{len(predicted_set) or 0}), "
-            f"Recall: {recall:.2f} ({true_positives}/{len(expected_set) or 0}), "
+            f"Precision: {precision:.2f} ({true_positives}/{total_predicted}), "
+            f"Recall: {recall:.2f} ({true_positives}/{total_expected}), "
             f"F1: {f1:.2f}. "
             f"Correct: {sorted(predicted_set & expected_set)}. "
             f"Missing: {sorted(expected_set - predicted_set)}. "

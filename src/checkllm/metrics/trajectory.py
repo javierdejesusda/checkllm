@@ -217,7 +217,9 @@ class TrajectoryStepCountMetric:
         start = time.perf_counter_ns()
         actual_steps = len(trajectory)
 
-        if actual_steps <= max_steps:
+        if max_steps <= 0:
+            deterministic_score = 0.0
+        elif actual_steps <= max_steps:
             deterministic_score = 1.0
         else:
             overshoot = actual_steps - max_steps

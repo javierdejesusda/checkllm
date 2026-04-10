@@ -38,6 +38,7 @@ class QuotedSpansAlignmentMetric:
         """
         patterns = [
             r'"([^"]+)"',
+            r"'([^']+)'",
             r"\u201c([^\u201d]+)\u201d",
             r"\u2018([^\u2019]+)\u2019",
         ]

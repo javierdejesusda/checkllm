@@ -356,9 +356,18 @@ class YAMLEvaluator:
         total_failed = 0
         total_cost = 0.0
 
+        budget = config.settings.budget
+        budget_exceeded = False
+
         for test_idx, test_cfg in enumerate(config.tests):
+            if budget_exceeded:
+                break
             for prompt_template in prompts:
+                if budget_exceeded:
+                    break
                 for provider_str in providers:
+                    if budget_exceeded:
+                        break
                     rendered = _render_template(prompt_template, test_cfg.vars)
 
                     output = await self._generate_output(
@@ -369,6 +378,9 @@ class YAMLEvaluator:
                     test_passed = True
 
                     for assertion in test_cfg.assert_:
+                        if budget > 0 and total_cost >= budget:
+                            budget_exceeded = True
+                            break
                         check_result = await self._resolve_assertion(
                             assertion, output, test_cfg, judge, config.settings,
                         )
@@ -430,9 +442,18 @@ class YAMLEvaluator:
         total_failed = 0
         total_cost = 0.0
 
+        budget = config.settings.budget
+        budget_exceeded = False
+
         for test_idx, test_cfg in enumerate(config.tests):
+            if budget_exceeded:
+                break
             for prompt_template in prompts:
+                if budget_exceeded:
+                    break
                 for provider_str in providers:
+                    if budget_exceeded:
+                        break
                     rendered = _render_template(prompt_template, test_cfg.vars)
 
                     output = await self._generate_output(
@@ -443,6 +464,9 @@ class YAMLEvaluator:
                     test_passed = True
 
                     for assertion in test_cfg.assert_:
+                        if budget > 0 and total_cost >= budget:
+                            budget_exceeded = True
+                            break
                         check_result = await self._resolve_assertion(
                             assertion, output, test_cfg, judge, config.settings,
                         )
