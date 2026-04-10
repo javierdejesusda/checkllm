@@ -165,6 +165,30 @@ try:
         SynthesisConfig,
         Synthesizer,
     )
+    from checkllm.knowledge_graph import (
+        BaseTransform,
+        EntityExtractor,
+        HeadlineSplitter,
+        KGEdge,
+        KGNode,
+        KGTestGenerator,
+        KeyphraseExtractor,
+        MultiHopAbstractSynthesizer,
+        MultiHopSpecificSynthesizer,
+        OverlapBuilder,
+        Persona,
+        QueryLength,
+        QueryStyle,
+        SentenceSplitter,
+        SimilarityBuilder,
+        SingleHopSynthesizer,
+        SummaryExtractor,
+        SynthesizedSample,
+        ThemeExtractor,
+    )
+    from checkllm.knowledge_graph import (
+        KnowledgeGraph as KnowledgeGraphV2,
+    )
     from checkllm.optimize import OptimizationResult, PromptOptimizer, PromptVariant
     from checkllm.testing import MockJudge, assert_all_passed, assert_score_above, make_collector
     from checkllm.yaml_config import EvalConfig, YamlEvalRunner, load_eval_config
@@ -489,6 +513,27 @@ __all__ = [
     # CI/CD integration
     "GitHubActionGenerator",
     "GitLabCIGenerator",
+    # Knowledge Graph V2 pipeline
+    "BaseTransform",
+    "EntityExtractor",
+    "HeadlineSplitter",
+    "KGEdge",
+    "KGNode",
+    "KGTestGenerator",
+    "KnowledgeGraphV2",
+    "KeyphraseExtractor",
+    "MultiHopAbstractSynthesizer",
+    "MultiHopSpecificSynthesizer",
+    "OverlapBuilder",
+    "Persona",
+    "QueryLength",
+    "QueryStyle",
+    "SentenceSplitter",
+    "SimilarityBuilder",
+    "SingleHopSynthesizer",
+    "SummaryExtractor",
+    "SynthesizedSample",
+    "ThemeExtractor",
     # Version
     "__version__",
 ]
