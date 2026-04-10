@@ -15,21 +15,41 @@ from checkllm.metrics.context_relevance import ContextRelevanceMetric
 from checkllm.metrics.contextual_precision import ContextualPrecisionMetric
 from checkllm.metrics.contextual_recall import ContextualRecallMetric
 from checkllm.metrics.conversation_completeness import ConversationCompletenessMetric
+from checkllm.metrics.dual_judge_nv import (
+    NVAnswerAccuracyMetric,
+    NVContextRelevanceMetric,
+    NVResponseGroundednessMetric,
+)
 from checkllm.metrics.factual_correctness import FactualCorrectnessMetric
 from checkllm.metrics.faithfulness import FaithfulnessMetric
 from checkllm.metrics.g_eval import GEvalMetric
 from checkllm.metrics.groundedness import GroundednessMetric
+from checkllm.metrics.image_editing import ImageEditingMetric
+from checkllm.metrics.image_reference import ImageReferenceMetric
 from checkllm.metrics.instruction_completeness import InstructionCompletenessMetric
 from checkllm.metrics.instruction_following import InstructionFollowingMetric
 from checkllm.metrics.knowledge_retention import KnowledgeRetentionMetric
 from checkllm.metrics.noise_sensitivity import NoiseSensitivityMetric
+from checkllm.metrics.per_turn import (
+    TurnCoherenceMetric,
+    TurnFaithfulnessMetric,
+    TurnRelevancyMetric,
+)
+from checkllm.metrics.prompt_alignment import PromptAlignmentMetric
 from checkllm.metrics.response_completeness import ResponseCompletenessMetric
 from checkllm.metrics.role_adherence import RoleAdherenceMetric
 from checkllm.metrics.sql_equivalence import SQLEquivalenceMetric
 from checkllm.metrics.summarization import SummarizationMetric
 from checkllm.metrics.task_completion import TaskCompletionMetric
 from checkllm.metrics.tool_accuracy import ToolAccuracyMetric
+from checkllm.metrics.tool_call_f1 import ToolCallF1Metric
 from checkllm.metrics.topic_adherence import TopicAdherenceMetric
+from checkllm.metrics.trajectory import (
+    TrajectoryGoalSuccessMetric,
+    TrajectoryStepCountMetric,
+    TrajectoryToolArgsMatchMetric,
+    TrajectoryToolSequenceMetric,
+)
 from checkllm.models import CheckResult
 
 logger = logging.getLogger("checkllm.metrics")
