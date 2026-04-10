@@ -126,11 +126,30 @@ try:
         CompliancePreset,
         OWASPCategory,
         RedTeamer,
+        RiskScore,
+        RiskScorer,
+        SeverityLevel,
         VulnerabilityReport,
         VulnerabilityType,
         get_compliance_vulnerabilities,
         get_owasp_mapping,
         get_vulnerabilities_by_owasp,
+    )
+    from checkllm.redteam_strategies import (
+        BaseStrategy,
+        StrategyResult,
+        StrategyType,
+        apply_strategies,
+        get_strategy,
+    )
+    from checkllm.redteam_coding_agents import (
+        CodingAgentPlugin,
+        CodingAgentPluginType,
+        CodingAgentReport,
+        CodingAgentScanner,
+        CodingAgentTestResult,
+        get_plugin,
+        list_plugins,
     )
     from checkllm.compliance import (
         ComplianceFramework,
