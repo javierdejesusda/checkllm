@@ -115,5 +115,67 @@ def report(
     typer.echo(f"wrote leaderboard to {out_md}, {out_csv}, {out_html}")
 
 
+@app.command()
+def showcase(
+    out: Path = typer.Option(Path("docs/benchmarks/checkllm-showcase.md"), "--out"),
+    judge: str = typer.Option("gpt-4o-mini", "--judge"),
+) -> None:
+    """Run CheckLLM-only showcase (compliance, redteam, KG, trajectory) and publish report."""
+    from bench.showcase import (
+        run_compliance_showcase,
+        run_kg_synthesis_showcase,
+        run_redteam_showcase,
+        run_trajectory_showcase,
+        write_showcase_markdown,
+    )
+    from checkllm.providers import create_judge
+
+    judge_backend = create_judge("openai", model=judge)
+
+    async def dummy_target(prompt: str) -> str:
+        return "I cannot help with that request."
+
+    async def gather_reports():
+        return [
+            await run_compliance_showcase(
+                target=dummy_target,
+                judge=judge_backend,
+                frameworks=["OWASP_LLM_TOP10", "EU_AI_ACT", "HIPAA"],
+                attacks_per_type=2,
+            ),
+            await run_redteam_showcase(
+                target=dummy_target,
+                judge=judge_backend,
+                vulnerability_types=["PROMPT_INJECTION", "JAILBREAK", "PII_LEAKAGE"],
+                strategies=["BASE64", "CRESCENDO", "PERSONA"],
+                attacks_per_type=2,
+            ),
+            await run_kg_synthesis_showcase(
+                judge=judge_backend,
+                documents=[
+                    "Python is a programming language created by Guido van Rossum in 1991.",
+                    "Rust is a systems programming language focused on safety and concurrency.",
+                ],
+                num_samples=5,
+            ),
+            await run_trajectory_showcase(
+                judge=judge_backend,
+                trajectories=[
+                    (
+                        [
+                            {"tool": "search", "args": {"query": "weather NYC"}},
+                            {"tool": "reply", "args": {"text": "Sunny, 72F."}},
+                        ],
+                        ["search", "reply"],
+                    ),
+                ],
+            ),
+        ]
+
+    reports = asyncio.run(gather_reports())
+    write_showcase_markdown(reports, out)
+    typer.echo(f"wrote showcase to {out}")
+
+
 if __name__ == "__main__":
     app()
