@@ -45,3 +45,31 @@ async def test_runner_enforces_budget(tiny_halubench):
     )
     scores = await runner.run(spec)
     assert len(scores) <= 3
+
+
+@pytest.mark.asyncio
+async def test_runner_multi_adapter_halubench(tiny_halubench):
+    from bench.adapters.deepeval_adapter import DeepEvalAdapter
+    from bench.datasets import load_halubench_from_rows
+    from bench.schema import MetricFamily
+    from tests.test_deepeval_adapter import FakeDeepEvalModel
+
+    samples = load_halubench_from_rows(tiny_halubench)
+    adapters = [
+        CheckllmAdapter(judge=MockJudge(default_score=0.95)),
+        DeepEvalAdapter(model=FakeDeepEvalModel(score_to_return=0.1)),
+    ]
+    runner = BenchmarkRunner(max_concurrency=4, budget_usd=100.0)
+    spec = RunSpec(
+        adapters=adapters,
+        samples=samples,
+        families=[MetricFamily.HALLUCINATION, MetricFamily.FAITHFULNESS],
+        judge_model="mock-judge",
+    )
+    scores = await runner.run(spec)
+
+    frameworks = {s.framework for s in scores}
+    assert "checkllm" in frameworks
+    assert "deepeval" in frameworks
+    families = {s.metric_family for s in scores}
+    assert MetricFamily.HALLUCINATION in families
