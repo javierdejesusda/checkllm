@@ -27,6 +27,9 @@ _DATASET_LOADERS = {
     "halubench": ("PatronusAI/HaluBench", "test", load_halubench_from_rows),
     "ragtruth": ("wandb/RAGTruth-processed", "test", load_ragtruth_from_rows),
     "truthfulqa": ("truthfulqa/truthful_qa", "validation", load_truthfulqa_from_rows),
+    # JBB-Behaviors exposes its rows via a config name rather than a split;
+    # verify with `datasets.get_dataset_config_names("JailbreakBench/JBB-Behaviors")`
+    # on first real run and adjust to the actual config/split if this raises.
     "jailbreakbench": ("JailbreakBench/JBB-Behaviors", "harmful", load_jailbreakbench_from_rows),
 }
 

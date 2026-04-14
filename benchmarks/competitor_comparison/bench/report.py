@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import html
 from pathlib import Path
 from typing import Mapping
 
@@ -111,9 +112,13 @@ def write_html(rows: list[dict], path: Path) -> None:
     """
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    head = "".join(f"<th>{c}</th>" for c in _COLUMNS)
+    head = "".join(f"<th>{html.escape(c)}</th>" for c in _COLUMNS)
     body = "".join(
-        "<tr>" + "".join(f"<td>{row.get(c, '')}</td>" for c in _COLUMNS) + "</tr>"
+        "<tr>"
+        + "".join(
+            f"<td>{html.escape(str(row.get(c, '')))}</td>" for c in _COLUMNS
+        )
+        + "</tr>"
         for row in rows
     )
     html = (

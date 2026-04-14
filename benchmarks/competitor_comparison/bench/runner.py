@@ -57,10 +57,10 @@ class BenchmarkRunner:
         Returns:
             A BenchmarkScore, or None if the budget was already exhausted.
         """
-        async with self._spent_lock:
-            if self._spent >= self.budget_usd:
-                return None
         async with sem:
+            async with self._spent_lock:
+                if self._spent >= self.budget_usd:
+                    return None
             try:
                 result = await adapter.score(sample, family, judge_model)
             except Exception as err:

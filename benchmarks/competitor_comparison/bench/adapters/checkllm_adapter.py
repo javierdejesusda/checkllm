@@ -37,8 +37,6 @@ class CheckllmAdapter:
             MetricFamily.HALLUCINATION,
             MetricFamily.FAITHFULNESS,
             MetricFamily.CONTEXT_RELEVANCE,
-            MetricFamily.ANSWER_RELEVANCY,
-            MetricFamily.JAILBREAK_RESISTANCE,
         }
 
     async def score(
