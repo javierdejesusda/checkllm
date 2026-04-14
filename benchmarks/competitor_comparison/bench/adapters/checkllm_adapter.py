@@ -4,6 +4,7 @@ from checkllm.judge import JudgeBackend
 from checkllm.metrics.context_relevance import ContextRelevanceMetric
 from checkllm.metrics.faithfulness import FaithfulnessMetric
 from checkllm.metrics.hallucination import HallucinationMetric
+from checkllm.metrics.relevance import RelevanceMetric
 
 from bench.schema import BenchmarkSample, BenchmarkScore, MetricFamily
 
@@ -23,6 +24,7 @@ class CheckllmAdapter:
         self._hallucination = HallucinationMetric(judge=judge)
         self._faithfulness = FaithfulnessMetric(judge=judge)
         self._context_relevance = ContextRelevanceMetric(judge=judge)
+        self._relevance = RelevanceMetric(judge=judge)
 
     def supports(self, family: MetricFamily) -> bool:
         """Return True if this adapter can score the given metric family.
@@ -37,6 +39,7 @@ class CheckllmAdapter:
             MetricFamily.HALLUCINATION,
             MetricFamily.FAITHFULNESS,
             MetricFamily.CONTEXT_RELEVANCE,
+            MetricFamily.ANSWER_RELEVANCY,
         }
 
     async def score(
@@ -74,6 +77,11 @@ class CheckllmAdapter:
                 context=sample.context, query=sample.query
             )
             metric_name = "context_relevance"
+        elif family is MetricFamily.ANSWER_RELEVANCY:
+            r = await self._relevance.evaluate(
+                output=sample.answer, query=sample.query
+            )
+            metric_name = "relevance"
         else:
             raise NotImplementedError(
                 f"{family} adapter not yet wired — add support before running this family"

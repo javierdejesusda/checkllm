@@ -30,14 +30,26 @@ async def test_checkllm_adapter_returns_score_for_hallucination(sample):
 
 
 @pytest.mark.asyncio
-async def test_checkllm_adapter_supports_three_families(sample):
+async def test_checkllm_adapter_supports_four_families(sample):
     judge = MockJudge(default_score=0.9)
     adapter = CheckllmAdapter(judge=judge)
     for family in [
         MetricFamily.HALLUCINATION,
         MetricFamily.FAITHFULNESS,
         MetricFamily.CONTEXT_RELEVANCE,
+        MetricFamily.ANSWER_RELEVANCY,
     ]:
         assert adapter.supports(family)
         result = await adapter.score(sample, family, "mock-judge")
         assert result.metric_family is family
+
+
+@pytest.mark.asyncio
+async def test_checkllm_adapter_scores_answer_relevancy_via_relevance_metric(sample):
+    judge = MockJudge(default_score=0.87)
+    adapter = CheckllmAdapter(judge=judge)
+    result = await adapter.score(sample, MetricFamily.ANSWER_RELEVANCY, "mock-judge")
+    assert result.framework == "checkllm"
+    assert result.metric_family is MetricFamily.ANSWER_RELEVANCY
+    assert result.metric_name == "relevance"
+    assert result.score == 0.87
