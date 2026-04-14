@@ -1,6 +1,17 @@
+import os
+
 import pytest
-from bench.adapters.ragas_adapter import RagasAdapter
-from bench.schema import BenchmarkSample, GroundTruth, MetricFamily
+
+if not os.getenv("CHECKLLM_BENCH_RUN_RAGAS"):
+    pytest.skip(
+        "Ragas adapter test skipped by default because importing ragas "
+        "pulls in torch, which is slow on some platforms. "
+        "Set CHECKLLM_BENCH_RUN_RAGAS=1 to enable.",
+        allow_module_level=True,
+    )
+
+from bench.adapters.ragas_adapter import RagasAdapter  # noqa: E402
+from bench.schema import BenchmarkSample, GroundTruth, MetricFamily  # noqa: E402
 
 
 class FakeLangChainLLM:
@@ -31,9 +42,19 @@ def sample():
 
 
 @pytest.mark.asyncio
-async def test_ragas_adapter_returns_faithfulness_score(sample):
+async def test_ragas_adapter_returns_faithfulness_score(sample, monkeypatch):
+    from ragas.metrics import faithfulness
+
+    async def fake_ascore(ragas_sample, callbacks=None):
+        return 0.88
+
+    monkeypatch.setattr(faithfulness, "single_turn_ascore", fake_ascore)
+
     adapter = RagasAdapter(llm=FakeLangChainLLM())
     result = await adapter.score(sample, MetricFamily.FAITHFULNESS, "fake-gpt-4o-mini")
+
     assert result.framework == "ragas"
     assert result.metric_family is MetricFamily.FAITHFULNESS
-    assert 0.0 <= result.score <= 1.0
+    assert result.score == 0.88
+    assert result.metric_name == "faithfulness"
+    assert result.judge_model == "fake-gpt-4o-mini"
