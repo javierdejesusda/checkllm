@@ -1,0 +1,5 @@
+[
+  {"id": "hb-1", "question": "What is the capital of France?", "passage": "Paris is the capital of France.", "answer": "Paris is the capital of France.", "label": "PASS"},
+  {"id": "hb-2", "question": "When was the Eiffel Tower built?", "passage": "The Eiffel Tower opened in 1889.", "answer": "The Eiffel Tower was completed in 1925.", "label": "FAIL"},
+  {"id": "hb-3", "question": "What language is spoken in Brazil?", "passage": "The official language of Brazil is Portuguese.", "answer": "Portuguese.", "label": "PASS"}
+]
