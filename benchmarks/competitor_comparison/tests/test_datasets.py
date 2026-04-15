@@ -27,6 +27,29 @@ def test_ragtruth_any_label_means_hallucinated(tiny_ragtruth):
     assert len(hallucinated) == 2
 
 
+def test_ragtruth_parses_json_string_hallucination_labels():
+    rows = [
+        {
+            "id": "rt-empty",
+            "query": "q",
+            "context": "c",
+            "output": "o",
+            "hallucination_labels": "[]",
+        },
+        {
+            "id": "rt-hall",
+            "query": "q",
+            "context": "c",
+            "output": "o",
+            "hallucination_labels": '[{"type": "evident_conflict"}]',
+        },
+    ]
+    samples = load_ragtruth_from_rows(rows)
+    labels = {s.sample_id: s.ground_truth.label for s in samples}
+    assert labels["rt-empty"] == 1.0
+    assert labels["rt-hall"] == 0.0
+
+
 def test_truthfulqa_extracts_best_answer_as_reference(tiny_truthfulqa):
     samples = load_truthfulqa_from_rows(tiny_truthfulqa)
     assert len(samples) == 3

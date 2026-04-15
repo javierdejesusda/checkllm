@@ -24,13 +24,34 @@ from bench.schema import BenchmarkScore, MetricFamily
 app = typer.Typer(name="checkllm-bench")
 
 _DATASET_LOADERS = {
-    "halubench": ("PatronusAI/HaluBench", "test", load_halubench_from_rows),
-    "ragtruth": ("wandb/RAGTruth-processed", "test", load_ragtruth_from_rows),
-    "truthfulqa": ("truthfulqa/truthful_qa", "validation", load_truthfulqa_from_rows),
-    # JBB-Behaviors exposes its rows via a config name rather than a split;
-    # verify with `datasets.get_dataset_config_names("JailbreakBench/JBB-Behaviors")`
-    # on first real run and adjust to the actual config/split if this raises.
-    "jailbreakbench": ("JailbreakBench/JBB-Behaviors", "harmful", load_jailbreakbench_from_rows),
+    "halubench": (
+        "PatronusAI/HaluBench",
+        None,
+        "test",
+        42,
+        load_halubench_from_rows,
+    ),
+    "ragtruth": (
+        "wandb/RAGTruth-processed",
+        None,
+        "test",
+        None,
+        load_ragtruth_from_rows,
+    ),
+    "truthfulqa": (
+        "truthfulqa/truthful_qa",
+        "generation",
+        "validation",
+        None,
+        load_truthfulqa_from_rows,
+    ),
+    "jailbreakbench": (
+        "JailbreakBench/JBB-Behaviors",
+        "behaviors",
+        "harmful",
+        None,
+        load_jailbreakbench_from_rows,
+    ),
 }
 
 
@@ -66,8 +87,14 @@ def run(
     if dataset not in _DATASET_LOADERS:
         raise typer.BadParameter(f"unknown dataset: {dataset}")
 
-    hf_name, split, mapper = _DATASET_LOADERS[dataset]
-    rows = load_hf(hf_name, split=split, limit=limit)
+    hf_name, config, split, shuffle_seed, mapper = _DATASET_LOADERS[dataset]
+    rows = load_hf(
+        hf_name,
+        split=split,
+        limit=limit,
+        config=config,
+        shuffle_seed=shuffle_seed,
+    )
     samples = mapper(rows)
 
     frameworks = (

@@ -121,11 +121,11 @@ def write_html(rows: list[dict], path: Path) -> None:
         + "</tr>"
         for row in rows
     )
-    html = (
+    document = (
         "<!doctype html><html><head><meta charset='utf-8'>"
         "<title>CheckLLM Competitor Benchmark</title></head><body>"
         "<h1>CheckLLM Competitor Benchmark</h1>"
         f"<table border='1'><thead><tr>{head}</tr></thead>"
         f"<tbody>{body}</tbody></table></body></html>"
     )
-    path.write_text(html, encoding="utf-8")
+    path.write_text(document, encoding="utf-8")

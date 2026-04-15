@@ -1,4 +1,4 @@
-from bench.report import build_leaderboard, write_markdown, write_csv
+from bench.report import build_leaderboard, write_csv, write_html, write_markdown
 from bench.schema import BenchmarkScore, MetricFamily
 
 
@@ -62,3 +62,39 @@ def test_write_csv_includes_all_columns(tmp_path):
     lines = path.read_text(encoding="utf-8").strip().splitlines()
     assert lines[0].split(",")[0] == "framework"
     assert "0.91" in lines[1]
+
+
+def test_write_html_escapes_and_renders_rows(tmp_path):
+    rows = [
+        {
+            "framework": "checkllm",
+            "dataset": "halubench",
+            "metric_family": "hallucination",
+            "auc": 0.91,
+            "best_f1": 0.88,
+            "spearman": 0.85,
+            "n": 200,
+            "mean_latency_ms": 420.0,
+            "total_cost_usd": 0.12,
+            "rank": 1,
+        },
+        {
+            "framework": "deep<script>",
+            "dataset": "halubench",
+            "metric_family": "hallucination",
+            "auc": 0.85,
+            "best_f1": 0.80,
+            "spearman": 0.78,
+            "n": 200,
+            "mean_latency_ms": 510.0,
+            "total_cost_usd": 0.18,
+            "rank": 2,
+        },
+    ]
+    path = tmp_path / "report.html"
+    write_html(rows, path)
+    text = path.read_text(encoding="utf-8")
+    assert "<th>framework</th>" in text
+    assert "checkllm" in text
+    assert "deep&lt;script&gt;" in text
+    assert "<script>" not in text.replace("deep&lt;script&gt;", "")
