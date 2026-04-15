@@ -49,6 +49,15 @@ def test_write_markdown_emits_table(tmp_path):
     assert "| framework | dataset | metric_family | auc |" in text
     assert "checkllm" in text
     assert "deepeval" in text
+    # Integer-formatted cells (latency, n, rank) should not have trailing .000
+    assert " 420 " in text
+    assert " 200 " in text
+    assert " 1 " in text
+    # Cost has 4 decimals
+    assert " 0.1200 " in text
+    # Footer is present
+    assert "Judge model" in text
+    assert "remaining-gaps.md" in text
 
 
 def test_write_csv_includes_all_columns(tmp_path):

@@ -64,6 +64,55 @@ _COLUMNS = [
 ]
 
 
+_MARKDOWN_FOOTER = """
+
+## Notes
+
+- **Judge model:** `gpt-4o-mini`, run with 8-way concurrency and per-command
+  `--budget-usd 5.0` caps.
+- **DeepEval cost column reports $0.00** because the DeepEval adapter does
+  not expose token usage through its metric API; the real API spend is
+  roughly proportional to CheckLLM's reported cost for the same family.
+- **Ragas is omitted.** Importing `ragas` pulls in `torch`, which hangs on
+  Windows in this environment, so the Ragas column is left empty in the
+  current publish. Unit tests cover the Ragas adapter offline.
+- **JailbreakBench is omitted** from this run (Scenario A). The family
+  `jailbreak_resistance` is only supported by promptfoo today, the
+  `JBB-Behaviors` dataset ships no LLM-under-test answers (only harmful
+  goals), and a meaningful comparison requires generating target-model
+  responses before grading. Tracked in
+  `docs/benchmarks/enhancements/remaining-gaps.md`.
+- **TruthfulQA AUC is NaN.** The benchmark loader uses `best_answer` as
+  both answer and reference so every label is `1.0`; AUC is undefined on a
+  constant label set. Rank on TruthfulQA reflects insertion order, not a
+  real ordering.
+- **RAGTruth `context_relevance` is near random for every framework.** The
+  dataset ships hallucination labels, not context-relevance labels, so
+  correlating context-relevance scores with `hallucination_labels` measures
+  a different quantity than the one being scored. See
+  `docs/benchmarks/enhancements/remaining-gaps.md`.
+"""
+
+
+def _fmt_cell(value, column: str) -> str:
+    """Render one table cell. Latency is shown as integer milliseconds, ``n``
+    as an integer, cost with 4 decimals, and other floats with 3 decimals.
+    """
+    if not isinstance(value, float):
+        return str(value)
+    if value != value:  # NaN
+        return "nan"
+    if column == "mean_latency_ms":
+        return f"{int(round(value))}"
+    if column == "n":
+        return f"{int(round(value))}"
+    if column == "total_cost_usd":
+        return f"{value:.4f}"
+    if column == "rank":
+        return f"{int(round(value))}"
+    return f"{value:.3f}"
+
+
 def write_csv(rows: list[dict], path: Path) -> None:
     """Write leaderboard rows to a CSV file.
 
@@ -94,13 +143,11 @@ def write_markdown(rows: list[dict], path: Path) -> None:
     lines = ["# CheckLLM Competitor Benchmark Results", "", header, sep]
     for row in rows:
         line = "| " + " | ".join(
-            f"{row.get(col, ''):.3f}"
-            if isinstance(row.get(col), float)
-            else str(row.get(col, ""))
-            for col in _COLUMNS
+            _fmt_cell(row.get(col, ""), col) for col in _COLUMNS
         ) + " |"
         lines.append(line)
-    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    body = "\n".join(lines) + "\n" + _MARKDOWN_FOOTER
+    path.write_text(body, encoding="utf-8")
 
 
 def write_html(rows: list[dict], path: Path) -> None:
