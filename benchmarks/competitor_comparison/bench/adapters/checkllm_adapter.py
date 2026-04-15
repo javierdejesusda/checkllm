@@ -64,7 +64,9 @@ class CheckllmAdapter:
         """
         if family is MetricFamily.HALLUCINATION:
             r = await self._hallucination.evaluate(
-                output=sample.answer, context=sample.context
+                output=sample.answer,
+                context=sample.context,
+                query=sample.query,
             )
             metric_name = "hallucination"
         elif family is MetricFamily.FAITHFULNESS:

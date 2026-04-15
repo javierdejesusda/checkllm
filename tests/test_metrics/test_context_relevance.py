@@ -77,3 +77,20 @@ class TestContextRelevanceMetric:
         last_call = judge.calls[-1]
         assert "my context" in last_call["prompt"]
         assert "my query" in last_call["prompt"]
+
+    @pytest.mark.asyncio
+    async def test_system_prompt_is_precision_oriented(self, judge):
+        """System prompt must push the judge toward a precision/ratio rubric
+        so scores spread out instead of clustering near 1.0 for any context
+        that merely touches the query topic.
+        """
+        judge.set_default(score=0.9, reasoning="ok")
+        metric = ContextRelevanceMetric(judge=judge, threshold=0.8)
+        await metric.evaluate(context="irrelevant filler", query="q")
+        system_prompt = judge.calls[-1]["system_prompt"].lower()
+        assert "precision" in system_prompt, (
+            "system prompt must frame grading as precision / signal-to-noise"
+        )
+        assert "ratio" in system_prompt, (
+            "system prompt must mention the relevant/total ratio"
+        )
