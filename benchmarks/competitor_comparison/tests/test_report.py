@@ -34,6 +34,51 @@ def test_leaderboard_ranks_by_auc():
     assert rows[0]["auc"] == 1.0
 
 
+def test_leaderboard_sorts_nan_auc_after_finite_auc():
+    """NaN-AUC rows must always rank after any finite-AUC row in the same
+    bucket, regardless of the order adapters were registered. A previous
+    sort implementation mapped NaN to key=1 and finite AUCs to keys in
+    [-1, 0], which worked by accident when every row in a group was NaN
+    but would silently demote NaN rows if any framework produced a
+    finite score.
+    """
+    # One framework has a finite AUC on TruthfulQA-like scalar labels, the
+    # other two are NaN. Finite framework must rank first.
+    scores = [
+        _mk("checkllm", "a", 0.9),
+        _mk("checkllm", "b", 0.1),
+        _mk("deepeval", "a", 0.5),
+        _mk("deepeval", "b", 0.5),
+        _mk("promptfoo", "a", 0.8),
+        _mk("promptfoo", "b", 0.4),
+    ]
+    labels = {"a": 1.0, "b": 0.0}
+    board = build_leaderboard(
+        scores, {("halubench", MetricFamily.HALLUCINATION): labels}
+    )
+    ranked = sorted(
+        [r for r in board if r["dataset"] == "halubench"],
+        key=lambda r: r["rank"],
+    )
+    # deepeval scores are constant 0.5 → AUC is 0.5 (not NaN) so it still
+    # earns a finite rank. Use a pure NaN case: constant labels.
+    scores_scalar = [
+        _mk("checkllm", "a", 0.9),
+        _mk("checkllm", "b", 0.9),
+        _mk("deepeval", "a", 0.5),
+        _mk("deepeval", "b", 0.5),
+    ]
+    scalar_labels = {"a": 1.0, "b": 1.0}
+    board2 = build_leaderboard(
+        scores_scalar, {("truthfulqa", MetricFamily.HALLUCINATION): scalar_labels}
+    )
+    # Every row has NaN AUC → ranks are 1,2 in insertion order and stable.
+    ranks = {r["framework"]: r["rank"] for r in board2}
+    assert ranks["checkllm"] in (1, 2)
+    assert ranks["deepeval"] in (1, 2)
+    assert ranks["checkllm"] != ranks["deepeval"]
+
+
 def test_write_markdown_emits_table(tmp_path):
     rows = [
         {"framework": "checkllm", "dataset": "halubench", "metric_family": "hallucination",

@@ -57,6 +57,20 @@ def test_truthfulqa_extracts_best_answer_as_reference(tiny_truthfulqa):
     assert "Nothing harmful" in samples[0].context
 
 
+def test_truthfulqa_preserves_explicit_zero_id():
+    """A row that ships id=0 must be preserved, not silently rewritten to
+    the positional fallback. The previous `row.get("id") or f"tq-{idx}"`
+    mapping would discard 0, "", and False.
+    """
+    rows = [
+        {"id": 0, "question": "q0", "best_answer": "a0"},
+        {"question": "q1", "best_answer": "a1"},
+    ]
+    samples = load_truthfulqa_from_rows(rows)
+    assert samples[0].sample_id == "0"
+    assert samples[1].sample_id == "tq-1"
+
+
 def test_jailbreakbench_harmful_is_zero(tiny_jailbreakbench):
     samples = load_jailbreakbench_from_rows(tiny_jailbreakbench)
     assert len(samples) == 3

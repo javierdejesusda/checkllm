@@ -102,7 +102,8 @@ def load_truthfulqa_from_rows(rows: Iterable[dict]) -> list[BenchmarkSample]:
     """
     out: list[BenchmarkSample] = []
     for idx, row in enumerate(rows):
-        sample_id = str(row.get("id") or f"tq-{idx}")
+        raw_id = row.get("id") if "id" in row else None
+        sample_id = f"tq-{idx}" if raw_id is None else str(raw_id)
         out.append(
             BenchmarkSample(
                 sample_id=sample_id,

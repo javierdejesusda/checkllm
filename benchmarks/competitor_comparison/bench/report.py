@@ -50,7 +50,18 @@ def build_leaderboard(
     for r in rows:
         by_cat.setdefault((r["dataset"], r["metric_family"]), []).append(r)
     for group in by_cat.values():
-        group.sort(key=lambda r: (-(r["auc"] if r["auc"] == r["auc"] else -1)))
+        # Sort by (is_nan, -auc): finite AUCs come first in descending order,
+        # and NaN rows are always segregated at the tail of the group. When
+        # every row in a group is NaN, Python's stable sort preserves the
+        # insertion order from the bucket iteration — so the ranking on
+        # NaN-only groups is degenerate by construction rather than
+        # accidentally depending on adapter registration order.
+        group.sort(
+            key=lambda r: (
+                r["auc"] != r["auc"],
+                -r["auc"] if r["auc"] == r["auc"] else 0.0,
+            )
+        )
         for i, r in enumerate(group, start=1):
             r["rank"] = i
 

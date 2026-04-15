@@ -149,6 +149,10 @@ class PromptfooAdapter:
     def __init__(self, judge_model: str, runner: RunnerFn | None = None) -> None:
         self.judge_model = judge_model
         self._runner = runner or _default_runner
+        # Resolve npx once at construction so a missing Node install fails
+        # before any samples are scored instead of emitting one
+        # FileNotFoundError per sample.
+        self._npx = _resolve_npx()
 
     def supports(self, family: MetricFamily) -> bool:
         """Return True if this adapter can score the given metric family.
@@ -207,7 +211,7 @@ class PromptfooAdapter:
 
             stdout, stderr = await self._runner(
                 [
-                    _resolve_npx(),
+                    self._npx,
                     "-y",
                     "promptfoo@latest",
                     "eval",

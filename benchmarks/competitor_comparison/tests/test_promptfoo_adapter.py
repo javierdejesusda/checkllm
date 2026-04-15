@@ -125,3 +125,15 @@ def test_resolve_npx_raises_when_missing(monkeypatch):
     )
     with pytest.raises(FileNotFoundError, match="npx not found"):
         _resolve_npx()
+
+
+def test_promptfoo_adapter_fails_fast_when_npx_missing(monkeypatch):
+    """Missing Node.js should raise once at construction rather than once
+    per sample — otherwise a 600-sample run produces 600 identical
+    FileNotFoundErrors spaced across the wall-clock.
+    """
+    monkeypatch.setattr(
+        "bench.adapters.promptfoo_adapter.shutil.which", lambda _: None
+    )
+    with pytest.raises(FileNotFoundError, match="npx not found"):
+        PromptfooAdapter(judge_model="gpt-4o-mini")
