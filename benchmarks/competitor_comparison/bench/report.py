@@ -93,15 +93,15 @@ _MARKDOWN_FOOTER = """
   goals), and a meaningful comparison requires generating target-model
   responses before grading. Tracked in
   `docs/benchmarks/enhancements/remaining-gaps.md`.
-- **TruthfulQA AUC is NaN.** The benchmark loader uses `best_answer` as
-  both answer and reference so every label is `1.0`; AUC is undefined on a
-  constant label set. Rank on TruthfulQA reflects insertion order, not a
-  real ordering.
-- **RAGTruth `context_relevance` is near random for every framework.** The
-  dataset ships hallucination labels, not context-relevance labels, so
-  correlating context-relevance scores with `hallucination_labels` measures
-  a different quantity than the one being scored. See
-  `docs/benchmarks/enhancements/remaining-gaps.md`.
+- **TruthfulQA is scored as a balanced binary task.** Each source row
+  emits a `best_answer` sample (label 1.0) and an `incorrect_answers[0]`
+  sample (label 0.0), so ROC-AUC is well-defined. `--limit 200` yields
+  400 graded samples per framework.
+- **RAGTruth `context_relevance` is scored answer-aware for CheckLLM.**
+  The retrieved context alone does not carry a retrieval-relevance label,
+  so CheckLLM folds the system answer into the judge prompt and grades
+  whether the context precisely justifies that answer. DeepEval and
+  promptfoo keep their original context-only semantics.
 """
 
 
