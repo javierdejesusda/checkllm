@@ -76,7 +76,9 @@ class CheckllmAdapter:
             metric_name = "faithfulness"
         elif family is MetricFamily.CONTEXT_RELEVANCE:
             r = await self._context_relevance.evaluate(
-                context=sample.context, query=sample.query
+                context=sample.context,
+                query=sample.query,
+                answer=sample.answer or None,
             )
             metric_name = "context_relevance"
         elif family is MetricFamily.ANSWER_RELEVANCY:

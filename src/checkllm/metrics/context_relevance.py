@@ -23,6 +23,20 @@ Key evaluation steps:
 3. Compute the ratio (relevant units / total units) and map it to the rubric above.
 4. Be willing to use intermediate values (0.55, 0.73, etc.) — do not cluster every answer at 1.0.
 
+When an answer is supplied alongside the query and context, you are evaluating
+a stricter question: does the retrieved context, on its own, contain the
+evidence that would justify this specific answer faithfully? Penalise contexts
+that force the system to guess or to lean on outside knowledge:
+- 1.0 = The context directly states the facts the answer relies on; nothing
+  outside the context is needed.
+- 0.6 = The context is topically close but only implies the answer; a reader
+  could plausibly reach it but only by filling gaps with outside knowledge.
+- 0.2 = The context is about the same broad subject but does not support the
+  specific claims the answer makes.
+- 0.0 = The context is unrelated or actively contradicts the answer.
+Answer-aware grading still uses the precision/ratio rubric above — off-topic
+sentences are still noise, even when the on-topic ones support the answer.
+
 Respond with JSON: {"score": <float>, "reasoning": "<explanation>"}"""
 
 
@@ -34,13 +48,30 @@ class ContextRelevanceMetric:
         self.threshold = threshold
         self.system_prompt: str = CONTEXT_RELEVANCE_SYSTEM_PROMPT
 
-    async def evaluate(self, context: str, query: str) -> CheckResult:
-        prompt = (
-            f"User Query:\n{query}\n\n"
-            f"Retrieved Context:\n{context}\n\n"
-            "Is the retrieved context relevant to the query? "
-            "Does it contain useful information for answering the query? Score it."
-        )
+    async def evaluate(
+        self,
+        context: str,
+        query: str,
+        answer: str | None = None,
+    ) -> CheckResult:
+        if answer is None:
+            prompt = (
+                f"User Query:\n{query}\n\n"
+                f"Retrieved Context:\n{context}\n\n"
+                "Is the retrieved context relevant to the query? "
+                "Does it contain useful information for answering the query? Score it."
+            )
+        else:
+            prompt = (
+                f"User Query:\n{query}\n\n"
+                f"Retrieved Context:\n{context}\n\n"
+                f"System Answer:\n{answer}\n\n"
+                "Given this query, this retrieved context, and the system answer, "
+                "does the context — on its own — contain the evidence needed to "
+                "justify the answer faithfully? Score precision: penalise off-topic "
+                "sentences as noise and penalise contexts that only topically overlap "
+                "without supporting the specific claims the answer makes."
+            )
 
         start = time.perf_counter_ns()
         response = await self.judge.evaluate(
