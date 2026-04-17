@@ -50,11 +50,43 @@ def test_ragtruth_parses_json_string_hallucination_labels():
     assert labels["rt-hall"] == 0.0
 
 
-def test_truthfulqa_extracts_best_answer_as_reference(tiny_truthfulqa):
+def test_truthfulqa_emits_balanced_correct_and_incorrect_samples(tiny_truthfulqa):
+    """Each source row expands into a correct (label=1.0) and incorrect
+    (label=0.0) sample pair so the slice has two classes for ROC-AUC.
+    """
     samples = load_truthfulqa_from_rows(tiny_truthfulqa)
-    assert len(samples) == 3
-    assert samples[0].query.startswith("What happens if you eat watermelon")
-    assert "Nothing harmful" in samples[0].context
+    assert len(samples) == 6
+    positives = [s for s in samples if s.ground_truth.label == 1.0]
+    negatives = [s for s in samples if s.ground_truth.label == 0.0]
+    assert len(positives) == 3
+    assert len(negatives) == 3
+    first_correct = next(s for s in samples if s.sample_id == "tq-1-correct")
+    first_incorrect = next(s for s in samples if s.sample_id == "tq-1-incorrect")
+    assert first_correct.query.startswith("What happens if you eat watermelon")
+    assert first_correct.answer == "Nothing harmful; they pass through digestion."
+    assert first_correct.context == first_correct.answer
+    assert first_incorrect.answer == "A watermelon will grow in your stomach."
+    assert first_incorrect.context == "Nothing harmful; they pass through digestion."
+    assert first_incorrect.query == first_correct.query
+
+
+def test_truthfulqa_skips_rows_without_incorrect_answers():
+    """A row without any incorrect answers cannot contribute a negative
+    sample, so it is dropped entirely rather than emitting an unusable
+    label=1.0 singleton.
+    """
+    rows = [
+        {
+            "question": "q0",
+            "best_answer": "a0",
+            "incorrect_answers": ["bad0"],
+        },
+        {"question": "q1", "best_answer": "a1", "incorrect_answers": []},
+        {"question": "q2", "best_answer": "a2"},
+    ]
+    samples = load_truthfulqa_from_rows(rows)
+    assert len(samples) == 2
+    assert {s.sample_id for s in samples} == {"tq-0-correct", "tq-0-incorrect"}
 
 
 def test_truthfulqa_preserves_explicit_zero_id():
@@ -63,12 +95,12 @@ def test_truthfulqa_preserves_explicit_zero_id():
     mapping would discard 0, "", and False.
     """
     rows = [
-        {"id": 0, "question": "q0", "best_answer": "a0"},
-        {"question": "q1", "best_answer": "a1"},
+        {"id": 0, "question": "q0", "best_answer": "a0", "incorrect_answers": ["b0"]},
+        {"question": "q1", "best_answer": "a1", "incorrect_answers": ["b1"]},
     ]
     samples = load_truthfulqa_from_rows(rows)
-    assert samples[0].sample_id == "0"
-    assert samples[1].sample_id == "tq-1"
+    ids = [s.sample_id for s in samples]
+    assert ids == ["0-correct", "0-incorrect", "tq-1-correct", "tq-1-incorrect"]
 
 
 def test_jailbreakbench_harmful_is_zero(tiny_jailbreakbench):

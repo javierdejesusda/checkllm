@@ -86,32 +86,51 @@ def load_ragtruth_from_rows(rows: Iterable[dict]) -> list[BenchmarkSample]:
 
 
 def load_truthfulqa_from_rows(rows: Iterable[dict]) -> list[BenchmarkSample]:
-    """Convert raw TruthfulQA rows into BenchmarkSample objects.
+    """Convert raw TruthfulQA rows into balanced BenchmarkSample pairs.
 
-    The best_answer is used as both the answer and the context/reference since
-    TruthfulQA is a reference-free evaluation setup. The HuggingFace dataset
-    does not ship with stable ids, so we fall back to a positional sample_id
-    when the row has no ``id`` field.
+    Each source row emits two samples so the metric has positive and negative
+    examples to rank. The ``best_answer`` produces a label=1.0 sample and the
+    first entry in ``incorrect_answers`` produces a label=0.0 sample. Rows
+    without any incorrect answers are skipped because they cannot contribute
+    a negative. ``best_answer`` is still used as the context/reference for
+    both samples (TruthfulQA is reference-free), so a relevance-style metric
+    sees the same setup and only the answer text differs between the pair.
 
     Args:
         rows: Iterable of dicts with keys question, best_answer,
             correct_answers, incorrect_answers, and optionally id.
 
     Returns:
-        List of BenchmarkSample with label 1.0 (scalar reference).
+        List of BenchmarkSample with balanced binary labels; length is twice
+        the number of source rows that ship at least one incorrect answer.
     """
     out: list[BenchmarkSample] = []
     for idx, row in enumerate(rows):
+        incorrect_answers = row.get("incorrect_answers") or []
+        if not incorrect_answers:
+            continue
         raw_id = row.get("id") if "id" in row else None
-        sample_id = f"tq-{idx}" if raw_id is None else str(raw_id)
+        base_id = f"tq-{idx}" if raw_id is None else str(raw_id)
+        best_answer = row["best_answer"]
+        question = row["question"]
         out.append(
             BenchmarkSample(
-                sample_id=sample_id,
+                sample_id=f"{base_id}-correct",
                 dataset="truthfulqa",
-                query=row["question"],
-                answer=row["best_answer"],
-                context=row["best_answer"],
-                ground_truth=GroundTruth(label=1.0, kind="scalar"),
+                query=question,
+                answer=best_answer,
+                context=best_answer,
+                ground_truth=GroundTruth(label=1.0, kind="binary"),
+            )
+        )
+        out.append(
+            BenchmarkSample(
+                sample_id=f"{base_id}-incorrect",
+                dataset="truthfulqa",
+                query=question,
+                answer=incorrect_answers[0],
+                context=best_answer,
+                ground_truth=GroundTruth(label=0.0, kind="binary"),
             )
         )
     return out
