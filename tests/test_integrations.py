@@ -90,6 +90,17 @@ def test_langchain_on_llm_end_with_generations():
     assert len(handler.results) == 1
 
 
+def test_langchain_handler_inherits_base_callback_handler():
+    try:
+        from langchain_core.callbacks import BaseCallbackHandler
+        assert issubclass(LangChainHandler, BaseCallbackHandler), (
+            "CheckllmCallbackHandler must inherit from BaseCallbackHandler "
+            "so LangChain's callback system registers it correctly"
+        )
+    except ImportError:
+        pass  # langchain_core not installed; inheritance check not applicable
+
+
 # --- LlamaIndex ---
 
 

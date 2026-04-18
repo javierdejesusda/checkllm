@@ -147,9 +147,10 @@ class TestBatchEvaluator:
         score, reasoning = BatchEvaluator._parse_judge_output(raw)
         assert score == 1.0  # clamped to max
 
-    def test_requires_openai_package(self):
+    def test_requires_openai_package(self, monkeypatch):
         """BatchEvaluator raises ImportError when openai is not installed,
         or ValueError when API key is missing. Either is acceptable."""
+        monkeypatch.delenv("OPENAI_API_KEY", raising=False)
         try:
             # This will either raise ImportError (no openai) or ValueError (no key)
             BatchEvaluator(api_key=None)

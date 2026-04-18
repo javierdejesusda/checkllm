@@ -394,3 +394,24 @@ class DeterministicChecksMixin:
         self.results.append(result)
         self._fire_after_hook(result)
         return result
+
+    def is_yaml(self, output: str) -> CheckResult:
+        self._fire_before_hook("is_yaml", {"output": output})
+        result = self._deterministic.is_yaml(output)
+        self.results.append(result)
+        self._fire_after_hook(result)
+        return result
+
+    def is_url(self, output: str) -> CheckResult:
+        self._fire_before_hook("is_url", {"output": output})
+        result = self._deterministic.is_url(output)
+        self.results.append(result)
+        self._fire_after_hook(result)
+        return result
+
+    def has_url(self, output: str) -> CheckResult:
+        self._fire_before_hook("has_url", {"output": output})
+        result = self._deterministic.has_url(output)
+        self.results.append(result)
+        self._fire_after_hook(result)
+        return result

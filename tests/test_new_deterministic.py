@@ -429,3 +429,65 @@ class TestHasStructure:
     def test_unknown_element(self, dc):
         result = dc.has_structure("text", ["nonexistent_element"])
         assert result.passed is False
+
+
+class TestIsYaml:
+    def test_valid_yaml(self, dc):
+        result = dc.is_yaml("key: value\nfoo: bar")
+        assert result.passed is True
+        assert result.score == 1.0
+        assert result.metric_name == "is_yaml"
+
+    def test_invalid_yaml(self, dc):
+        result = dc.is_yaml("}{bad yaml}{")
+        assert result.passed is False
+
+    def test_empty_string(self, dc):
+        result = dc.is_yaml("")
+        assert result.passed is False
+
+    def test_yaml_with_code_fence(self, dc):
+        result = dc.is_yaml("```yaml\nkey: value\n```")
+        assert result.passed is True
+
+
+class TestIsUrl:
+    def test_valid_https_url(self, dc):
+        result = dc.is_url("https://example.com")
+        assert result.passed is True
+        assert result.metric_name == "is_url"
+
+    def test_valid_http_url(self, dc):
+        result = dc.is_url("http://api.example.com/v1/data")
+        assert result.passed is True
+
+    def test_url_with_surrounding_text_fails(self, dc):
+        result = dc.is_url("Check out https://example.com for info")
+        assert result.passed is False
+
+    def test_plain_text_fails(self, dc):
+        result = dc.is_url("just some text")
+        assert result.passed is False
+
+    def test_empty_string(self, dc):
+        result = dc.is_url("")
+        assert result.passed is False
+
+
+class TestHasUrl:
+    def test_text_containing_url(self, dc):
+        result = dc.has_url("Check out https://example.com for more info.")
+        assert result.passed is True
+        assert result.metric_name == "has_url"
+
+    def test_no_url(self, dc):
+        result = dc.has_url("No URLs in this text at all.")
+        assert result.passed is False
+
+    def test_multiple_urls(self, dc):
+        result = dc.has_url("See https://a.com and https://b.org")
+        assert result.passed is True
+
+    def test_empty_string(self, dc):
+        result = dc.has_url("")
+        assert result.passed is False

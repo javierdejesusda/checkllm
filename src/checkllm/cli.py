@@ -979,6 +979,9 @@ def list_metrics(
         ("between", "Numeric in range"),
         ("latency", "Response time check"),
         ("cost", "API cost check"),
+        ("is_yaml", "Valid YAML check"),
+        ("is_url", "Output is a valid URL"),
+        ("has_url", "Output contains a valid URL"),
     ]
 
     llm_metrics = [

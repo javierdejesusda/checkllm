@@ -2110,6 +2110,83 @@ class DeterministicChecks:
             threshold=threshold,
         )
 
+    def is_yaml(self, output: str) -> CheckResult:
+        """Check that output is valid YAML (alias for is_valid_yaml with metric name 'is_yaml').
+
+        Args:
+            output: The text to validate as YAML.
+
+        Returns:
+            CheckResult with pass/fail based on YAML validity.
+        """
+        result = self.is_valid_yaml(output)
+        return CheckResult(
+            passed=result.passed,
+            score=result.score,
+            reasoning=result.reasoning,
+            cost=0.0,
+            latency_ms=0,
+            metric_name="is_yaml",
+            input_preview=output[:200],
+        )
+
+    def is_url(self, output: str) -> CheckResult:
+        """Check that the output IS a valid URL (the entire trimmed string).
+
+        Use has_url to check if text *contains* a URL anywhere.
+
+        Args:
+            output: The text to validate as a URL.
+
+        Returns:
+            CheckResult with pass/fail based on whether the whole output is a valid URL.
+        """
+        text = output.strip()
+        if not text:
+            return CheckResult(
+                passed=False, score=0.0,
+                reasoning="Empty output",
+                cost=0.0, latency_ms=0, metric_name="is_url",
+                input_preview=output[:200],
+            )
+        parsed = urlparse(text)
+        passed = bool(
+            parsed.scheme in ("http", "https", "ftp")
+            and parsed.netloc
+            and "." in parsed.netloc
+        )
+        return CheckResult(
+            passed=passed,
+            score=1.0 if passed else 0.0,
+            reasoning=f"Output {'is' if passed else 'is not'} a valid URL",
+            cost=0.0,
+            latency_ms=0,
+            metric_name="is_url",
+            input_preview=output[:200],
+        )
+
+    def has_url(self, output: str) -> CheckResult:
+        """Check that the output contains at least one valid URL.
+
+        Use is_url to check if the entire output IS a URL.
+
+        Args:
+            output: The text to search for valid URLs.
+
+        Returns:
+            CheckResult with pass/fail based on URL presence.
+        """
+        result = self.is_valid_url(output)
+        return CheckResult(
+            passed=result.passed,
+            score=result.score,
+            reasoning=result.reasoning,
+            cost=0.0,
+            latency_ms=0,
+            metric_name="has_url",
+            input_preview=output[:200],
+        )
+
     def exact_match_strict(
         self,
         output: str,

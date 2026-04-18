@@ -26,8 +26,13 @@ from checkllm.guardrails import Guard, ValidationResult
 
 logger = logging.getLogger("checkllm.integrations.langchain")
 
+try:
+    from langchain_core.callbacks import BaseCallbackHandler as _LangChainBase
+except ImportError:
+    _LangChainBase = object  # type: ignore[assignment,misc]
 
-class CheckllmCallbackHandler:
+
+class CheckllmCallbackHandler(_LangChainBase):
     """LangChain callback handler that validates outputs with checkllm.
 
     Parameters

@@ -26,8 +26,8 @@ jobs:
       - name: Install dependencies
         run: pip install -e ".[dev]"
 
-      - name: Run tests (deterministic only, no API key needed)
-        run: pytest tests/ -v -m "not llm" --tb=short
+      - name: Run tests
+        run: pytest tests/ -v --tb=short --cov=checkllm --cov-report=xml --cov-fail-under=50
 
       - name: Check CLI works
         run: checkllm --version
