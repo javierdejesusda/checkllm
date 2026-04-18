@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased
+
+### Competitor benchmark
+- **Public competitor leaderboard** under `docs/benchmarks/` comparing checkllm to DeepEval, Ragas, and promptfoo on HaluBench, RAGTruth (hallucination, faithfulness, context_relevance), and TruthfulQA. checkllm holds rank 1 on every published row.
+- **TruthfulQA balanced loader** — `load_truthfulqa_from_rows` now emits `best_answer` / `incorrect_answers[0]` sample pairs so ROC-AUC is well-defined on the slice.
+- **Answer-aware `ContextRelevanceMetric`** — `evaluate(...)` accepts an optional `answer` kwarg; when provided, the judge grades whether the retrieved context precisely justifies that specific answer. The answer-less path keeps its original semantics.
+
 ## v3.2.0 (2026-04-06)
 
 ### VS Code Extension

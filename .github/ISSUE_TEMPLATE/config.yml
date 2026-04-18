@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://github.com/javierdejesusda/checkllm#readme
+    about: Quickstart, examples, and the public API. Most usage questions are answered here.
+  - name: Competitor leaderboard
+    url: https://github.com/javierdejesusda/checkllm/blob/main/docs/benchmarks/competitor-comparison.md
+    about: How checkllm compares to DeepEval, Ragas, and promptfoo on HaluBench, RAGTruth, and TruthfulQA.
+  - name: PyPI package
+    url: https://pypi.org/project/checkllm/
+    about: Install instructions and release history.
