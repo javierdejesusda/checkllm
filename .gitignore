@@ -7,3 +7,4 @@ build/
 .checkllm/
 *.egg
 .venv/
+.env
