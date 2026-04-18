@@ -126,7 +126,8 @@ def test_html_report_generation(tmp_path):
 def test_cli_version():
     """Verify CLI is accessible."""
     from typer.testing import CliRunner
+    from checkllm import __version__
     from checkllm.cli import app
 
     result = CliRunner().invoke(app, ["--version"])
-    assert "5.0.0" in result.output
+    assert __version__ in result.output

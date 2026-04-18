@@ -133,8 +133,9 @@ class TestCliDiff:
 
 class TestCliVersion:
     def test_version_flag(self):
+        from checkllm import __version__
         result = runner.invoke(app, ["--version"])
-        assert "5.0.0" in result.output
+        assert __version__ in result.output
 
 
 class TestCliInit:
