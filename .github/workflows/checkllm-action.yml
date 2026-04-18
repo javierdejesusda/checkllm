@@ -29,7 +29,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install checkllm
-        run: pip install "checkllm[all]"
+        run: pip install "checkllm[all]" pytest pytest-asyncio
 
       - name: Run deterministic checks
         run: |
