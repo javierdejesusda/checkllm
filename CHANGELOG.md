@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## v5.0.1 (2026-04-18)
 
 ### Competitor benchmark
 - **Public competitor leaderboard** under `docs/benchmarks/` comparing checkllm to DeepEval, Ragas, and promptfoo on HaluBench, RAGTruth (hallucination, faithfulness, context_relevance), and TruthfulQA. checkllm holds rank 1 on every published row.

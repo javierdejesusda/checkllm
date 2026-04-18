@@ -315,7 +315,7 @@ from checkllm.dashboard import (
     check_alerts,
 )
 
-__version__ = "5.0.0"
+__version__ = "5.0.1"
 
 __all__ = [
     # Deprecation framework
