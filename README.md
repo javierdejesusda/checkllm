@@ -2,7 +2,7 @@
 
 The most comprehensive LLM evaluation framework. The pytest of LLM testing.
 
-[![PyPI](https://img.shields.io/pypi/v/checkllm)](https://pypi.org/project/checkllm/) [![Python](https://img.shields.io/pypi/pyversions/checkllm)](https://pypi.org/project/checkllm/) [![License](https://img.shields.io/pypi/l/checkllm)](https://github.com/checkllm/checkllm/blob/main/LICENSE)
+[![PyPI](https://img.shields.io/pypi/v/checkllm)](https://pypi.org/project/checkllm/) [![Python](https://img.shields.io/pypi/pyversions/checkllm)](https://pypi.org/project/checkllm/) [![License](https://img.shields.io/pypi/l/checkllm)](https://github.com/javierdejesusda/checkllm/blob/main/LICENSE) [![CI](https://github.com/javierdejesusda/checkllm/actions/workflows/ci.yml/badge.svg)](https://github.com/javierdejesusda/checkllm/actions/workflows/ci.yml) [![Benchmark](https://img.shields.io/badge/leaderboard-rank%201-brightgreen)](docs/benchmarks/competitor-comparison.md)
 
 ```bash
 pip install checkllm
@@ -127,6 +127,18 @@ checkllm eval-yaml checkllm.yaml
 ```
 
 ## How checkllm compares
+
+> **Independent benchmark, not just feature counts.** On the public competitor leaderboard
+> ([docs/benchmarks/competitor-comparison.md](docs/benchmarks/competitor-comparison.md))
+> checkllm holds **rank 1 on every published row** against DeepEval and promptfoo:
+> halubench/hallucination 0.783, ragtruth/hallucination 0.663,
+> ragtruth/faithfulness 0.754, ragtruth/context_relevance 0.565, and
+> truthfulqa/answer_relevancy 0.546 (ROC-AUC, gpt-4o-mini judge,
+> 200 source rows per slice). Methodology is in
+> [docs/benchmarks/methodology.md](docs/benchmarks/methodology.md);
+> raw scores ship in `benchmarks/competitor_comparison/`.
+
+### Feature comparison
 
 | Feature | checkllm | DeepEval | Ragas | promptfoo |
 |---------|----------|----------|-------|-----------|
