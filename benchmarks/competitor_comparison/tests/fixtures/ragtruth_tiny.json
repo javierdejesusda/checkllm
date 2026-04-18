@@ -1,0 +1,5 @@
+[
+  {"id": "rt-1", "query": "Who wrote Hamlet?", "context": "Hamlet was written by William Shakespeare around 1600.", "output": "William Shakespeare wrote Hamlet.", "hallucination_labels": []},
+  {"id": "rt-2", "query": "What is the boiling point of water?", "context": "Water boils at 100 C at sea level.", "output": "Water boils at 90 C.", "hallucination_labels": ["evident_conflict"]},
+  {"id": "rt-3", "query": "Summarize.", "context": "Q3 revenue was $12M.", "output": "Q3 revenue was $12M with strong growth in APAC.", "hallucination_labels": ["baseless_info"]}
+]

@@ -5,20 +5,37 @@ import time
 from checkllm.judge import JudgeBackend
 from checkllm.models import CheckResult
 
-CONTEXT_RELEVANCE_SYSTEM_PROMPT = """You are an expert context relevance evaluator for Retrieval-Augmented Generation (RAG) systems. Your job is to assess whether the retrieved context is relevant to the user's query — that is, whether the context contains information that would be useful for answering the query.
+CONTEXT_RELEVANCE_SYSTEM_PROMPT = """You are an expert context relevance evaluator for Retrieval-Augmented Generation (RAG) systems. Your job is to assess precision: how much of the retrieved context is actually useful for answering the user's query, versus unrelated noise.
 
-Score from 0.0 to 1.0:
-- 1.0 = The context is highly relevant and contains all the information needed to fully answer the query.
-- 0.8 = The context is mostly relevant with minor tangential content. It covers the main aspects of the query.
-- 0.5 = The context is partially relevant. It addresses some aspects of the query but misses key parts, or contains significant irrelevant material.
-- 0.3 = The context has only marginal relevance. Most of the content is unrelated to the query, with only superficial connections.
-- 0.0 = The context is completely irrelevant to the query. It does not address the topic at all.
+The score must reflect the ratio of query-relevant content to total context length. A verbose passage where only a few sentences matter is NOT a 1.0 — each irrelevant sentence is noise that dilutes the signal.
 
-Key evaluation criteria:
-1. Does the context directly address the topic of the query?
-2. Does the context contain enough information to answer the query?
-3. How much of the context is irrelevant noise vs. useful signal?
-4. Would a human consider this context helpful for answering the query?
+Score from 0.0 to 1.0 using this rubric:
+- 1.0 = Every sentence in the context is directly on-topic for the query. There is no wasted content.
+- 0.8 = The context is mostly on-topic; a small minority of sentences are tangential but not misleading.
+- 0.6 = The context contains the answer, but roughly half the material is unrelated background or other topics.
+- 0.4 = Only a small fraction of the context is relevant. Most sentences cover unrelated facts or digressions.
+- 0.2 = The context barely touches the query topic. One or two sentences hint at it; the rest is off-topic.
+- 0.0 = The context does not address the query at all.
+
+Key evaluation steps:
+1. Mentally segment the context into sentences or paragraphs.
+2. Count how many of those units would directly help answer the query.
+3. Compute the ratio (relevant units / total units) and map it to the rubric above.
+4. Be willing to use intermediate values (0.55, 0.73, etc.) — do not cluster every answer at 1.0.
+
+When an answer is supplied alongside the query and context, you are evaluating
+a stricter question: does the retrieved context, on its own, contain the
+evidence that would justify this specific answer faithfully? Penalise contexts
+that force the system to guess or to lean on outside knowledge:
+- 1.0 = The context directly states the facts the answer relies on; nothing
+  outside the context is needed.
+- 0.6 = The context is topically close but only implies the answer; a reader
+  could plausibly reach it but only by filling gaps with outside knowledge.
+- 0.2 = The context is about the same broad subject but does not support the
+  specific claims the answer makes.
+- 0.0 = The context is unrelated or actively contradicts the answer.
+Answer-aware grading still uses the precision/ratio rubric above — off-topic
+sentences are still noise, even when the on-topic ones support the answer.
 
 Respond with JSON: {"score": <float>, "reasoning": "<explanation>"}"""
 
@@ -31,13 +48,30 @@ class ContextRelevanceMetric:
         self.threshold = threshold
         self.system_prompt: str = CONTEXT_RELEVANCE_SYSTEM_PROMPT
 
-    async def evaluate(self, context: str, query: str) -> CheckResult:
-        prompt = (
-            f"User Query:\n{query}\n\n"
-            f"Retrieved Context:\n{context}\n\n"
-            "Is the retrieved context relevant to the query? "
-            "Does it contain useful information for answering the query? Score it."
-        )
+    async def evaluate(
+        self,
+        context: str,
+        query: str,
+        answer: str | None = None,
+    ) -> CheckResult:
+        if answer is None:
+            prompt = (
+                f"User Query:\n{query}\n\n"
+                f"Retrieved Context:\n{context}\n\n"
+                "Is the retrieved context relevant to the query? "
+                "Does it contain useful information for answering the query? Score it."
+            )
+        else:
+            prompt = (
+                f"User Query:\n{query}\n\n"
+                f"Retrieved Context:\n{context}\n\n"
+                f"System Answer:\n{answer}\n\n"
+                "Given this query, this retrieved context, and the system answer, "
+                "does the context — on its own — contain the evidence needed to "
+                "justify the answer faithfully? Score precision: penalise off-topic "
+                "sentences as noise and penalise contexts that only topically overlap "
+                "without supporting the specific claims the answer makes."
+            )
 
         start = time.perf_counter_ns()
         response = await self.judge.evaluate(

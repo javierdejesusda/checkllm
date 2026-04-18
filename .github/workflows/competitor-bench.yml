@@ -1,0 +1,75 @@
+name: competitor-bench
+
+on:
+  schedule:
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "benchmarks/competitor_comparison/**"
+      - "src/checkllm/metrics/**"
+
+jobs:
+  smoke:
+    name: smoke (offline fixtures)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Install main package
+        run: pip install -e .
+      - name: Install bench package
+        run: pip install -e "benchmarks/competitor_comparison[dev]"
+      - name: Run bench unit tests
+        run: |
+          cd benchmarks/competitor_comparison
+          PYTHONPATH=. python -m pytest tests/ -v --timeout=30
+
+  full-bench:
+    name: full bench (HaluBench 200)
+    runs-on: ubuntu-latest
+    if: github.event_name != 'pull_request'
+    needs: smoke
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: pip install -e .
+      - run: pip install -e "benchmarks/competitor_comparison[dev]"
+      - run: npm install -g promptfoo
+      - name: Run bench
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          checkllm-bench run --dataset halubench --framework all --family hallucination --limit 200 --judge gpt-4o-mini --budget-usd 5.0
+      - name: Build report
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          python -c "
+          import json
+          from datasets import load_dataset
+          ds = load_dataset('PatronusAI/HaluBench', split='test')
+          out = {'halubench': {'hallucination': {str(r['id']): (1.0 if r['label']=='PASS' else 0.0) for r in ds.select(range(200))}}}
+          open('benchmarks/competitor_comparison/results/labels.json', 'w').write(json.dumps(out, indent=2))
+          "
+          checkllm-bench report \
+            --results benchmarks/competitor_comparison/results \
+            --labels benchmarks/competitor_comparison/results/labels.json \
+            --out-md docs/benchmarks/competitor-comparison.md \
+            --out-csv docs/benchmarks/competitor-comparison.csv \
+            --out-html docs/benchmarks/competitor-comparison.html
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-report
+          path: docs/benchmarks/competitor-comparison.*
