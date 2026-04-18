@@ -1,8 +1,9 @@
 site_name: checkllm
 site_description: The pytest of LLM testing
-site_url: https://checkllm.github.io/checkllm/
-repo_url: https://github.com/checkllm/checkllm
-repo_name: checkllm/checkllm
+site_url: https://javierdejesusda.github.io/checkllm/
+repo_url: https://github.com/javierdejesusda/checkllm
+repo_name: javierdejesusda/checkllm
+edit_uri: edit/main/docs/
 
 theme:
   name: material
@@ -39,6 +40,9 @@ nav:
     - Plugins: guides/plugins.md
     - Configuration: guides/configuration.md
   - Comparison: comparison.md
+  - Benchmarks:
+    - Competitor leaderboard: benchmarks/competitor-comparison.md
+    - Methodology: benchmarks/methodology.md
 
 markdown_extensions:
   - pymdownx.highlight:

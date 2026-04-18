@@ -24,3 +24,5 @@ htmlcov/
 
 node_modules/
 *.tsbuildinfo
+
+site/
