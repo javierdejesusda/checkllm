@@ -54,6 +54,7 @@ class AssertionConfig(BaseModel):
 class TestConfig(BaseModel):
     """A single test case with input, expected output, and assertions."""
 
+    __test__ = False
     description: str = ""
     input: str = ""
     expected: str | None = None

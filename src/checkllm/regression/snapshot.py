@@ -13,6 +13,7 @@ class MetricRecord(BaseModel):
 
 
 class TestRunRecord(BaseModel):
+    __test__ = False
     metrics: dict[str, MetricRecord]
 
 
