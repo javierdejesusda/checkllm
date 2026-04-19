@@ -87,6 +87,7 @@ packages = ["src/checkllm"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+addopts = "-p no:checkllm"
 
 [tool.checkllm]
 judge_model = "gpt-4o"
@@ -128,3 +129,13 @@ exclude = [
 [tool.bandit]
 exclude_dirs = ["tests", "benchmarks"]
 skips = ["B101"]
+
+[tool.coverage.run]
+source = ["checkllm"]
+branch = false
+
+[tool.coverage.report]
+omit = [
+    "*/tests/*",
+    "*/benchmarks/*",
+]

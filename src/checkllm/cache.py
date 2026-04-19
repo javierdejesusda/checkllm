@@ -16,7 +16,7 @@ _DEFAULT_CACHE_DIR = ".checkllm"
 _DEFAULT_TTL_SECONDS = 7 * 24 * 3600  # 7 days
 
 
-def _cache_key(metric_name: str, model: str, output: str, **kwargs) -> str:
+def _cache_key(metric_name: str, model: str, output: str = "", **kwargs) -> str:
     """Generate a SHA-256 cache key from the evaluation inputs."""
     payload = json.dumps(
         {"metric": metric_name, "model": model, "output": output, **kwargs},
