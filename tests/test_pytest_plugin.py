@@ -1,6 +1,33 @@
 
 
 
+class TestMakeReportHook:
+    def test_judge_config_error_causes_skip(self, pytester):
+        """JudgeConfigError raised in a test body should not cause a failure.
+
+        The hook converts the failed report to a skipped outcome by setting
+        wasxfail, so pytest counts the test as xfailed rather than failed.
+        """
+        pytester.makepyfile("""
+            from checkllm.judge import JudgeConfigError
+
+            def test_raises_judge_config_error(check):
+                raise JudgeConfigError("No API key configured")
+        """)
+        result = pytester.runpytest("-v")
+        # The hook sets report.wasxfail so the outcome is counted as xfailed.
+        result.assert_outcomes(xfailed=1, failed=0)
+
+    def test_check_failure_fails_test(self, pytester):
+        """A deterministic check that fails should cause the test to be marked failed."""
+        pytester.makepyfile("""
+            def test_failing_check(check):
+                check.contains("hello world", "MISSING_TEXT")
+        """)
+        result = pytester.runpytest("-v")
+        result.assert_outcomes(failed=1, passed=0)
+
+
 class TestCheckFixture:
     def test_check_fixture_is_available(self, pytester):
         """The check fixture should be auto-discovered by pytest."""
