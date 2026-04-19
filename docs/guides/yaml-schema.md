@@ -224,6 +224,6 @@ import asyncio
 from checkllm.yaml_eval import YAMLEvaluator
 
 evaluator = YAMLEvaluator()
-result = asyncio.run(evaluator.run("eval.yaml"))
-print(result.summary())
+results = asyncio.run(evaluator.run("eval.yaml"))
+print(results.summary())
 ```
