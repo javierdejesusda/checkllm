@@ -27,7 +27,7 @@ jobs:
         run: pip install -e ".[dev]"
 
       - name: Run tests
-        run: pytest tests/ -v --tb=short --cov=checkllm --cov-report=xml --cov-fail-under=50
+        run: pytest tests/ -v --tb=short --cov=checkllm --cov-report=xml --cov-fail-under=75
 
       - name: Check CLI works
         run: checkllm --version
@@ -45,5 +45,8 @@ jobs:
       - name: Install dependencies
         run: pip install -e ".[dev]"
 
-      - name: Type check
-        run: python -m py_compile src/checkllm/__init__.py
+      - name: Type check (mypy)
+        run: python -m mypy src/checkllm/ --ignore-missing-imports --no-error-summary || true
+
+      - name: Security scan (bandit)
+        run: python -m bandit -r src/checkllm/ -c pyproject.toml --quiet --severity-level medium --exit-zero

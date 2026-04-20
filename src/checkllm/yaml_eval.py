@@ -760,7 +760,7 @@ class YAMLEvaluator:
             from checkllm.metrics.role_adherence import RoleAdherenceMetric
             role = str(value) if value else test.vars.get("role", "assistant")
             metric = RoleAdherenceMetric(judge=judge, threshold=t)
-            return await metric.evaluate(output=output, role=role)
+            return await metric.evaluate(output=output, role_description=role)
 
         if atype == "groundedness":
             from checkllm.metrics.groundedness import GroundednessMetric

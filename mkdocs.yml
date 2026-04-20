@@ -39,6 +39,8 @@ nav:
     - Custom Metrics: guides/custom-metrics.md
     - Plugins: guides/plugins.md
     - Configuration: guides/configuration.md
+    - YAML Schema: guides/yaml-schema.md
+    - CLI Reference: guides/cli-reference.md
   - Comparison: comparison.md
   - Benchmarks:
     - Competitor leaderboard: benchmarks/competitor-comparison.md
