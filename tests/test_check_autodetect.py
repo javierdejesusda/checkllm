@@ -16,12 +16,17 @@ def test_auto_detect_creates_openai_judge():
 
 
 def test_auto_detect_creates_anthropic_judge():
+    import sys
+    from unittest.mock import MagicMock
+
     config = CheckllmConfig(judge_backend="auto")
     collector = CheckCollector(config=config)
+    mock_anthropic = MagicMock()
     with patch.dict("os.environ", {"ANTHROPIC_API_KEY": "sk-ant-test"}, clear=True):
-        judge = collector._get_judge()
-        from checkllm.judge import AnthropicJudge
-        assert isinstance(judge, AnthropicJudge)
+        with patch.dict(sys.modules, {"anthropic": mock_anthropic}):
+            judge = collector._get_judge()
+            from checkllm.judge import AnthropicJudge
+            assert isinstance(judge, AnthropicJudge)
 
 
 def test_auto_detect_raises_helpful_error_when_nothing_found():
