@@ -70,8 +70,6 @@ Run checkllm alongside a local Ollama instance — zero API cost.
 ### `docker-compose.yml`
 
 ```yaml
-version: "3.9"
-
 services:
   ollama:
     image: ollama/ollama:latest
@@ -95,7 +93,7 @@ services:
       OLLAMA_BASE_URL: "http://ollama:11434"
     command: >
       sh -c "
-        curl -s http://ollama:11434/api/pull -d '{\"name\":\"llama3.2\"}' &&
+        curl -s http://ollama:11434/api/pull -d '{\"model\":\"llama3.2\"}' &&
         pytest tests/ -v -m 'not llm'
       "
 
@@ -123,7 +121,7 @@ docker run --gpus all \
   -p 8000:8000 \
   vllm/vllm-openai:latest \
   --model meta-llama/Llama-3.1-70B-Instruct \
-  --tensor-parallel-size 4 \
+  --tensor-parallel-size 4 \  # set to number of GPUs
   --max-model-len 8192
 ```
 
