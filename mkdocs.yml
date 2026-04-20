@@ -41,6 +41,10 @@ nav:
     - Configuration: guides/configuration.md
     - YAML Schema: guides/yaml-schema.md
     - CLI Reference: guides/cli-reference.md
+    - Deployment: guides/deployment.md
+    - Troubleshooting: guides/troubleshooting.md
+    - Migration: guides/migration.md
+    - Advanced Patterns: guides/advanced-patterns.md
   - Comparison: comparison.md
   - Benchmarks:
     - Competitor leaderboard: benchmarks/competitor-comparison.md
