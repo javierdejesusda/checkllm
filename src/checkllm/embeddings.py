@@ -64,9 +64,7 @@ class OpenAIEmbeddings:
 
         resolved_key = api_key or os.environ.get("OPENAI_API_KEY")
         if not resolved_key:
-            raise ValueError(
-                "OpenAI API key required. Set OPENAI_API_KEY or pass api_key=."
-            )
+            raise ValueError("OpenAI API key required. Set OPENAI_API_KEY or pass api_key=.")
         self.model = model
         self.dimensions = dimensions
         self.total_cost = 0.0
@@ -88,9 +86,7 @@ class OpenAIEmbeddings:
         # Track cost
         usage_tokens = response.usage.total_tokens
         self.total_tokens += usage_tokens
-        price_per_token = _OPENAI_EMBEDDING_PRICES.get(
-            self.model, _DEFAULT_EMBEDDING_PRICE
-        )
+        price_per_token = _OPENAI_EMBEDDING_PRICES.get(self.model, _DEFAULT_EMBEDDING_PRICE)
         self.total_cost += usage_tokens * price_per_token
 
         # Return embeddings in input order
@@ -98,10 +94,7 @@ class OpenAIEmbeddings:
         return [d.embedding for d in sorted_data]
 
     def __repr__(self) -> str:
-        return (
-            f"OpenAIEmbeddings(model={self.model!r}, "
-            f"total_cost=${self.total_cost:.6f})"
-        )
+        return f"OpenAIEmbeddings(model={self.model!r}, total_cost=${self.total_cost:.6f})"
 
 
 # ---------------------------------------------------------------------------
@@ -158,10 +151,7 @@ class SentenceTransformerEmbeddings:
         return [vec.tolist() for vec in embeddings]
 
     def __repr__(self) -> str:
-        return (
-            f"SentenceTransformerEmbeddings(model={self.model_name!r}, "
-            f"device={self.device!r})"
-        )
+        return f"SentenceTransformerEmbeddings(model={self.model_name!r}, device={self.device!r})"
 
 
 # ---------------------------------------------------------------------------
@@ -212,9 +202,7 @@ class CachedEmbeddings:
 
         if texts_to_embed:
             new_embeddings = await self._backend.embed(texts_to_embed)
-            for idx, text, emb in zip(
-                indices_to_embed, texts_to_embed, new_embeddings
-            ):
+            for idx, text, emb in zip(indices_to_embed, texts_to_embed, new_embeddings):
                 key = self._hash_text(text)
                 self._cache[key] = emb
                 # Evict oldest entries if over capacity
@@ -249,9 +237,7 @@ def cosine_similarity(a: list[float], b: list[float]) -> float:
     vectors.
     """
     if len(a) != len(b):
-        raise ValueError(
-            f"Vectors must have the same length, got {len(a)} and {len(b)}"
-        )
+        raise ValueError(f"Vectors must have the same length, got {len(a)} and {len(b)}")
 
     dot = sum(x * y for x, y in zip(a, b))
     mag_a = math.sqrt(sum(x * x for x in a))
@@ -294,9 +280,7 @@ async def semantic_similarity(
     return CheckResult(
         passed=passed,
         score=clamped,
-        reasoning=(
-            f"Semantic similarity: {score:.4f} (threshold: {threshold})"
-        ),
+        reasoning=(f"Semantic similarity: {score:.4f} (threshold: {threshold})"),
         cost=cost,
         latency_ms=elapsed_ms,
         metric_name="semantic_similarity",
@@ -345,9 +329,7 @@ async def batch_semantic_similarity(
             CheckResult(
                 passed=passed,
                 score=clamped,
-                reasoning=(
-                    f"Semantic similarity: {score:.4f} (threshold: {threshold})"
-                ),
+                reasoning=(f"Semantic similarity: {score:.4f} (threshold: {threshold})"),
                 cost=cost,
                 latency_ms=per_pair_ms,
                 metric_name="semantic_similarity",

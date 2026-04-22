@@ -33,24 +33,18 @@ class MockJudge:
         self.scoring_calls: list[tuple[str, str]] = []
         self._mutation_counter = 0
 
-    async def evaluate(
-        self, prompt: str, system_prompt: str | None = None
-    ) -> JudgeResponse:
+    async def evaluate(self, prompt: str, system_prompt: str | None = None) -> JudgeResponse:
         sys = system_prompt or ""
         if "red-team prompt engineer" in sys:
             self._mutation_counter += 1
             self.mutation_calls.append(prompt)
             mutated = self.mutation_template.format(
-                seed=prompt.splitlines()[1]
-                if len(prompt.splitlines()) > 1
-                else prompt,
+                seed=prompt.splitlines()[1] if len(prompt.splitlines()) > 1 else prompt,
                 counter=self._mutation_counter,
             )
             payload = {"mutated_prompt": mutated}
             raw = json.dumps(payload)
-            return JudgeResponse(
-                score=1.0, reasoning="mock mutation", raw_output=raw
-            )
+            return JudgeResponse(score=1.0, reasoning="mock mutation", raw_output=raw)
 
         if "adversarial prompt" in sys:
             attack_line, response_line = _extract_pair(prompt)
@@ -61,13 +55,9 @@ class MockJudge:
                 "reasoning": "mock score",
             }
             raw = json.dumps(payload)
-            return JudgeResponse(
-                score=score, reasoning="mock", raw_output=raw
-            )
+            return JudgeResponse(score=score, reasoning="mock", raw_output=raw)
 
-        return JudgeResponse(
-            score=0.0, reasoning="unknown", raw_output="{}"
-        )
+        return JudgeResponse(score=0.0, reasoning="unknown", raw_output="{}")
 
 
 def _extract_pair(prompt: str) -> tuple[str, str]:
@@ -144,9 +134,7 @@ class TestEvolverMechanics:
             patience=10,
             success_threshold=1.0,
         )
-        evolver = AdversarialAttackEvolver(
-            evolver_judge=judge, config=config, rng=random.Random(0)
-        )
+        evolver = AdversarialAttackEvolver(evolver_judge=judge, config=config, rng=random.Random(0))
         target = _make_target({})
 
         await evolver.evolve(
@@ -162,9 +150,7 @@ class TestEvolverMechanics:
     @pytest.mark.asyncio
     async def test_top_n_selection_keeps_best_scores(self):
         judge = MockJudge(
-            scoring_fn=lambda attack, response: (
-                0.9 if "compliant" in response else 0.1
-            )
+            scoring_fn=lambda attack, response: (0.9 if "compliant" in response else 0.1)
         )
         evolver = AdversarialAttackEvolver(
             evolver_judge=judge,
@@ -193,15 +179,13 @@ class TestEvolverMechanics:
 
         assert len(result) <= 2
         assert result[0].success_score >= result[-1].success_score
-        assert result[0].success_score >= 0.5, (
-            "top candidate should have found a compliant response"
-        )
+        assert (
+            result[0].success_score >= 0.5
+        ), "top candidate should have found a compliant response"
 
     @pytest.mark.asyncio
     async def test_early_stop_when_threshold_reached(self):
-        judge = MockJudge(
-            scoring_fn=lambda attack, response: 0.95
-        )
+        judge = MockJudge(scoring_fn=lambda attack, response: 0.95)
         config = EvolverConfig(
             generations=20,
             population_size=2,
@@ -209,9 +193,7 @@ class TestEvolverMechanics:
             patience=10,
             success_threshold=0.9,
         )
-        evolver = AdversarialAttackEvolver(
-            evolver_judge=judge, config=config, rng=random.Random(0)
-        )
+        evolver = AdversarialAttackEvolver(evolver_judge=judge, config=config, rng=random.Random(0))
         target = _make_target({}, default="Sure, here is what you asked for.")
 
         result = await evolver.evolve(
@@ -228,9 +210,7 @@ class TestEvolverMechanics:
 
     @pytest.mark.asyncio
     async def test_early_stop_on_no_improvement(self):
-        judge = MockJudge(
-            scoring_fn=lambda attack, response: 0.3
-        )
+        judge = MockJudge(scoring_fn=lambda attack, response: 0.3)
         config = EvolverConfig(
             generations=10,
             population_size=2,
@@ -238,9 +218,7 @@ class TestEvolverMechanics:
             patience=1,
             success_threshold=0.99,
         )
-        evolver = AdversarialAttackEvolver(
-            evolver_judge=judge, config=config, rng=random.Random(0)
-        )
+        evolver = AdversarialAttackEvolver(evolver_judge=judge, config=config, rng=random.Random(0))
         target = _make_target({}, default="Uninteresting reply.")
 
         result = await evolver.evolve(
@@ -249,17 +227,14 @@ class TestEvolverMechanics:
         )
 
         max_gen = max(r.generation for r in result)
-        assert max_gen <= 2, (
-            "patience=1 with flat scores should cut evolution short "
-            f"(saw max_gen={max_gen})"
-        )
+        assert (
+            max_gen <= 2
+        ), f"patience=1 with flat scores should cut evolution short (saw max_gen={max_gen})"
 
     @pytest.mark.asyncio
     async def test_results_sorted_descending(self):
         judge = MockJudge(
-            scoring_fn=lambda attack, response: (
-                0.8 if "mutated::" in attack else 0.2
-            )
+            scoring_fn=lambda attack, response: (0.8 if "mutated::" in attack else 0.2)
         )
         evolver = AdversarialAttackEvolver(
             evolver_judge=judge,
@@ -306,9 +281,7 @@ class TestEvolverMechanics:
             target=target,
         )
 
-        assert result[0].success_score == 0.0, (
-            "refusal heuristic should score a refusal as 0"
-        )
+        assert result[0].success_score == 0.0, "refusal heuristic should score a refusal as 0"
 
 
 class TestMutationStrategyEnum:

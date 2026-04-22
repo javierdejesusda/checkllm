@@ -48,9 +48,7 @@ Example YAML config::
 
 from __future__ import annotations
 
-import asyncio
 import logging
-import re
 import time
 from pathlib import Path
 from typing import Any
@@ -210,7 +208,9 @@ class YAMLEvalResult(BaseModel):
             lines.append(f"  [{status}]{provider_label} Test {result.test_index + 1}")
             for a in result.assertions:
                 a_status = "PASS" if a.get("passed", False) else "FAIL"
-                lines.append(f"    [{a_status}] {a.get('type', '?')}: {a.get('reasoning', '')[:80]}")
+                lines.append(
+                    f"    [{a_status}] {a.get('type', '?')}: {a.get('reasoning', '')[:80]}"
+                )
         return "\n".join(lines)
 
 
@@ -370,9 +370,7 @@ class YAMLEvaluator:
                         break
                     rendered = _render_template(prompt_template, test_cfg.vars)
 
-                    output = await self._generate_output(
-                        rendered, provider_str, config.judge
-                    )
+                    output = await self._generate_output(rendered, provider_str, config.judge)
 
                     assertion_results: list[dict[str, Any]] = []
                     test_passed = True
@@ -382,16 +380,22 @@ class YAMLEvaluator:
                             budget_exceeded = True
                             break
                         check_result = await self._resolve_assertion(
-                            assertion, output, test_cfg, judge, config.settings,
+                            assertion,
+                            output,
+                            test_cfg,
+                            judge,
+                            config.settings,
                         )
                         a_passed = check_result.passed
-                        assertion_results.append({
-                            "type": assertion.type,
-                            "passed": a_passed,
-                            "score": check_result.score,
-                            "reasoning": check_result.reasoning or "",
-                            "cost": check_result.cost,
-                        })
+                        assertion_results.append(
+                            {
+                                "type": assertion.type,
+                                "passed": a_passed,
+                                "score": check_result.score,
+                                "reasoning": check_result.reasoning or "",
+                                "cost": check_result.cost,
+                            }
+                        )
                         total_cost += check_result.cost
                         if a_passed:
                             total_passed += 1
@@ -399,15 +403,17 @@ class YAMLEvaluator:
                             total_failed += 1
                             test_passed = False
 
-                    all_results.append(TestResult(
-                        test_index=test_idx,
-                        prompt=rendered,
-                        provider=provider_str,
-                        vars=test_cfg.vars,
-                        assertions=assertion_results,
-                        passed=test_passed,
-                        output=output,
-                    ))
+                    all_results.append(
+                        TestResult(
+                            test_index=test_idx,
+                            prompt=rendered,
+                            provider=provider_str,
+                            vars=test_cfg.vars,
+                            assertions=assertion_results,
+                            passed=test_passed,
+                            output=output,
+                        )
+                    )
 
         elapsed_ms = (time.perf_counter() - t0) * 1000
 
@@ -456,9 +462,7 @@ class YAMLEvaluator:
                         break
                     rendered = _render_template(prompt_template, test_cfg.vars)
 
-                    output = await self._generate_output(
-                        rendered, provider_str, config.judge
-                    )
+                    output = await self._generate_output(rendered, provider_str, config.judge)
 
                     assertion_results: list[dict[str, Any]] = []
                     test_passed = True
@@ -468,16 +472,22 @@ class YAMLEvaluator:
                             budget_exceeded = True
                             break
                         check_result = await self._resolve_assertion(
-                            assertion, output, test_cfg, judge, config.settings,
+                            assertion,
+                            output,
+                            test_cfg,
+                            judge,
+                            config.settings,
                         )
                         a_passed = check_result.passed
-                        assertion_results.append({
-                            "type": assertion.type,
-                            "passed": a_passed,
-                            "score": check_result.score,
-                            "reasoning": check_result.reasoning or "",
-                            "cost": check_result.cost,
-                        })
+                        assertion_results.append(
+                            {
+                                "type": assertion.type,
+                                "passed": a_passed,
+                                "score": check_result.score,
+                                "reasoning": check_result.reasoning or "",
+                                "cost": check_result.cost,
+                            }
+                        )
                         total_cost += check_result.cost
                         if a_passed:
                             total_passed += 1
@@ -485,15 +495,17 @@ class YAMLEvaluator:
                             total_failed += 1
                             test_passed = False
 
-                    all_results.append(TestResult(
-                        test_index=test_idx,
-                        prompt=rendered,
-                        provider=provider_str,
-                        vars=test_cfg.vars,
-                        assertions=assertion_results,
-                        passed=test_passed,
-                        output=output,
-                    ))
+                    all_results.append(
+                        TestResult(
+                            test_index=test_idx,
+                            prompt=rendered,
+                            provider=provider_str,
+                            vars=test_cfg.vars,
+                            assertions=assertion_results,
+                            passed=test_passed,
+                            output=output,
+                        )
+                    )
 
         elapsed_ms = (time.perf_counter() - t0) * 1000
 
@@ -576,6 +588,7 @@ class YAMLEvaluator:
                 return response.content[0].text if response.content else ""
             else:
                 from openai import AsyncOpenAI
+
                 client = AsyncOpenAI()
                 response = await client.chat.completions.create(
                     model=model or "gpt-4o",
@@ -647,9 +660,7 @@ class YAMLEvaluator:
 
         if atype == "word_count":
             max_w = int(value) if value is not None else None
-            return self._deterministic.word_count(
-                output, max_words=max_w
-            )
+            return self._deterministic.word_count(output, max_words=max_w)
 
         if atype == "bleu":
             ref = str(value) if value else ""
@@ -686,84 +697,98 @@ class YAMLEvaluator:
 
         if atype == "relevance":
             from checkllm.metrics.relevance import RelevanceMetric
+
             query = test.vars.get("query", test.vars.get("input", ""))
             metric = RelevanceMetric(judge=judge, threshold=t)
             return await metric.evaluate(output=output, query=query)
 
         if atype == "hallucination":
             from checkllm.metrics.hallucination import HallucinationMetric
+
             context = test.vars.get("context", test.vars.get("input", ""))
             metric = HallucinationMetric(judge=judge, threshold=t)
             return await metric.evaluate(output=output, context=context)
 
         if atype == "toxicity":
             from checkllm.metrics.toxicity import ToxicityMetric
+
             metric = ToxicityMetric(judge=judge, threshold=t)
             return await metric.evaluate(output=output)
 
         if atype == "fluency":
             from checkllm.metrics.fluency import FluencyMetric
+
             metric = FluencyMetric(judge=judge, threshold=t)
             return await metric.evaluate(output=output)
 
         if atype == "coherence":
             from checkllm.metrics.coherence import CoherenceMetric
+
             metric = CoherenceMetric(judge=judge, threshold=t)
             return await metric.evaluate(output=output)
 
         if atype == "correctness":
             from checkllm.metrics.correctness import CorrectnessMetric
+
             expected = str(value) if value else test.vars.get("expected", "")
             metric = CorrectnessMetric(judge=judge, threshold=t)
             return await metric.evaluate(output=output, expected=expected)
 
         if atype == "faithfulness":
             from checkllm.metrics.faithfulness import FaithfulnessMetric
+
             context = test.vars.get("context", test.vars.get("input", ""))
             query = test.vars.get("query", "")
             metric = FaithfulnessMetric(judge=judge, threshold=t)
-            return await metric.evaluate(
-                output=output, context=context, query=query
-            )
+            return await metric.evaluate(output=output, context=context, query=query)
 
         if atype == "rubric":
             from checkllm.metrics.rubric import RubricMetric
-            criteria = str(value) if value else "Output should be accurate, helpful, and well-structured."
-            metric = RubricMetric(judge=judge)
-            return await metric.evaluate(
-                output=output, criteria=criteria, threshold=t
+
+            criteria = (
+                str(value) if value else "Output should be accurate, helpful, and well-structured."
             )
+            metric = RubricMetric(judge=judge)
+            return await metric.evaluate(output=output, criteria=criteria, threshold=t)
 
         if atype == "sentiment":
             from checkllm.metrics.sentiment import SentimentMetric
+
             metric = SentimentMetric(judge=judge, threshold=t)
             return await metric.evaluate(output=output)
 
         if atype == "bias":
             from checkllm.metrics.bias import BiasMetric
+
             metric = BiasMetric(judge=judge, threshold=t)
             return await metric.evaluate(output=output)
 
         if atype == "summarization":
             from checkllm.metrics.summarization import SummarizationMetric
+
             source = str(value) if value else test.vars.get("context", "")
             metric = SummarizationMetric(judge=judge, threshold=t)
             return await metric.evaluate(output=output, source=source)
 
         if atype == "instruction_following":
-            from checkllm.metrics.instruction_following import InstructionFollowingMetric
+            from checkllm.metrics.instruction_following import (
+                InstructionFollowingMetric,
+            )
+
             instructions = str(value) if value else test.vars.get("input", "")
             metric = InstructionFollowingMetric(judge=judge, threshold=t)
             return await metric.evaluate(output=output, instructions=instructions)
 
         if atype == "role_adherence":
             from checkllm.metrics.role_adherence import RoleAdherenceMetric
+
             role = str(value) if value else test.vars.get("role", "assistant")
             metric = RoleAdherenceMetric(judge=judge, threshold=t)
             return await metric.evaluate(output=output, role_description=role)
 
         if atype == "groundedness":
             from checkllm.metrics.groundedness import GroundednessMetric
+
             sources = [str(value)] if value else [test.vars.get("context", "")]
             metric = GroundednessMetric(judge=judge, threshold=t)
             return await metric.evaluate(output=output, sources=sources)

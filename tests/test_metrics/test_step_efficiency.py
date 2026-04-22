@@ -49,13 +49,14 @@ class TestStepEfficiencyMetric:
     def test_prompt_content(self, mock_judge):
         metric = StepEfficiencyMetric(judge=mock_judge)
         assert "score" in metric.system_prompt.lower()
-        assert "redundant" in metric.system_prompt.lower() or "efficient" in metric.system_prompt.lower()
+        assert (
+            "redundant" in metric.system_prompt.lower()
+            or "efficient" in metric.system_prompt.lower()
+        )
 
     @pytest.mark.asyncio
     async def test_steps_numbered_in_prompt(self, mock_judge):
-        mock_judge.evaluate.return_value = JudgeResponse(
-            score=0.9, reasoning="ok", raw_output=""
-        )
+        mock_judge.evaluate.return_value = JudgeResponse(score=0.9, reasoning="ok", raw_output="")
         metric = StepEfficiencyMetric(judge=mock_judge)
         await metric.evaluate(steps=["alpha step", "beta step"], task="some task")
         call_args = mock_judge.evaluate.call_args

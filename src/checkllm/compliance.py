@@ -20,7 +20,12 @@ from enum import Enum
 
 from pydantic import BaseModel, Field
 
-from checkllm.redteam import OWASPCategory, VulnerabilityReport, VulnerabilityType, get_owasp_mapping
+from checkllm.redteam import (
+    OWASPCategory,
+    VulnerabilityReport,
+    VulnerabilityType,
+    get_owasp_mapping,
+)
 
 
 class ComplianceFramework(str, Enum):
@@ -147,7 +152,9 @@ def _successful_attacks_for_owasp(
     return details
 
 
-def _owasp_requirements(vuln_report: VulnerabilityReport) -> list[ComplianceRequirement]:
+def _owasp_requirements(
+    vuln_report: VulnerabilityReport,
+) -> list[ComplianceRequirement]:
     """Build one ComplianceRequirement per OWASP LLM Top 10 category.
 
     Args:
@@ -214,8 +221,7 @@ def _owasp_requirements(vuln_report: VulnerabilityReport) -> list[ComplianceRequ
 
     for category, req_id, description in owasp_meta:
         relevant = [
-            r for r in vuln_report.results
-            if owasp_map.get(r.vulnerability_type) == category
+            r for r in vuln_report.results if owasp_map.get(r.vulnerability_type) == category
         ]
         successful = [r for r in relevant if r.vulnerable]
         details = _successful_attacks_for_owasp(vuln_report, category)
@@ -253,8 +259,6 @@ def _nist_requirements(vuln_report: VulnerabilityReport) -> list[ComplianceRequi
         A list of six ComplianceRequirement objects covering GOVERN, MAP, MEASURE,
         MANAGE, TRUST, and SAFETY.
     """
-    total = vuln_report.total_attacks
-    successful = vuln_report.successful_attacks
 
     def _status(relevant_types: list[VulnerabilityType]) -> tuple[str, int, int]:
         """Derive status, vulnerability count, and test count for a set of types.
@@ -370,7 +374,9 @@ def _nist_requirements(vuln_report: VulnerabilityReport) -> list[ComplianceRequi
     return requirements
 
 
-def _eu_ai_act_requirements(vuln_report: VulnerabilityReport) -> list[ComplianceRequirement]:
+def _eu_ai_act_requirements(
+    vuln_report: VulnerabilityReport,
+) -> list[ComplianceRequirement]:
     """Build ComplianceRequirements for EU AI Act obligations.
 
     Args:
@@ -380,6 +386,7 @@ def _eu_ai_act_requirements(vuln_report: VulnerabilityReport) -> list[Compliance
         A list of five ComplianceRequirement objects covering Transparency,
         Human Oversight, Robustness, Data Governance, and Non-discrimination.
     """
+
     def _status(relevant_types: list[VulnerabilityType]) -> tuple[str, int, int]:
         """Derive status, vulnerability count, and test count for a set of types.
 

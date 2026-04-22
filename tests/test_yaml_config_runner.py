@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 
 from checkllm.yaml_config import (
     AssertionConfig,
@@ -19,8 +18,12 @@ from checkllm.models import CheckResult
 
 def _make_result(passed: bool = True, metric: str = "test") -> CheckResult:
     return CheckResult(
-        passed=passed, score=0.9 if passed else 0.2,
-        reasoning="ok", cost=0.001, latency_ms=100, metric_name=metric,
+        passed=passed,
+        score=0.9 if passed else 0.2,
+        reasoning="ok",
+        cost=0.001,
+        latency_ms=100,
+        metric_name=metric,
     )
 
 
@@ -34,14 +37,18 @@ def _runner_with_mock_generate(config: EvalConfig, output: str) -> YamlEvalRunne
 # run() — basic integration
 # ---------------------------------------------------------------------------
 
+
 class TestYamlEvalRunnerRun:
     async def test_run_returns_one_result_per_combination(self):
         config = EvalConfig(
             providers=[ProviderConfig(id="openai", model="gpt-4o")],
             prompts=[PromptConfig(name="p1", template="{{input}}")],
-            tests=[TestConfig(input="hello", assertions=[
-                AssertionConfig(type="contains", value="hello")
-            ])],
+            tests=[
+                TestConfig(
+                    input="hello",
+                    assertions=[AssertionConfig(type="contains", value="hello")],
+                )
+            ],
         )
         runner = _runner_with_mock_generate(config, "hello world")
         with patch.object(runner, "_create_judge", return_value=MagicMock()):
@@ -77,9 +84,12 @@ class TestYamlEvalRunnerRun:
     async def test_run_no_prompts_uses_passthrough(self):
         config = EvalConfig(
             providers=[ProviderConfig(id="openai", model="gpt-4o")],
-            tests=[TestConfig(input="test question", assertions=[
-                AssertionConfig(type="contains", value="answer")
-            ])],
+            tests=[
+                TestConfig(
+                    input="test question",
+                    assertions=[AssertionConfig(type="contains", value="answer")],
+                )
+            ],
         )
         runner = _runner_with_mock_generate(config, "here is your answer")
         with patch.object(runner, "_create_judge", return_value=MagicMock()):
@@ -103,9 +113,12 @@ class TestYamlEvalRunnerRun:
     async def test_run_fail_when_assertion_fails(self):
         config = EvalConfig(
             providers=[ProviderConfig(id="openai")],
-            tests=[TestConfig(input="hi", assertions=[
-                AssertionConfig(type="contains", value="MISSING_TEXT")
-            ])],
+            tests=[
+                TestConfig(
+                    input="hi",
+                    assertions=[AssertionConfig(type="contains", value="MISSING_TEXT")],
+                )
+            ],
         )
         runner = _runner_with_mock_generate(config, "hello world")
         with patch.object(runner, "_create_judge", return_value=MagicMock()):
@@ -117,6 +130,7 @@ class TestYamlEvalRunnerRun:
 # ---------------------------------------------------------------------------
 # _run_assertion — deterministic branches
 # ---------------------------------------------------------------------------
+
 
 class TestRunAssertionDeterministic:
     def _runner(self) -> YamlEvalRunner:
@@ -130,7 +144,9 @@ class TestRunAssertionDeterministic:
         runner = self._runner()
         result = await runner._run_assertion(
             AssertionConfig(type="contains", value="hello"),
-            "hello world", self._test(), MagicMock()
+            "hello world",
+            self._test(),
+            MagicMock(),
         )
         assert result.passed is True
 
@@ -138,7 +154,9 @@ class TestRunAssertionDeterministic:
         runner = self._runner()
         result = await runner._run_assertion(
             AssertionConfig(type="contains", value="MISSING"),
-            "hello world", self._test(), MagicMock()
+            "hello world",
+            self._test(),
+            MagicMock(),
         )
         assert result.passed is False
 
@@ -146,7 +164,9 @@ class TestRunAssertionDeterministic:
         runner = self._runner()
         result = await runner._run_assertion(
             AssertionConfig(type="not_contains", value="MISSING"),
-            "hello world", self._test(), MagicMock()
+            "hello world",
+            self._test(),
+            MagicMock(),
         )
         assert result.passed is True
 
@@ -154,7 +174,9 @@ class TestRunAssertionDeterministic:
         runner = self._runner()
         result = await runner._run_assertion(
             AssertionConfig(type="exact_match", value="hello"),
-            "hello", self._test(), MagicMock()
+            "hello",
+            self._test(),
+            MagicMock(),
         )
         assert result.passed is True
 
@@ -162,7 +184,9 @@ class TestRunAssertionDeterministic:
         runner = self._runner()
         result = await runner._run_assertion(
             AssertionConfig(type="regex", value=r"\d+"),
-            "answer is 42", self._test(), MagicMock()
+            "answer is 42",
+            self._test(),
+            MagicMock(),
         )
         assert result.passed is True
 
@@ -170,7 +194,9 @@ class TestRunAssertionDeterministic:
         runner = self._runner()
         result = await runner._run_assertion(
             AssertionConfig(type="starts_with", value="Hello"),
-            "Hello world", self._test(), MagicMock()
+            "Hello world",
+            self._test(),
+            MagicMock(),
         )
         assert result.passed is True
 
@@ -178,7 +204,9 @@ class TestRunAssertionDeterministic:
         runner = self._runner()
         result = await runner._run_assertion(
             AssertionConfig(type="ends_with", value="world"),
-            "Hello world", self._test(), MagicMock()
+            "Hello world",
+            self._test(),
+            MagicMock(),
         )
         assert result.passed is True
 
@@ -186,15 +214,16 @@ class TestRunAssertionDeterministic:
         runner = self._runner()
         result = await runner._run_assertion(
             AssertionConfig(type="max_tokens", value=100),
-            "short answer", self._test(), MagicMock()
+            "short answer",
+            self._test(),
+            MagicMock(),
         )
         assert result.passed is True
 
     async def test_min_tokens(self):
         runner = self._runner()
         result = await runner._run_assertion(
-            AssertionConfig(type="min_tokens", value=1),
-            "hi", self._test(), MagicMock()
+            AssertionConfig(type="min_tokens", value=1), "hi", self._test(), MagicMock()
         )
         assert result.passed is True
 
@@ -202,7 +231,9 @@ class TestRunAssertionDeterministic:
         runner = self._runner()
         result = await runner._run_assertion(
             AssertionConfig(type="word_count", value=100),
-            "one two three", self._test(), MagicMock()
+            "one two three",
+            self._test(),
+            MagicMock(),
         )
         assert result.passed is True
 
@@ -210,7 +241,9 @@ class TestRunAssertionDeterministic:
         runner = self._runner()
         result = await runner._run_assertion(
             AssertionConfig(type="is_json"),
-            '{"key": "value"}', self._test(), MagicMock()
+            '{"key": "value"}',
+            self._test(),
+            MagicMock(),
         )
         assert result.passed is True
 
@@ -218,7 +251,9 @@ class TestRunAssertionDeterministic:
         runner = self._runner()
         result = await runner._run_assertion(
             AssertionConfig(type="is_json"),
-            "not json at all", self._test(), MagicMock()
+            "not json at all",
+            self._test(),
+            MagicMock(),
         )
         assert result.passed is False
 
@@ -226,7 +261,9 @@ class TestRunAssertionDeterministic:
         runner = self._runner()
         result = await runner._run_assertion(
             AssertionConfig(type="no_pii"),
-            "The answer is blue", self._test(), MagicMock()
+            "The answer is blue",
+            self._test(),
+            MagicMock(),
         )
         assert isinstance(result.passed, bool)
 
@@ -234,7 +271,9 @@ class TestRunAssertionDeterministic:
         runner = self._runner()
         result = await runner._run_assertion(
             AssertionConfig(type="bleu", value="The cat sat on the mat", threshold=0.1),
-            "The cat sat on the mat", self._test(), MagicMock()
+            "The cat sat on the mat",
+            self._test(),
+            MagicMock(),
         )
         assert result.passed is True
 
@@ -242,7 +281,9 @@ class TestRunAssertionDeterministic:
         runner = self._runner()
         result = await runner._run_assertion(
             AssertionConfig(type="rouge_l", value="hello world", threshold=0.1),
-            "hello world", self._test(), MagicMock()
+            "hello world",
+            self._test(),
+            MagicMock(),
         )
         assert result.passed is True
 
@@ -250,7 +291,9 @@ class TestRunAssertionDeterministic:
         runner = self._runner()
         result = await runner._run_assertion(
             AssertionConfig(type="similarity", value="hello world", threshold=0.5),
-            "hello world", self._test(), MagicMock()
+            "hello world",
+            self._test(),
+            MagicMock(),
         )
         assert isinstance(result.passed, bool)
 
@@ -258,7 +301,9 @@ class TestRunAssertionDeterministic:
         runner = self._runner()
         result = await runner._run_assertion(
             AssertionConfig(type="is_valid_python"),
-            "x = 1 + 2", self._test(), MagicMock()
+            "x = 1 + 2",
+            self._test(),
+            MagicMock(),
         )
         assert result.passed is True
 
@@ -266,7 +311,9 @@ class TestRunAssertionDeterministic:
         runner = self._runner()
         result = await runner._run_assertion(
             AssertionConfig(type="is_valid_python"),
-            "def broken(", self._test(), MagicMock()
+            "def broken(",
+            self._test(),
+            MagicMock(),
         )
         assert result.passed is False
 
@@ -274,7 +321,9 @@ class TestRunAssertionDeterministic:
         runner = self._runner()
         result = await runner._run_assertion(
             AssertionConfig(type="language", value="en"),
-            "This is an English sentence about testing.", self._test(), MagicMock()
+            "This is an English sentence about testing.",
+            self._test(),
+            MagicMock(),
         )
         assert isinstance(result.passed, bool)
 
@@ -282,7 +331,9 @@ class TestRunAssertionDeterministic:
         runner = self._runner()
         result = await runner._run_assertion(
             AssertionConfig(type="json_schema", value={"type": "object"}),
-            '{"name": "Alice"}', self._test(), MagicMock()
+            '{"name": "Alice"}',
+            self._test(),
+            MagicMock(),
         )
         assert result.passed is True
 
@@ -290,7 +341,9 @@ class TestRunAssertionDeterministic:
         runner = self._runner()
         result = await runner._run_assertion(
             AssertionConfig(type="nonexistent_check"),
-            "any output", self._test(), MagicMock()
+            "any output",
+            self._test(),
+            MagicMock(),
         )
         assert result.passed is False
         assert "nonexistent_check" in result.reasoning
@@ -300,20 +353,29 @@ class TestRunAssertionDeterministic:
 # _run_assertion — LLM assertion branches (mocked)
 # ---------------------------------------------------------------------------
 
+
 class TestRunAssertionLlm:
     def _runner(self) -> YamlEvalRunner:
         return YamlEvalRunner(EvalConfig(providers=[], tests=[]))
 
     def _mock_result(self, passed: bool = True, metric: str = "test") -> CheckResult:
         return CheckResult(
-            passed=passed, score=0.9 if passed else 0.3,
-            reasoning="mocked", cost=0.002, latency_ms=200, metric_name=metric,
+            passed=passed,
+            score=0.9 if passed else 0.3,
+            reasoning="mocked",
+            cost=0.002,
+            latency_ms=200,
+            metric_name=metric,
         )
 
     async def test_relevance_assertion(self):
         runner = self._runner()
         mock_result = self._mock_result(True)
-        with patch("checkllm.metrics.relevance.RelevanceMetric.evaluate", new_callable=AsyncMock, return_value=mock_result):
+        with patch(
+            "checkllm.metrics.relevance.RelevanceMetric.evaluate",
+            new_callable=AsyncMock,
+            return_value=mock_result,
+        ):
             result = await runner._run_assertion(
                 AssertionConfig(type="relevance", threshold=0.8),
                 "Paris is the capital of France.",
@@ -325,7 +387,11 @@ class TestRunAssertionLlm:
     async def test_hallucination_assertion(self):
         runner = self._runner()
         mock_result = self._mock_result(True)
-        with patch("checkllm.metrics.hallucination.HallucinationMetric.evaluate", new_callable=AsyncMock, return_value=mock_result):
+        with patch(
+            "checkllm.metrics.hallucination.HallucinationMetric.evaluate",
+            new_callable=AsyncMock,
+            return_value=mock_result,
+        ):
             result = await runner._run_assertion(
                 AssertionConfig(type="hallucination", threshold=0.8),
                 "The sky is blue.",
@@ -337,7 +403,11 @@ class TestRunAssertionLlm:
     async def test_toxicity_assertion(self):
         runner = self._runner()
         mock_result = self._mock_result(True)
-        with patch("checkllm.metrics.toxicity.ToxicityMetric.evaluate", new_callable=AsyncMock, return_value=mock_result):
+        with patch(
+            "checkllm.metrics.toxicity.ToxicityMetric.evaluate",
+            new_callable=AsyncMock,
+            return_value=mock_result,
+        ):
             result = await runner._run_assertion(
                 AssertionConfig(type="toxicity", threshold=0.8),
                 "Have a great day!",
@@ -349,7 +419,11 @@ class TestRunAssertionLlm:
     async def test_fluency_assertion(self):
         runner = self._runner()
         mock_result = self._mock_result(True)
-        with patch("checkllm.metrics.fluency.FluencyMetric.evaluate", new_callable=AsyncMock, return_value=mock_result):
+        with patch(
+            "checkllm.metrics.fluency.FluencyMetric.evaluate",
+            new_callable=AsyncMock,
+            return_value=mock_result,
+        ):
             result = await runner._run_assertion(
                 AssertionConfig(type="fluency", threshold=0.8),
                 "This is fluently written prose.",
@@ -361,7 +435,11 @@ class TestRunAssertionLlm:
     async def test_coherence_assertion(self):
         runner = self._runner()
         mock_result = self._mock_result(True)
-        with patch("checkllm.metrics.coherence.CoherenceMetric.evaluate", new_callable=AsyncMock, return_value=mock_result):
+        with patch(
+            "checkllm.metrics.coherence.CoherenceMetric.evaluate",
+            new_callable=AsyncMock,
+            return_value=mock_result,
+        ):
             result = await runner._run_assertion(
                 AssertionConfig(type="coherence", threshold=0.8),
                 "The argument is coherent and logical.",
@@ -373,7 +451,11 @@ class TestRunAssertionLlm:
     async def test_correctness_assertion_uses_expected(self):
         runner = self._runner()
         mock_result = self._mock_result(True)
-        with patch("checkllm.metrics.correctness.CorrectnessMetric.evaluate", new_callable=AsyncMock, return_value=mock_result):
+        with patch(
+            "checkllm.metrics.correctness.CorrectnessMetric.evaluate",
+            new_callable=AsyncMock,
+            return_value=mock_result,
+        ):
             result = await runner._run_assertion(
                 AssertionConfig(type="correctness", threshold=0.8),
                 "4",
@@ -385,7 +467,11 @@ class TestRunAssertionLlm:
     async def test_faithfulness_assertion(self):
         runner = self._runner()
         mock_result = self._mock_result(True)
-        with patch("checkllm.metrics.faithfulness.FaithfulnessMetric.evaluate", new_callable=AsyncMock, return_value=mock_result):
+        with patch(
+            "checkllm.metrics.faithfulness.FaithfulnessMetric.evaluate",
+            new_callable=AsyncMock,
+            return_value=mock_result,
+        ):
             result = await runner._run_assertion(
                 AssertionConfig(type="faithfulness", threshold=0.8),
                 "The study found X.",
@@ -397,7 +483,11 @@ class TestRunAssertionLlm:
     async def test_rubric_assertion(self):
         runner = self._runner()
         mock_result = self._mock_result(True)
-        with patch("checkllm.metrics.rubric.RubricMetric.evaluate", new_callable=AsyncMock, return_value=mock_result):
+        with patch(
+            "checkllm.metrics.rubric.RubricMetric.evaluate",
+            new_callable=AsyncMock,
+            return_value=mock_result,
+        ):
             result = await runner._run_assertion(
                 AssertionConfig(type="rubric", value="Must be concise and clear."),
                 "Short answer.",
@@ -409,7 +499,11 @@ class TestRunAssertionLlm:
     async def test_sentiment_assertion(self):
         runner = self._runner()
         mock_result = self._mock_result(True)
-        with patch("checkllm.metrics.sentiment.SentimentMetric.evaluate", new_callable=AsyncMock, return_value=mock_result):
+        with patch(
+            "checkllm.metrics.sentiment.SentimentMetric.evaluate",
+            new_callable=AsyncMock,
+            return_value=mock_result,
+        ):
             result = await runner._run_assertion(
                 AssertionConfig(type="sentiment"),
                 "This is wonderful!",
@@ -421,7 +515,11 @@ class TestRunAssertionLlm:
     async def test_bias_assertion(self):
         runner = self._runner()
         mock_result = self._mock_result(True)
-        with patch("checkllm.metrics.bias.BiasMetric.evaluate", new_callable=AsyncMock, return_value=mock_result):
+        with patch(
+            "checkllm.metrics.bias.BiasMetric.evaluate",
+            new_callable=AsyncMock,
+            return_value=mock_result,
+        ):
             result = await runner._run_assertion(
                 AssertionConfig(type="bias"),
                 "All people deserve equal treatment.",
@@ -433,7 +531,11 @@ class TestRunAssertionLlm:
     async def test_summarization_assertion(self):
         runner = self._runner()
         mock_result = self._mock_result(True)
-        with patch("checkllm.metrics.summarization.SummarizationMetric.evaluate", new_callable=AsyncMock, return_value=mock_result):
+        with patch(
+            "checkllm.metrics.summarization.SummarizationMetric.evaluate",
+            new_callable=AsyncMock,
+            return_value=mock_result,
+        ):
             result = await runner._run_assertion(
                 AssertionConfig(type="summarization"),
                 "The report showed key findings.",
@@ -445,7 +547,11 @@ class TestRunAssertionLlm:
     async def test_instruction_following_assertion(self):
         runner = self._runner()
         mock_result = self._mock_result(True)
-        with patch("checkllm.metrics.instruction_following.InstructionFollowingMetric.evaluate", new_callable=AsyncMock, return_value=mock_result):
+        with patch(
+            "checkllm.metrics.instruction_following.InstructionFollowingMetric.evaluate",
+            new_callable=AsyncMock,
+            return_value=mock_result,
+        ):
             result = await runner._run_assertion(
                 AssertionConfig(type="instruction_following"),
                 "Here is a numbered list: 1. first 2. second",
@@ -457,7 +563,11 @@ class TestRunAssertionLlm:
     async def test_groundedness_assertion_uses_value_as_source(self):
         runner = self._runner()
         mock_result = self._mock_result(True)
-        with patch("checkllm.metrics.groundedness.GroundednessMetric.evaluate", new_callable=AsyncMock, return_value=mock_result):
+        with patch(
+            "checkllm.metrics.groundedness.GroundednessMetric.evaluate",
+            new_callable=AsyncMock,
+            return_value=mock_result,
+        ):
             result = await runner._run_assertion(
                 AssertionConfig(type="groundedness", value="Source document text here."),
                 "The answer based on source.",
@@ -469,7 +579,11 @@ class TestRunAssertionLlm:
     async def test_groundedness_assertion_uses_list_value(self):
         runner = self._runner()
         mock_result = self._mock_result(True)
-        with patch("checkllm.metrics.groundedness.GroundednessMetric.evaluate", new_callable=AsyncMock, return_value=mock_result):
+        with patch(
+            "checkllm.metrics.groundedness.GroundednessMetric.evaluate",
+            new_callable=AsyncMock,
+            return_value=mock_result,
+        ):
             result = await runner._run_assertion(
                 AssertionConfig(type="groundedness", value=["source1", "source2"]),
                 "Combined answer.",
@@ -481,7 +595,11 @@ class TestRunAssertionLlm:
     async def test_consistency_assertion(self):
         runner = self._runner()
         mock_result = self._mock_result(True)
-        with patch("checkllm.metrics.consistency.ConsistencyMetric.evaluate", new_callable=AsyncMock, return_value=mock_result):
+        with patch(
+            "checkllm.metrics.consistency.ConsistencyMetric.evaluate",
+            new_callable=AsyncMock,
+            return_value=mock_result,
+        ):
             result = await runner._run_assertion(
                 AssertionConfig(type="consistency"),
                 "Consistent answer.",
@@ -493,7 +611,11 @@ class TestRunAssertionLlm:
     async def test_answer_completeness_assertion(self):
         runner = self._runner()
         mock_result = self._mock_result(True)
-        with patch("checkllm.metrics.answer_completeness.AnswerCompletenessMetric.evaluate", new_callable=AsyncMock, return_value=mock_result):
+        with patch(
+            "checkllm.metrics.answer_completeness.AnswerCompletenessMetric.evaluate",
+            new_callable=AsyncMock,
+            return_value=mock_result,
+        ):
             result = await runner._run_assertion(
                 AssertionConfig(type="answer_completeness"),
                 "Complete answer covering all points.",
@@ -505,7 +627,11 @@ class TestRunAssertionLlm:
     async def test_context_relevance_assertion(self):
         runner = self._runner()
         mock_result = self._mock_result(True)
-        with patch("checkllm.metrics.context_relevance.ContextRelevanceMetric.evaluate", new_callable=AsyncMock, return_value=mock_result):
+        with patch(
+            "checkllm.metrics.context_relevance.ContextRelevanceMetric.evaluate",
+            new_callable=AsyncMock,
+            return_value=mock_result,
+        ):
             result = await runner._run_assertion(
                 AssertionConfig(type="context_relevance"),
                 "output",
@@ -518,6 +644,7 @@ class TestRunAssertionLlm:
 # ---------------------------------------------------------------------------
 # _generate — error path
 # ---------------------------------------------------------------------------
+
 
 class TestRunnerGenerate:
     async def test_generate_returns_error_string_on_openai_failure(self):
@@ -540,6 +667,7 @@ class TestRunnerGenerate:
         provider = ProviderConfig(id="anthropic", model="claude-sonnet-4-6")
 
         import sys
+
         original = sys.modules.get("anthropic")
         sys.modules["anthropic"] = None  # type: ignore[assignment]
         try:
@@ -558,14 +686,17 @@ class TestRunnerGenerate:
 # _create_judge — fallback path
 # ---------------------------------------------------------------------------
 
+
 class TestRunnerCreateJudge:
     def test_create_judge_falls_back_on_unknown_provider(self):
         config = EvalConfig(providers=[], tests=[])
         runner = YamlEvalRunner(config)
         provider = ProviderConfig(id="unknown_backend_xyz", model="some-model")
 
-        with patch("checkllm.providers.create_judge", side_effect=ValueError("unknown")), \
-             patch("checkllm.judge.OpenAIJudge") as mock_judge_cls:
+        with (
+            patch("checkllm.providers.create_judge", side_effect=ValueError("unknown")),
+            patch("checkllm.judge.OpenAIJudge") as mock_judge_cls,
+        ):
             mock_judge_cls.return_value = MagicMock()
             judge = runner._create_judge(provider)
 

@@ -58,6 +58,4 @@ def test_summary_not_empty(check):
     """Summary should have substance."""
     summarizer = _get_summarizer()
     output = summarizer(article)
-    # At least 5 words
-    word_count = len(output.split())
     check.contains(output, " ")  # has at least one space (more than one word)

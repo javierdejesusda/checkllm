@@ -32,7 +32,7 @@ class TestArgumentCorrectnessMetric:
         )
         metric = ArgumentCorrectnessMetric(judge=mock_judge, threshold=0.8)
         result = await metric.evaluate(
-            tool_calls='delete(id=123)',
+            tool_calls="delete(id=123)",
             expected_calls='search(query="python")',
         )
         assert not result.passed
@@ -53,13 +53,9 @@ class TestArgumentCorrectnessMetric:
 
     @pytest.mark.asyncio
     async def test_prompt_contains_calls(self, mock_judge):
-        mock_judge.evaluate.return_value = JudgeResponse(
-            score=0.9, reasoning="ok", raw_output=""
-        )
+        mock_judge.evaluate.return_value = JudgeResponse(score=0.9, reasoning="ok", raw_output="")
         metric = ArgumentCorrectnessMetric(judge=mock_judge)
-        await metric.evaluate(
-            tool_calls="actual_tool(x=1)", expected_calls="expected_tool(x=1)"
-        )
+        await metric.evaluate(tool_calls="actual_tool(x=1)", expected_calls="expected_tool(x=1)")
         call_args = mock_judge.evaluate.call_args
         prompt = call_args.kwargs["prompt"]
         assert "actual_tool(x=1)" in prompt

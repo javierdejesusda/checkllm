@@ -1,4 +1,5 @@
 """Verify check methods populate threshold and input_preview on results."""
+
 from checkllm.config import CheckllmConfig
 from checkllm.check import CheckCollector
 

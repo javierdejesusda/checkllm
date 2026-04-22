@@ -69,9 +69,16 @@ def build_leaderboard(
 
 
 _COLUMNS = [
-    "framework", "dataset", "metric_family",
-    "auc", "best_f1", "spearman", "n",
-    "mean_latency_ms", "total_cost_usd", "rank",
+    "framework",
+    "dataset",
+    "metric_family",
+    "auc",
+    "best_f1",
+    "spearman",
+    "n",
+    "mean_latency_ms",
+    "total_cost_usd",
+    "rank",
 ]
 
 
@@ -153,9 +160,7 @@ def write_markdown(rows: list[dict], path: Path) -> None:
     sep = "| " + " | ".join("---" for _ in _COLUMNS) + " |"
     lines = ["# CheckLLM Competitor Benchmark Results", "", header, sep]
     for row in rows:
-        line = "| " + " | ".join(
-            _fmt_cell(row.get(col, ""), col) for col in _COLUMNS
-        ) + " |"
+        line = "| " + " | ".join(_fmt_cell(row.get(col, ""), col) for col in _COLUMNS) + " |"
         lines.append(line)
     body = "\n".join(lines) + "\n" + _MARKDOWN_FOOTER
     path.write_text(body, encoding="utf-8")
@@ -172,11 +177,7 @@ def write_html(rows: list[dict], path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     head = "".join(f"<th>{html.escape(c)}</th>" for c in _COLUMNS)
     body = "".join(
-        "<tr>"
-        + "".join(
-            f"<td>{html.escape(str(row.get(c, '')))}</td>" for c in _COLUMNS
-        )
-        + "</tr>"
+        "<tr>" + "".join(f"<td>{html.escape(str(row.get(c, '')))}</td>" for c in _COLUMNS) + "</tr>"
         for row in rows
     )
     document = (

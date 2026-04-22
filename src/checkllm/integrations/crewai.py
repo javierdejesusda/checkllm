@@ -21,6 +21,7 @@ Usage::
 
 Requires: ``pip install crewai``
 """
+
 from __future__ import annotations
 
 import logging

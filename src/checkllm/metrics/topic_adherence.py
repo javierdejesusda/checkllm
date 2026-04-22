@@ -44,9 +44,7 @@ class TopicAdherenceMetric:
         self.threshold = threshold
         self.system_prompt: str = TOPIC_ADHERENCE_SYSTEM_PROMPT
 
-    async def evaluate(
-        self, output: str, allowed_topics: list[str]
-    ) -> CheckResult:
+    async def evaluate(self, output: str, allowed_topics: list[str]) -> CheckResult:
         """Evaluate whether the output stays within the allowed topics.
 
         Args:
@@ -64,9 +62,7 @@ class TopicAdherenceMetric:
             "Identify any off-topic content and score the adherence."
         )
         start = time.perf_counter_ns()
-        response = await self.judge.evaluate(
-            prompt=prompt, system_prompt=self.system_prompt
-        )
+        response = await self.judge.evaluate(prompt=prompt, system_prompt=self.system_prompt)
         elapsed_ms = (time.perf_counter_ns() - start) // 1_000_000
 
         return CheckResult(

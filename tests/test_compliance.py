@@ -9,7 +9,12 @@ from checkllm.compliance import (
     ComplianceRequirement,
     generate_compliance_report,
 )
-from checkllm.redteam import AttackResult, AttackStrategy, VulnerabilityReport, VulnerabilityType
+from checkllm.redteam import (
+    AttackResult,
+    AttackStrategy,
+    VulnerabilityReport,
+    VulnerabilityType,
+)
 
 
 def _make_vuln_report(

@@ -3,6 +3,7 @@
 Scores a generated caption against the actual image (and optionally a
 reference caption). Uses a vision-capable LLM judge.
 """
+
 from __future__ import annotations
 
 import time

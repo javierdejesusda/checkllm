@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import time
 
 from checkllm.judge import JudgeBackend
@@ -77,13 +76,9 @@ class TurnRelevancyMetric:
                 f"Assistant Response:\n{assistant_msg}\n\n"
                 "Is the assistant's response relevant to the user's message? Score it."
             )
-            response = await self.judge.evaluate(
-                prompt=prompt, system_prompt=self.system_prompt
-            )
+            response = await self.judge.evaluate(prompt=prompt, system_prompt=self.system_prompt)
             turn_scores.append(response.score)
-            turn_details.append(
-                f"Turn {i + 1}: {response.score:.2f} - {response.reasoning}"
-            )
+            turn_details.append(f"Turn {i + 1}: {response.score:.2f} - {response.reasoning}")
             total_cost += response.cost
 
         elapsed_ms = (time.perf_counter_ns() - start) // 1_000_000
@@ -149,13 +144,9 @@ class TurnFaithfulnessMetric:
                 "Is the assistant's response faithful to the provided context? "
                 "Does it introduce any unsupported claims? Score it."
             )
-            response = await self.judge.evaluate(
-                prompt=prompt, system_prompt=self.system_prompt
-            )
+            response = await self.judge.evaluate(prompt=prompt, system_prompt=self.system_prompt)
             turn_scores.append(response.score)
-            turn_details.append(
-                f"Turn {i + 1}: {response.score:.2f} - {response.reasoning}"
-            )
+            turn_details.append(f"Turn {i + 1}: {response.score:.2f} - {response.reasoning}")
             total_cost += response.cost
 
         elapsed_ms = (time.perf_counter_ns() - start) // 1_000_000
@@ -221,13 +212,9 @@ class TurnCoherenceMetric:
                 "Does the assistant's response maintain coherent conversation flow? "
                 "Evaluate coherence relative to the conversation history. Score it."
             )
-            response = await self.judge.evaluate(
-                prompt=prompt, system_prompt=self.system_prompt
-            )
+            response = await self.judge.evaluate(prompt=prompt, system_prompt=self.system_prompt)
             turn_scores.append(response.score)
-            turn_details.append(
-                f"Turn {i + 1}: {response.score:.2f} - {response.reasoning}"
-            )
+            turn_details.append(f"Turn {i + 1}: {response.score:.2f} - {response.reasoning}")
             total_cost += response.cost
 
         elapsed_ms = (time.perf_counter_ns() - start) // 1_000_000

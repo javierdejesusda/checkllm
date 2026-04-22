@@ -3,14 +3,18 @@
 Run with: pytest examples/test_custom_metrics.py -v
 No API key needed.
 """
+
 import checkllm
 from checkllm import CheckResult
 
 
 # --- Register custom metrics ---
 
+
 @checkllm.metric("word_count")
-def word_count_check(output: str, min_words: int = 1, max_words: int = 100, **kwargs) -> CheckResult:
+def word_count_check(
+    output: str, min_words: int = 1, max_words: int = 100, **kwargs
+) -> CheckResult:
     """Check that output word count is within a range."""
     count = len(output.split())
     passed = min_words <= count <= max_words
@@ -53,6 +57,7 @@ def no_pii_check(output: str, **kwargs) -> CheckResult:
 
 # --- Tests using custom metrics ---
 
+
 def test_response_length(check):
     """Verify response is concise."""
     output = "Python is a versatile programming language used for web development, data science, and automation."
@@ -68,5 +73,5 @@ def test_no_pii_leak(check):
 def test_pii_detected(check):
     """This should fail because the output contains an email."""
     leaky_output = "Contact john.doe@example.com for support."
-    result = check.run_metric("no_pii", output=leaky_output)
+    check.run_metric("no_pii", output=leaky_output)
     # Note: this test will FAIL because PII is detected - that's intentional

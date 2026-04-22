@@ -241,7 +241,9 @@ class TestAssertionChainDeterministicMethods:
 
     def test_has_citations_passes(self):
         c = _collector()
-        c.that("According to [1] Smith et al., the result is [2] important.").has_citations(min_count=2)
+        c.that("According to [1] Smith et al., the result is [2] important.").has_citations(
+            min_count=2
+        )
         assert c.results[-1] is not None
 
     def test_no_repetition_passes(self):

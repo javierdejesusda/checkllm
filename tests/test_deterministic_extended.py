@@ -1,6 +1,10 @@
 """Tests for new deterministic checks: similarity, readability, word_count, etc."""
 
-from checkllm.deterministic import DeterministicChecks, _levenshtein_ratio, _flesch_kincaid_grade
+from checkllm.deterministic import (
+    DeterministicChecks,
+    _levenshtein_ratio,
+    _flesch_kincaid_grade,
+)
 
 
 class TestLevenshteinRatio:
@@ -60,7 +64,9 @@ class TestSimilarityCheck:
         assert result.passed is False
 
     def test_ignore_case(self):
-        result = self.checks.similarity("Hello World", "hello world", threshold=0.99, ignore_case=True)
+        result = self.checks.similarity(
+            "Hello World", "hello world", threshold=0.99, ignore_case=True
+        )
         assert result.passed is True
         assert result.score == 1.0
 
@@ -152,7 +158,9 @@ class TestSentenceCount:
         self.checks = DeterministicChecks()
 
     def test_within_range(self):
-        result = self.checks.sentence_count("One sentence. Two sentences. Three.", min_sentences=2, max_sentences=5)
+        result = self.checks.sentence_count(
+            "One sentence. Two sentences. Three.", min_sentences=2, max_sentences=5
+        )
         assert result.passed is True
 
     def test_below_min(self):

@@ -44,9 +44,7 @@ class ComparativeQualityMetric:
         self.threshold = threshold
         self.system_prompt: str = COMPARATIVE_QUALITY_SYSTEM_PROMPT
 
-    async def evaluate(
-        self, output_a: str, output_b: str, criteria: str
-    ) -> CheckResult:
+    async def evaluate(self, output_a: str, output_b: str, criteria: str) -> CheckResult:
         """Compare two outputs on specified criteria.
 
         Args:
@@ -67,9 +65,7 @@ class ComparativeQualityMetric:
             "0.5 means they are equal. Score it."
         )
         start = time.perf_counter_ns()
-        response = await self.judge.evaluate(
-            prompt=prompt, system_prompt=self.system_prompt
-        )
+        response = await self.judge.evaluate(prompt=prompt, system_prompt=self.system_prompt)
         elapsed_ms = (time.perf_counter_ns() - start) // 1_000_000
 
         return CheckResult(

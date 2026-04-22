@@ -122,9 +122,7 @@ class TestContextRelevanceMetric:
         metric = ContextRelevanceMetric(judge=judge, threshold=0.8)
         await metric.evaluate(context="irrelevant filler", query="q")
         system_prompt = judge.calls[-1]["system_prompt"].lower()
-        assert "precision" in system_prompt, (
-            "system prompt must frame grading as precision / signal-to-noise"
-        )
-        assert "ratio" in system_prompt, (
-            "system prompt must mention the relevant/total ratio"
-        )
+        assert (
+            "precision" in system_prompt
+        ), "system prompt must frame grading as precision / signal-to-noise"
+        assert "ratio" in system_prompt, "system prompt must mention the relevant/total ratio"

@@ -2,11 +2,11 @@
 
 The ``langsmith`` SDK is mocked so these tests never touch the network.
 """
+
 from __future__ import annotations
 
 import sys
 import types
-from unittest.mock import MagicMock
 
 import pytest
 

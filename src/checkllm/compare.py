@@ -10,6 +10,7 @@ Usage::
     print(result.best_provider("score"))
     print(result.summary())
 """
+
 from __future__ import annotations
 
 import asyncio

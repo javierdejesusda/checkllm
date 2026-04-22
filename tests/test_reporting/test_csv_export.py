@@ -1,4 +1,5 @@
 """Tests for CSV export module."""
+
 from __future__ import annotations
 
 import csv
@@ -7,25 +8,41 @@ from pathlib import Path
 
 
 from checkllm.models import CheckResult
-from checkllm.reporting.csv_export import results_to_dataframe, write_csv, write_csv_string
+from checkllm.reporting.csv_export import (
+    results_to_dataframe,
+    write_csv,
+    write_csv_string,
+)
 
 
 def _sample_results() -> dict[str, list[CheckResult]]:
     return {
         "test_foo": [
             CheckResult(
-                passed=True, score=0.9, reasoning="Good",
-                cost=0.001, latency_ms=100, metric_name="hallucination",
+                passed=True,
+                score=0.9,
+                reasoning="Good",
+                cost=0.001,
+                latency_ms=100,
+                metric_name="hallucination",
             ),
         ],
         "test_bar": [
             CheckResult(
-                passed=False, score=0.3, reasoning="Bad",
-                cost=0.002, latency_ms=200, metric_name="relevance",
+                passed=False,
+                score=0.3,
+                reasoning="Bad",
+                cost=0.002,
+                latency_ms=200,
+                metric_name="relevance",
             ),
             CheckResult(
-                passed=True, score=1.0, reasoning="OK",
-                cost=0.0, latency_ms=0, metric_name="contains",
+                passed=True,
+                score=1.0,
+                reasoning="OK",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="contains",
             ),
         ],
     }
@@ -40,7 +57,15 @@ class TestResultsToDataframe:
 
     def test_dict_keys(self):
         rows = results_to_dataframe(_sample_results())
-        expected_keys = {"test_name", "metric_name", "passed", "score", "reasoning", "cost", "latency_ms"}
+        expected_keys = {
+            "test_name",
+            "metric_name",
+            "passed",
+            "score",
+            "reasoning",
+            "cost",
+            "latency_ms",
+        }
         for row in rows:
             assert set(row.keys()) == expected_keys
 
@@ -79,8 +104,13 @@ class TestWriteCsv:
         write_csv(_sample_results(), output)
         reader = csv.DictReader(output.open(newline="", encoding="utf-8"))
         assert reader.fieldnames == [
-            "test_name", "metric_name", "passed", "score",
-            "reasoning", "cost", "latency_ms",
+            "test_name",
+            "metric_name",
+            "passed",
+            "score",
+            "reasoning",
+            "cost",
+            "latency_ms",
         ]
 
     def test_creates_parent_dirs(self, tmp_path: Path):

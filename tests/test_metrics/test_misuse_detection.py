@@ -53,9 +53,7 @@ class TestMisuseDetectionMetric:
 
     @pytest.mark.asyncio
     async def test_prompt_contains_output_and_scope(self, mock_judge):
-        mock_judge.evaluate.return_value = JudgeResponse(
-            score=0.9, reasoning="ok", raw_output=""
-        )
+        mock_judge.evaluate.return_value = JudgeResponse(score=0.9, reasoning="ok", raw_output="")
         metric = MisuseDetectionMetric(judge=mock_judge)
         await metric.evaluate(output="my output text", intended_scope="my scope text")
         call_args = mock_judge.evaluate.call_args

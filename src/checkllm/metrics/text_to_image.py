@@ -25,9 +25,7 @@ class TextToImageMetric:
         self.threshold = threshold
         self.system_prompt: str = TEXT_TO_IMAGE_SYSTEM_PROMPT
 
-    async def evaluate(
-        self, image_description: str, original_prompt: str
-    ) -> CheckResult:
+    async def evaluate(self, image_description: str, original_prompt: str) -> CheckResult:
         """Evaluate how well a generated image matches the original prompt.
 
         Args:
@@ -43,9 +41,7 @@ class TextToImageMetric:
             "How well does the generated image match the original prompt? Score it."
         )
         start = time.perf_counter_ns()
-        response = await self.judge.evaluate(
-            prompt=prompt, system_prompt=self.system_prompt
-        )
+        response = await self.judge.evaluate(prompt=prompt, system_prompt=self.system_prompt)
         elapsed_ms = (time.perf_counter_ns() - start) // 1_000_000
 
         return CheckResult(

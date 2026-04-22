@@ -123,46 +123,56 @@ class ComplianceReport(BaseModel):
         ]
 
         if self.requirements_failed:
-            lines.extend([
-                "## Failed Requirements",
-                "",
-            ])
+            lines.extend(
+                [
+                    "## Failed Requirements",
+                    "",
+                ]
+            )
             for req in self.requirements_failed:
-                lines.extend([
-                    f"### {req.id}: {req.title}",
-                    "",
-                    f"**Severity:** {req.severity}",
-                    f"**Category:** {req.category}",
-                    "",
-                    req.description,
-                    "",
-                    f"**Remediation:** {req.remediation}",
-                    "",
-                ])
+                lines.extend(
+                    [
+                        f"### {req.id}: {req.title}",
+                        "",
+                        f"**Severity:** {req.severity}",
+                        f"**Category:** {req.category}",
+                        "",
+                        req.description,
+                        "",
+                        f"**Remediation:** {req.remediation}",
+                        "",
+                    ]
+                )
 
         if self.requirements_passed:
-            lines.extend([
-                "## Passed Requirements",
-                "",
-            ])
+            lines.extend(
+                [
+                    "## Passed Requirements",
+                    "",
+                ]
+            )
             for req in self.requirements_passed:
                 lines.append(f"- **{req.id}:** {req.title}")
             lines.append("")
 
         if self.requirements_not_tested:
-            lines.extend([
-                "## Not Tested Requirements",
-                "",
-            ])
+            lines.extend(
+                [
+                    "## Not Tested Requirements",
+                    "",
+                ]
+            )
             for req in self.requirements_not_tested:
                 lines.append(f"- **{req.id}:** {req.title}")
             lines.append("")
 
         if self.recommendations:
-            lines.extend([
-                "## Recommendations",
-                "",
-            ])
+            lines.extend(
+                [
+                    "## Recommendations",
+                    "",
+                ]
+            )
             for i, rec in enumerate(self.recommendations, 1):
                 lines.append(f"{i}. {rec}")
             lines.append("")
@@ -183,15 +193,11 @@ class ComplianceReport(BaseModel):
             "<head>",
             f"<title>Compliance Report: {esc(self.framework)}</title>",
             "<style>",
-            "body { font-family: system-ui, sans-serif; margin: 2em; "
-            "color: #1a1a1a; }",
+            "body { font-family: system-ui, sans-serif; margin: 2em; color: #1a1a1a; }",
             "h1 { color: #1a365d; }",
-            "h2 { color: #2d3748; border-bottom: 1px solid #e2e8f0; "
-            "padding-bottom: 0.3em; }",
-            "table { border-collapse: collapse; width: 100%; "
-            "margin: 1em 0; }",
-            "th, td { border: 1px solid #e2e8f0; padding: 0.5em 1em; "
-            "text-align: left; }",
+            "h2 { color: #2d3748; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.3em; }",
+            "table { border-collapse: collapse; width: 100%; margin: 1em 0; }",
+            "th, td { border: 1px solid #e2e8f0; padding: 0.5em 1em; text-align: left; }",
             "th { background-color: #f7fafc; }",
             ".pass { color: #276749; background-color: #f0fff4; }",
             ".fail { color: #9b2c2c; background-color: #fff5f5; }",
@@ -209,8 +215,7 @@ class ComplianceReport(BaseModel):
             "<body>",
             f"<h1>Compliance Report: {esc(self.framework)}</h1>",
             "<div class='meta'>",
-            f"<p>Version: {esc(self.framework_version)} | "
-            f"Scan Date: {esc(self.scan_date)}</p>",
+            f"<p>Version: {esc(self.framework_version)} | Scan Date: {esc(self.scan_date)}</p>",
             "</div>",
             f"<p class='score'>{self.overall_score:.0%}</p>",
             f"<p>Risk Level: <strong>{esc(self.risk_level.upper())}</strong>"
@@ -221,10 +226,8 @@ class ComplianceReport(BaseModel):
             "<h2>Summary</h2>",
             "<table>",
             "<tr><th>Status</th><th>Count</th></tr>",
-            f"<tr class='pass'><td>Passed</td>"
-            f"<td>{len(self.requirements_passed)}</td></tr>",
-            f"<tr class='fail'><td>Failed</td>"
-            f"<td>{len(self.requirements_failed)}</td></tr>",
+            f"<tr class='pass'><td>Passed</td><td>{len(self.requirements_passed)}</td></tr>",
+            f"<tr class='fail'><td>Failed</td><td>{len(self.requirements_failed)}</td></tr>",
             f"<tr class='not-tested'><td>Not Tested</td>"
             f"<td>{len(self.requirements_not_tested)}</td></tr>",
             "</table>",
@@ -253,20 +256,14 @@ class ComplianceReport(BaseModel):
             parts.append("<h2>Passed Requirements</h2>")
             parts.append("<ul>")
             for req in self.requirements_passed:
-                parts.append(
-                    f"<li><strong>{esc(req.id)}:</strong> "
-                    f"{esc(req.title)}</li>"
-                )
+                parts.append(f"<li><strong>{esc(req.id)}:</strong> {esc(req.title)}</li>")
             parts.append("</ul>")
 
         if self.requirements_not_tested:
             parts.append("<h2>Not Tested Requirements</h2>")
             parts.append("<ul>")
             for req in self.requirements_not_tested:
-                parts.append(
-                    f"<li><strong>{esc(req.id)}:</strong> "
-                    f"{esc(req.title)}</li>"
-                )
+                parts.append(f"<li><strong>{esc(req.id)}:</strong> {esc(req.title)}</li>")
             parts.append("</ul>")
 
         if self.recommendations:
@@ -382,9 +379,7 @@ class ComplianceScanner:
         Returns:
             A ComplianceReport with per-requirement evaluation results.
         """
-        scan_date = datetime.datetime.now(datetime.timezone.utc).strftime(
-            "%Y-%m-%dT%H:%M:%SZ"
-        )
+        scan_date = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
         requirement_results: list[RequirementResult] = []
         passed_reqs: list[FrameworkRequirement] = []
@@ -407,9 +402,7 @@ class ComplianceScanner:
                 passed_reqs.append(req)
             elif status == "fail":
                 failed_reqs.append(req)
-                recommendations.append(
-                    f"[{req.id}] {req.title}: {req.remediation}"
-                )
+                recommendations.append(f"[{req.id}] {req.title}: {req.remediation}")
             else:
                 not_tested_reqs.append(req)
 
@@ -448,9 +441,7 @@ class ComplianceScanner:
             A tuple of (status, score, findings) where status is one of
             "pass", "fail", or "not_tested".
         """
-        relevant_keys = (
-            req.vulnerability_types + req.metrics + req.deterministic_checks
-        )
+        relevant_keys = req.vulnerability_types + req.metrics + req.deterministic_checks
 
         matched_results: list[dict[str, Any]] = []
         for key in relevant_keys:

@@ -39,8 +39,12 @@ class TestCostBudget:
         config = CheckllmConfig(cache_enabled=False)
         collector = CheckCollector(config=config)
         result = CheckResult(
-            passed=True, score=0.9, reasoning="ok",
-            cost=0.005, latency_ms=100, metric_name="test",
+            passed=True,
+            score=0.9,
+            reasoning="ok",
+            cost=0.005,
+            latency_ms=100,
+            metric_name="test",
         )
         collector._track_cost(result)
         assert collector.total_cost == pytest.approx(0.005)

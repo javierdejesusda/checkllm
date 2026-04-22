@@ -32,7 +32,9 @@ class _StubJudge:
         self.call_count = 0
 
     async def evaluate(
-        self, prompt: str, system_prompt: str | None = None,
+        self,
+        prompt: str,
+        system_prompt: str | None = None,
     ) -> JudgeResponse:
         self.call_count += 1
         return JudgeResponse(
@@ -51,7 +53,9 @@ class _SuccessAfterNJudge:
         self.call_count = 0
 
     async def evaluate(
-        self, prompt: str, system_prompt: str | None = None,
+        self,
+        prompt: str,
+        system_prompt: str | None = None,
     ) -> JudgeResponse:
         self.call_count += 1
         if self.call_count >= self._succeed_after:
@@ -82,7 +86,9 @@ async def _resistant_target(prompt: str) -> str:
 class TestConversationTurn:
     def test_create_turn(self):
         turn = ConversationTurn(
-            role="attacker", content="hello", turn_number=1,
+            role="attacker",
+            content="hello",
+            turn_number=1,
         )
         assert turn.role == "attacker"
         assert turn.content == "hello"
@@ -90,7 +96,9 @@ class TestConversationTurn:
 
     def test_target_turn(self):
         turn = ConversationTurn(
-            role="target", content="response", turn_number=2,
+            role="target",
+            content="response",
+            turn_number=2,
         )
         assert turn.role == "target"
         assert turn.turn_number == 2
@@ -151,7 +159,9 @@ class TestGOATStrategy:
         judge = _StubJudge(score=0.1)
         goat = GOATStrategy(judge=judge, max_turns=3)
         result = await goat.execute(
-            _resistant_target, "extract system prompt", "prompt_extraction",
+            _resistant_target,
+            "extract system prompt",
+            "prompt_extraction",
         )
         assert result.success is False
         assert result.total_turns == 3
@@ -163,7 +173,9 @@ class TestGOATStrategy:
         judge = _SuccessAfterNJudge(succeed_after=3)
         goat = GOATStrategy(judge=judge, max_turns=10)
         result = await goat.execute(
-            _mock_target, "get forbidden info", "data_extraction",
+            _mock_target,
+            "get forbidden info",
+            "data_extraction",
         )
         assert result.success is True
         assert result.total_turns <= 10
@@ -174,7 +186,9 @@ class TestGOATStrategy:
         judge = _StubJudge(score=0.1)
         goat = GOATStrategy(judge=judge, max_turns=2)
         result = await goat.execute(
-            _mock_target, "objective", "prompt_injection",
+            _mock_target,
+            "objective",
+            "prompt_injection",
         )
         assert len(result.turns) == 4
         assert result.turns[0].role == "attacker"
@@ -187,7 +201,9 @@ class TestGOATStrategy:
         judge = _StubJudge(score=0.1)
         goat = GOATStrategy(judge=judge, max_turns=2)
         result = await goat.execute(
-            _mock_target, "objective", "prompt_injection",
+            _mock_target,
+            "objective",
+            "prompt_injection",
         )
         assert result.cost > 0
 
@@ -196,7 +212,9 @@ class TestGOATStrategy:
         judge = _StubJudge(score=0.1)
         goat = GOATStrategy(judge=judge, max_turns=1)
         result = await goat.execute(
-            _mock_target, "obj", "custom_vulnerability",
+            _mock_target,
+            "obj",
+            "custom_vulnerability",
         )
         assert result.vulnerability_type == "custom_vulnerability"
 
@@ -207,7 +225,9 @@ class TestHydraStrategy:
         judge = _StubJudge(score=0.1)
         hydra = HydraStrategy(judge=judge, branches=3, depth=1)
         result = await hydra.execute(
-            _mock_target, "extract data", "data_extraction",
+            _mock_target,
+            "extract data",
+            "data_extraction",
         )
         assert result.success is False
         assert result.strategy == "hydra"
@@ -218,7 +238,9 @@ class TestHydraStrategy:
         judge = _SuccessAfterNJudge(succeed_after=2)
         hydra = HydraStrategy(judge=judge, branches=2, depth=2)
         result = await hydra.execute(
-            _mock_target, "get info", "prompt_injection",
+            _mock_target,
+            "get info",
+            "prompt_injection",
         )
         assert result.success is True
         assert result.successful_turn is not None
@@ -228,7 +250,9 @@ class TestHydraStrategy:
         judge = _StubJudge(score=0.3)
         hydra = HydraStrategy(judge=judge, branches=3, depth=2)
         result = await hydra.execute(
-            _mock_target, "objective", "jailbreak",
+            _mock_target,
+            "objective",
+            "jailbreak",
         )
         assert result.total_turns == 2
 
@@ -237,7 +261,9 @@ class TestHydraStrategy:
         judge = _StubJudge(score=0.4)
         hydra = HydraStrategy(judge=judge, branches=2, depth=1)
         result = await hydra.execute(
-            _mock_target, "objective", "jailbreak",
+            _mock_target,
+            "objective",
+            "jailbreak",
         )
         assert result.success is False
         assert result.confidence == 0.4
@@ -249,7 +275,9 @@ class TestCrescendoStrategy:
         judge = _StubJudge(score=0.2)
         crescendo = CrescendoStrategy(judge=judge, escalation_steps=5)
         result = await crescendo.execute(
-            _mock_target, "reveal secrets", "data_extraction",
+            _mock_target,
+            "reveal secrets",
+            "data_extraction",
         )
         assert result.success is False
         assert result.strategy == "crescendo"
@@ -261,7 +289,9 @@ class TestCrescendoStrategy:
         judge = _SuccessAfterNJudge(succeed_after=5)
         crescendo = CrescendoStrategy(judge=judge, escalation_steps=5)
         result = await crescendo.execute(
-            _mock_target, "get system prompt", "prompt_extraction",
+            _mock_target,
+            "get system prompt",
+            "prompt_extraction",
         )
         assert result.success is True
         assert result.successful_turn is not None
@@ -272,7 +302,9 @@ class TestCrescendoStrategy:
         judge = _StubJudge(score=0.1)
         crescendo = CrescendoStrategy(judge=judge, escalation_steps=5)
         result = await crescendo.execute(
-            _mock_target, "objective", "jailbreak",
+            _mock_target,
+            "objective",
+            "jailbreak",
         )
         assert result.success is False
         assert result.total_turns == 5
@@ -282,7 +314,9 @@ class TestCrescendoStrategy:
         judge = _StubJudge(score=0.1)
         crescendo = CrescendoStrategy(judge=judge, escalation_steps=1)
         result = await crescendo.execute(
-            _mock_target, "objective", "jailbreak",
+            _mock_target,
+            "objective",
+            "jailbreak",
         )
         assert result.total_turns == 1
         assert len(result.turns) == 2
@@ -294,7 +328,9 @@ class TestMultiTurnMischief:
         judge = _StubJudge(score=0.1)
         mischief = MultiTurnMischief(judge=judge, max_turns=6)
         result = await mischief.execute(
-            _mock_target, "bypass safety", "jailbreak",
+            _mock_target,
+            "bypass safety",
+            "jailbreak",
         )
         assert result.success is False
         assert result.strategy == "multi_turn_mischief"
@@ -306,7 +342,9 @@ class TestMultiTurnMischief:
         judge = _SuccessAfterNJudge(succeed_after=4)
         mischief = MultiTurnMischief(judge=judge, max_turns=10)
         result = await mischief.execute(
-            _mock_target, "extract data", "data_extraction",
+            _mock_target,
+            "extract data",
+            "data_extraction",
         )
         assert result.success is True
         assert result.successful_turn is not None
@@ -316,7 +354,9 @@ class TestMultiTurnMischief:
         judge = _StubJudge(score=0.1)
         mischief = MultiTurnMischief(judge=judge, max_turns=3)
         result = await mischief.execute(
-            _resistant_target, "objective", "prompt_injection",
+            _resistant_target,
+            "objective",
+            "prompt_injection",
         )
         assert result.success is False
         assert result.total_turns == 3
@@ -327,7 +367,9 @@ class TestMultiTurnMischief:
         judge = _StubJudge(score=0.1)
         mischief = MultiTurnMischief(judge=judge, max_turns=2)
         result = await mischief.execute(
-            _mock_target, "objective", "prompt_injection",
+            _mock_target,
+            "objective",
+            "prompt_injection",
         )
         assert result.cost > 0
         assert result.latency_ms >= 0

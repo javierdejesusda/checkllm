@@ -178,18 +178,23 @@ class WatchRunner:
             self.console.print()
 
         now = datetime.now().strftime("%H:%M:%S")
-        header_parts: list[str] = [f"[bold cyan]Run #{self.run_count}[/]", f"[dim]{now}[/]"]
+        header_parts: list[str] = [
+            f"[bold cyan]Run #{self.run_count}[/]",
+            f"[dim]{now}[/]",
+        ]
         if changed_files:
             names = ", ".join(p.name for p in changed_files[:5])
             if len(changed_files) > 5:
                 names += f" (+{len(changed_files) - 5} more)"
             header_parts.append(f"[yellow]changed: {names}[/]")
 
-        self.console.print(Panel(
-            Text.from_markup(" | ".join(header_parts)),
-            title="checkllm watch",
-            border_style="cyan",
-        ))
+        self.console.print(
+            Panel(
+                Text.from_markup(" | ".join(header_parts)),
+                title="checkllm watch",
+                border_style="cyan",
+            )
+        )
 
         cmd = self._build_cmd()
         env = self._build_env()
@@ -202,7 +207,9 @@ class WatchRunner:
             self.console.print(f"\n[bold green]PASSED[/] [dim](run #{self.run_count})[/]")
         else:
             self.fail_count += 1
-            self.console.print(f"\n[bold red]FAILED[/] [dim](run #{self.run_count}, exit code {exit_code})[/]")
+            self.console.print(
+                f"\n[bold red]FAILED[/] [dim](run #{self.run_count}, exit code {exit_code})[/]"
+            )
 
         self.console.print(
             f"[dim]History: {self.pass_count} passed, {self.fail_count} failed "

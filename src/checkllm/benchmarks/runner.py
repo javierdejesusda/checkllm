@@ -1,4 +1,5 @@
 """BenchmarkRunner and related models for evaluating LLMs on benchmark datasets."""
+
 from __future__ import annotations
 
 import asyncio
@@ -21,13 +22,10 @@ _MC_AB_SYSTEM_PROMPT = (
     "Respond with only the letter of the correct answer (A or B)."
 )
 
-_OPEN_SYSTEM_PROMPT = (
-    "Answer the question as accurately and concisely as possible."
-)
+_OPEN_SYSTEM_PROMPT = "Answer the question as accurately and concisely as possible."
 
 _MATH_SYSTEM_PROMPT = (
-    "Solve the math problem. Provide only the final numeric answer, "
-    "with no units or explanation."
+    "Solve the math problem. Provide only the final numeric answer, with no units or explanation."
 )
 
 _CODE_SYSTEM_PROMPT = (
@@ -35,13 +33,9 @@ _CODE_SYSTEM_PROMPT = (
     "without the function signature or docstring."
 )
 
-_BOOLEAN_SYSTEM_PROMPT = (
-    "Answer the following yes/no question. Respond with only 'Yes' or 'No'."
-)
+_BOOLEAN_SYSTEM_PROMPT = "Answer the following yes/no question. Respond with only 'Yes' or 'No'."
 
-_INSTRUCTION_SYSTEM_PROMPT = (
-    "Follow the instructions in the question exactly as specified."
-)
+_INSTRUCTION_SYSTEM_PROMPT = "Follow the instructions in the question exactly as specified."
 
 _COMPLETION_SYSTEM_PROMPT = (
     "Complete the passage by providing the single missing word at the end. "
@@ -49,8 +43,7 @@ _COMPLETION_SYSTEM_PROMPT = (
 )
 
 _READING_SYSTEM_PROMPT = (
-    "Read the passage and answer the question. "
-    "Provide only the answer, as briefly as possible."
+    "Read the passage and answer the question. Provide only the answer, as briefly as possible."
 )
 
 _BIAS_SYSTEM_PROMPT = (
@@ -131,9 +124,7 @@ class BenchmarkRunner:
         Returns:
             A BenchmarkResult with accuracy and per-category breakdown.
         """
-        return asyncio.get_event_loop().run_until_complete(
-            self.arun(benchmark, limit)
-        )
+        return asyncio.get_event_loop().run_until_complete(self.arun(benchmark, limit))
 
     async def arun(self, benchmark: str, limit: int | None = None) -> BenchmarkResult:
         """Run a benchmark asynchronously.
@@ -156,9 +147,7 @@ class BenchmarkRunner:
 
         for sample in dataset.samples:
             prompt, system_prompt = self._build_prompt(benchmark, sample)
-            response = await self._provider.evaluate(
-                prompt=prompt, system_prompt=system_prompt
-            )
+            response = await self._provider.evaluate(prompt=prompt, system_prompt=system_prompt)
             total_cost += response.cost
 
             answer_text = response.raw_output or response.reasoning
@@ -177,8 +166,7 @@ class BenchmarkRunner:
         elapsed_ms = int((time.monotonic() - start) * 1000)
 
         by_category = {
-            cat: category_correct.get(cat, 0) / category_total[cat]
-            for cat in category_total
+            cat: category_correct.get(cat, 0) / category_total[cat] for cat in category_total
         }
         accuracy = correct / total if total > 0 else 0.0
 
@@ -192,9 +180,7 @@ class BenchmarkRunner:
             latency_ms=elapsed_ms,
         )
 
-    def _build_prompt(
-        self, benchmark: str, sample
-    ) -> tuple[str, str]:
+    def _build_prompt(self, benchmark: str, sample) -> tuple[str, str]:
         """Construct the prompt and system prompt for a sample.
 
         Args:
@@ -239,14 +225,20 @@ class BenchmarkRunner:
             prompt = sample.question
         return prompt, system
 
-    _MC_BENCHMARKS = frozenset({
-        "mmlu", "hellaswag", "bbh", "arc", "logiqa", "mathqa",
-        "winogrande", "bbq",
-    })
+    _MC_BENCHMARKS = frozenset(
+        {
+            "mmlu",
+            "hellaswag",
+            "bbh",
+            "arc",
+            "logiqa",
+            "mathqa",
+            "winogrande",
+            "bbq",
+        }
+    )
 
-    def _check_answer(
-        self, benchmark: str, model_text: str, correct_answer: str
-    ) -> bool:
+    def _check_answer(self, benchmark: str, model_text: str, correct_answer: str) -> bool:
         """Determine whether the model's response matches the correct answer.
 
         Args:
@@ -348,11 +340,7 @@ class BenchmarkRunner:
         ]
         if not key_lines:
             return False
-        matched = sum(
-            1
-            for line in key_lines
-            if line.replace(" ", "").lower() in model_normalized
-        )
+        matched = sum(1 for line in key_lines if line.replace(" ", "").lower() in model_normalized)
         return matched / len(key_lines) >= 0.5
 
     @staticmethod
@@ -397,9 +385,7 @@ class BenchmarkRunner:
             return all(c.isupper() for c in alpha_chars)
 
         if "not contain" in spec:
-            forbidden_match = re.findall(
-                r"(?:not contain the word[s]?\s+)(.+)", spec
-            )
+            forbidden_match = re.findall(r"(?:not contain the word[s]?\s+)(.+)", spec)
             if forbidden_match:
                 words = re.split(r"[,\s]+(?:or\s+)?", forbidden_match[0].strip())
                 words = [w.strip(" .'\"") for w in words if w.strip(" .'\"")]
@@ -408,43 +394,29 @@ class BenchmarkRunner:
         sentence_match = re.search(r"exactly (\d+) sentence", spec)
         if sentence_match:
             expected_count = int(sentence_match.group(1))
-            sentences = [
-                s.strip()
-                for s in re.split(r"[.!?]+", model_text)
-                if s.strip()
-            ]
+            sentences = [s.strip() for s in re.split(r"[.!?]+", model_text) if s.strip()]
             return len(sentences) == expected_count
 
         bullet_match = re.search(r"exactly (\d+) bullet", spec)
         if bullet_match:
             expected_count = int(bullet_match.group(1))
-            bullets = [
-                line
-                for line in model_text.splitlines()
-                if line.strip().startswith("-")
-            ]
+            bullets = [line for line in model_text.splitlines() if line.strip().startswith("-")]
             return len(bullets) == expected_count
 
         step_match = re.search(r"exactly (\d+) numbered step", spec)
         if step_match:
             expected_count = int(step_match.group(1))
-            steps = [
-                line
-                for line in model_text.splitlines()
-                if re.match(r"^\s*\d+[.)]\s", line)
-            ]
+            steps = [line for line in model_text.splitlines() if re.match(r"^\s*\d+[.)]\s", line)]
             return len(steps) == expected_count
 
         if "numbered list" in spec:
-            lines = [l.strip() for l in model_text.splitlines() if l.strip()]
+            lines = [line.strip() for line in model_text.splitlines() if line.strip()]
             return any(re.match(r"^\d+[.)]\s", line) for line in lines)
 
         if "semicolon" in spec:
             return ";" in model_text
 
-        word_match = re.search(
-            r"contain the word (\w+) (?:at least|exactly) (\w+)", spec
-        )
+        word_match = re.search(r"contain the word (\w+) (?:at least|exactly) (\w+)", spec)
         if word_match:
             word = word_match.group(1).lower()
             count_word = word_match.group(2)
@@ -466,24 +438,21 @@ class BenchmarkRunner:
             start_match = re.search(r"start with (\w+)", spec)
             end_match = re.search(r"end with (.+?)(?:\.|$)", spec)
             if start_match and end_match:
-                starts_ok = model_text.strip().lower().startswith(
-                    start_match.group(1).lower()
-                )
-                ends_ok = model_text.strip().lower().rstrip(".").endswith(
-                    end_match.group(1).strip().lower().rstrip(".")
+                starts_ok = model_text.strip().lower().startswith(start_match.group(1).lower())
+                ends_ok = (
+                    model_text.strip()
+                    .lower()
+                    .rstrip(".")
+                    .endswith(end_match.group(1).strip().lower().rstrip("."))
                 )
                 return starts_ok and ends_ok
 
-        word_count_match = re.search(
-            r"(?:at most|no more than) (\d+) words", spec
-        )
+        word_count_match = re.search(r"(?:at most|no more than) (\d+) words", spec)
         if word_count_match:
             max_words = int(word_count_match.group(1))
             return len(model_text.split()) <= max_words
 
-        between_match = re.search(
-            r"between (\d+) and (\d+) words", spec
-        )
+        between_match = re.search(r"between (\d+) and (\d+) words", spec)
         if between_match:
             lo = int(between_match.group(1))
             hi = int(between_match.group(2))

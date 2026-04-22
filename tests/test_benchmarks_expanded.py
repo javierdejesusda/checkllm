@@ -1,4 +1,5 @@
 """Expanded tests for the 16-benchmark suite in checkllm.benchmarks."""
+
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
@@ -70,7 +71,14 @@ def test_benchmark_limit(name):
 
 
 MC_BENCHMARKS = [
-    "mmlu", "hellaswag", "bbh", "arc", "logiqa", "mathqa", "winogrande", "bbq",
+    "mmlu",
+    "hellaswag",
+    "bbh",
+    "arc",
+    "logiqa",
+    "mathqa",
+    "winogrande",
+    "bbq",
 ]
 
 
@@ -83,8 +91,14 @@ def test_mc_benchmarks_have_choices(name):
 
 
 OPEN_BENCHMARKS = [
-    "truthfulqa", "gsm8k", "humaneval", "boolq", "drop", "ifeval",
-    "lambada", "squad",
+    "truthfulqa",
+    "gsm8k",
+    "humaneval",
+    "boolq",
+    "drop",
+    "ifeval",
+    "lambada",
+    "squad",
 ]
 
 
@@ -99,9 +113,7 @@ def test_open_benchmarks_have_no_choices(name):
 def test_each_benchmark_has_multiple_categories(name):
     dataset = load_benchmark(name)
     categories = {s.category for s in dataset.samples}
-    assert len(categories) >= 2, (
-        f"{name} only has categories: {categories}"
-    )
+    assert len(categories) >= 2, f"{name} only has categories: {categories}"
 
 
 def test_winogrande_has_two_choices():
@@ -291,9 +303,7 @@ class TestBuildPrompt:
         assert "passage" in system.lower() or "read" in system.lower()
 
     def test_winogrande_uses_ab_prompt(self):
-        sample = self._make_sample(
-            choices=["A. Option 1", "B. Option 2"], answer="A"
-        )
+        sample = self._make_sample(choices=["A. Option 1", "B. Option 2"], answer="A")
         _, system = self.runner._build_prompt("winogrande", sample)
         assert "a or b" in system.lower() or "two options" in system.lower()
 

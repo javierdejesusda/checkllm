@@ -45,10 +45,7 @@ class TestAsyncEngineDedup:
         key = make_dedup_key("judge", "same-prompt", model="m")
 
         try:
-            tasks = [
-                await engine.submit_dedup(key, lambda: counter.work("p"))
-                for _ in range(10)
-            ]
+            tasks = [await engine.submit_dedup(key, lambda: counter.work("p")) for _ in range(10)]
             results = await engine.gather(tasks)
         finally:
             await engine.shutdown()
@@ -67,11 +64,7 @@ class TestAsyncEngineDedup:
             tasks = []
             for tag in ("a", "b", "c"):
                 key = make_dedup_key("judge", tag)
-                tasks.append(
-                    await engine.submit_dedup(
-                        key, lambda t=tag: counter.work(t)
-                    )
-                )
+                tasks.append(await engine.submit_dedup(key, lambda t=tag: counter.work(t)))
             results = await engine.gather(tasks)
         finally:
             await engine.shutdown()
@@ -87,10 +80,7 @@ class TestAsyncEngineDedup:
         key = make_dedup_key("judge", "x")
 
         try:
-            tasks = [
-                await engine.submit_dedup(key, lambda: counter.work("x"))
-                for _ in range(5)
-            ]
+            tasks = [await engine.submit_dedup(key, lambda: counter.work("x")) for _ in range(5)]
             results = await engine.gather(tasks)
         finally:
             await engine.shutdown()
@@ -132,10 +122,7 @@ class TestAsyncEngineDedup:
         key = make_dedup_key("j", "x")
 
         try:
-            tasks = [
-                await engine.submit_dedup(key, lambda: counter.work("x"))
-                for _ in range(4)
-            ]
+            tasks = [await engine.submit_dedup(key, lambda: counter.work("x")) for _ in range(4)]
             await engine.gather(tasks)
         finally:
             await engine.shutdown()

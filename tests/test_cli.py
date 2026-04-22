@@ -22,12 +22,19 @@ class TestCliRun:
     def test_run_with_snapshot_and_report(self):
         with patch("checkllm.cli.subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(returncode=0)
-            result = runner.invoke(app, [
-                "run", "tests/",
-                "--snapshot", "snap.json",
-                "--html-report", "report.html",
-                "--junit-xml", "results.xml",
-            ])
+            result = runner.invoke(
+                app,
+                [
+                    "run",
+                    "tests/",
+                    "--snapshot",
+                    "snap.json",
+                    "--html-report",
+                    "report.html",
+                    "--junit-xml",
+                    "results.xml",
+                ],
+            )
             assert result.exit_code == 0
             cmd = mock_run.call_args[0][0]
             assert any("--checkllm-snapshot" in str(a) for a in cmd)
@@ -41,9 +48,7 @@ class TestCliSnapshot:
         with patch("checkllm.cli.subprocess.run") as mock_run:
             mock_run.return_value = MagicMock(returncode=0)
             with patch("checkllm.cli.load_config") as mock_config:
-                mock_config.return_value = MagicMock(
-                    snapshot_dir=str(snapshot_dir)
-                )
+                mock_config.return_value = MagicMock(snapshot_dir=str(snapshot_dir))
                 result = runner.invoke(app, ["snapshot", "tests/"])
         assert result.exit_code == 0
 
@@ -51,5 +56,6 @@ class TestCliSnapshot:
 class TestCliVersion:
     def test_version_flag(self):
         from checkllm import __version__
+
         result = runner.invoke(app, ["--version"])
         assert __version__ in result.output

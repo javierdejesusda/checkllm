@@ -275,9 +275,7 @@ class TestLayerStrategy:
 
     @pytest.mark.asyncio
     async def test_custom_composition(self):
-        strategy = LayerStrategy(
-            inner_strategies=[Base64Strategy(), ReverseStrategy()]
-        )
+        strategy = LayerStrategy(inner_strategies=[Base64Strategy(), ReverseStrategy()])
         results = await strategy.apply("test")
         assert len(results) >= 1
         for r in results:
@@ -471,9 +469,7 @@ class TestRiskScoringIntegration:
         ]
 
         scorer = RiskScorer()
-        score = scorer.score_vulnerability(
-            VulnerabilityType.PROMPT_INJECTION, results
-        )
+        score = scorer.score_vulnerability(VulnerabilityType.PROMPT_INJECTION, results)
         assert 0.0 <= score.cvss_score <= 10.0
         assert score.attack_success_rate == 0.5
         assert isinstance(score.severity, SeverityLevel)
@@ -498,9 +494,7 @@ class TestRiskScoringIntegration:
         ]
 
         scorer = RiskScorer()
-        score = scorer.score_vulnerability(
-            VulnerabilityType.JAILBREAK, results
-        )
+        score = scorer.score_vulnerability(VulnerabilityType.JAILBREAK, results)
         assert score.cvss_score == 0.0
         assert score.attack_success_rate == 0.0
         assert score.severity == SeverityLevel.INFORMATIONAL
@@ -524,9 +518,7 @@ class TestRiskScoringIntegration:
         ]
 
         scorer = RiskScorer()
-        score = scorer.score_vulnerability(
-            VulnerabilityType.SQL_INJECTION, results
-        )
+        score = scorer.score_vulnerability(VulnerabilityType.SQL_INJECTION, results)
         assert score.attack_success_rate == 1.0
         assert score.cvss_score >= 7.0
 

@@ -112,8 +112,10 @@ class TestPostMrComment:
             captured["data"] = req.data
             return _FakeResp()
 
-        with patch.dict("os.environ", env, clear=True), \
-             patch("checkllm.ci.gitlab.urlopen", _fake_urlopen):
+        with (
+            patch.dict("os.environ", env, clear=True),
+            patch("checkllm.ci.gitlab.urlopen", _fake_urlopen),
+        ):
             result = gitlab.post_mr_comment("hello")
 
         assert result is True
@@ -168,9 +170,7 @@ class TestCliCommand:
 
     def test_cli_writes_to_output(self, tmp_path):
         out = tmp_path / "gitlab-ci.yml"
-        result = runner.invoke(
-            app, ["ci-gitlab-template", "--output", str(out), "--budget", "2.5"]
-        )
+        result = runner.invoke(app, ["ci-gitlab-template", "--output", str(out), "--budget", "2.5"])
         assert result.exit_code == 0
         content = out.read_text()
         assert "--budget 2.50" in content
@@ -181,10 +181,7 @@ class TestCiAutoDetectsGitlab:
 
     def test_ci_detects_gitlab(self, tmp_path):
         test_file = tmp_path / "test_ex.py"
-        test_file.write_text(
-            "def test_basic(check):\n"
-            "    check.contains('hello world', 'hello')\n"
-        )
+        test_file.write_text("def test_basic(check):\n    check.contains('hello world', 'hello')\n")
         env = {
             "GITLAB_CI": "true",
             "CI_PROJECT_ID": "5",

@@ -1,4 +1,5 @@
 """Tests for new configuration fields."""
+
 import pytest
 
 from checkllm.config import CheckllmConfig, load_config

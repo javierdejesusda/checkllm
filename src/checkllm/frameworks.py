@@ -567,8 +567,7 @@ def _build_owasp_api_top_10() -> FrameworkDefinition:
         name="OWASP API Security Top 10",
         version="2023",
         description=(
-            "The OWASP API Security Top 10 identifies the most critical "
-            "security risks facing APIs."
+            "The OWASP API Security Top 10 identifies the most critical security risks facing APIs."
         ),
         url="https://owasp.org/API-Security/editions/2023/en/0x11-t10/",
         requirements=reqs,
@@ -990,8 +989,7 @@ def _build_nist_ai_rmf() -> FrameworkDefinition:
             ],
             deterministic_checks=["contains", "not_contains"],
             remediation=(
-                "Document clear use-case boundaries. Define "
-                "out-of-scope applications explicitly."
+                "Document clear use-case boundaries. Define out-of-scope applications explicitly."
             ),
         ),
         FrameworkRequirement(
@@ -1163,8 +1161,7 @@ def _build_nist_ai_rmf() -> FrameworkDefinition:
             id="MEASURE-3.1",
             title="Continuous Monitoring",
             description=(
-                "AI system performance and safety metrics are "
-                "monitored continuously in production."
+                "AI system performance and safety metrics are monitored continuously in production."
             ),
             severity="high",
             category="MEASURE",
@@ -1185,8 +1182,7 @@ def _build_nist_ai_rmf() -> FrameworkDefinition:
             id="MANAGE-1.1",
             title="Risk Prioritization",
             description=(
-                "Identified AI risks are prioritized based on "
-                "likelihood and potential impact."
+                "Identified AI risks are prioritized based on likelihood and potential impact."
             ),
             severity="high",
             category="MANAGE",
@@ -2162,8 +2158,7 @@ def _build_soc2_type2() -> FrameworkDefinition:
             metrics=["role_adherence", "instruction_following"],
             deterministic_checks=["not_contains"],
             remediation=(
-                "Implement prompt injection defenses. Deploy "
-                "content safety classifiers on inputs."
+                "Implement prompt injection defenses. Deploy content safety classifiers on inputs."
             ),
         ),
         FrameworkRequirement(
@@ -2180,8 +2175,7 @@ def _build_soc2_type2() -> FrameworkDefinition:
             metrics=["task_completion", "step_efficiency"],
             deterministic_checks=["latency", "cost"],
             remediation=(
-                "Implement real-time monitoring of AI system "
-                "performance and security metrics."
+                "Implement real-time monitoring of AI system performance and security metrics."
             ),
         ),
         FrameworkRequirement(
@@ -2381,8 +2375,7 @@ def _build_iso_42001() -> FrameworkDefinition:
             metrics=["correctness"],
             deterministic_checks=[],
             remediation=(
-                "Establish executive sponsorship for AI governance. "
-                "Document AI management policy."
+                "Establish executive sponsorship for AI governance. Document AI management policy."
             ),
         ),
         FrameworkRequirement(
@@ -2484,8 +2477,7 @@ def _build_iso_42001() -> FrameworkDefinition:
             metrics=["non_advice"],
             deterministic_checks=["contains"],
             remediation=(
-                "Establish communication channels for AI incidents "
-                "and governance decisions."
+                "Establish communication channels for AI incidents and governance decisions."
             ),
         ),
         FrameworkRequirement(
@@ -2510,8 +2502,7 @@ def _build_iso_42001() -> FrameworkDefinition:
             ],
             deterministic_checks=["not_contains"],
             remediation=(
-                "Implement operational procedures for AI system "
-                "deployment and monitoring."
+                "Implement operational procedures for AI system deployment and monitoring."
             ),
         ),
         FrameworkRequirement(
@@ -2643,8 +2634,7 @@ def _build_iso_42001() -> FrameworkDefinition:
             metrics=["correctness"],
             deterministic_checks=[],
             remediation=(
-                "Conduct regular management reviews with AI risk "
-                "and performance reports."
+                "Conduct regular management reviews with AI risk and performance reports."
             ),
         ),
         FrameworkRequirement(
@@ -2787,8 +2777,7 @@ def _build_iso_42001() -> FrameworkDefinition:
             metrics=["bias", "toxicity", "sentiment"],
             deterministic_checks=["not_contains"],
             remediation=(
-                "Implement fairness testing and monitoring. "
-                "Apply bias mitigation techniques."
+                "Implement fairness testing and monitoring. Apply bias mitigation techniques."
             ),
         ),
         FrameworkRequirement(
@@ -2856,10 +2845,7 @@ def _build_iso_27001_ai() -> FrameworkDefinition:
             vulnerability_types=["harmful_content", "bias_exploitation"],
             metrics=["role_adherence"],
             deterministic_checks=[],
-            remediation=(
-                "Include AI-specific sections in information "
-                "security policies."
-            ),
+            remediation=("Include AI-specific sections in information security policies."),
         ),
         FrameworkRequirement(
             id="A.5.23",
@@ -2901,8 +2887,7 @@ def _build_iso_27001_ai() -> FrameworkDefinition:
             metrics=["role_adherence", "role_violation"],
             deterministic_checks=["not_contains"],
             remediation=(
-                "Apply least privilege to AI system access. "
-                "Implement segregation of duties."
+                "Apply least privilege to AI system access. Implement segregation of duties."
             ),
         ),
         FrameworkRequirement(
@@ -2922,8 +2907,7 @@ def _build_iso_27001_ai() -> FrameworkDefinition:
             metrics=["role_adherence"],
             deterministic_checks=["not_contains"],
             remediation=(
-                "Control access to AI model weights, training "
-                "scripts, and prompt templates."
+                "Control access to AI model weights, training scripts, and prompt templates."
             ),
         ),
         FrameworkRequirement(
@@ -2984,8 +2968,7 @@ def _build_iso_27001_ai() -> FrameworkDefinition:
             metrics=["pii_detection"],
             deterministic_checks=["no_pii", "not_contains"],
             remediation=(
-                "Apply data masking to sensitive fields in AI "
-                "training data and model outputs."
+                "Apply data masking to sensitive fields in AI training data and model outputs."
             ),
         ),
         FrameworkRequirement(
@@ -3009,8 +2992,7 @@ def _build_iso_27001_ai() -> FrameworkDefinition:
             metrics=["pii_detection"],
             deterministic_checks=["no_pii", "not_contains"],
             remediation=(
-                "Implement output filtering to prevent data leakage "
-                "through AI model responses."
+                "Implement output filtering to prevent data leakage through AI model responses."
             ),
         ),
         FrameworkRequirement(
@@ -3143,8 +3125,7 @@ def _build_hipaa_ai() -> FrameworkDefinition:
             metrics=["task_completion"],
             deterministic_checks=["contains"],
             remediation=(
-                "Implement comprehensive audit logging for all "
-                "AI interactions involving PHI."
+                "Implement comprehensive audit logging for all AI interactions involving PHI."
             ),
         ),
         FrameworkRequirement(
@@ -3213,8 +3194,7 @@ def _build_hipaa_ai() -> FrameworkDefinition:
             metrics=["pii_detection"],
             deterministic_checks=["no_pii", "not_contains"],
             remediation=(
-                "Use TLS for all AI API communications. "
-                "Implement end-to-end encryption for PHI."
+                "Use TLS for all AI API communications. Implement end-to-end encryption for PHI."
             ),
         ),
         FrameworkRequirement(
@@ -3276,8 +3256,7 @@ def _build_hipaa_ai() -> FrameworkDefinition:
             metrics=["task_completion"],
             deterministic_checks=["contains"],
             remediation=(
-                "Log all PHI disclosures through AI systems. "
-                "Maintain disclosure audit trails."
+                "Log all PHI disclosures through AI systems. Maintain disclosure audit trails."
             ),
         ),
         FrameworkRequirement(
@@ -3293,10 +3272,7 @@ def _build_hipaa_ai() -> FrameworkDefinition:
             vulnerability_types=["data_extraction"],
             metrics=["correctness"],
             deterministic_checks=["contains"],
-            remediation=(
-                "Implement data subject access request handling "
-                "for AI-processed PHI."
-            ),
+            remediation=("Implement data subject access request handling for AI-processed PHI."),
         ),
     ]
     return FrameworkDefinition(
@@ -3389,8 +3365,7 @@ def _build_gdpr_ai() -> FrameworkDefinition:
             metrics=["pii_detection"],
             deterministic_checks=["no_pii", "not_contains"],
             remediation=(
-                "Apply data minimization to AI model inputs and "
-                "training data. Reduce PII exposure."
+                "Apply data minimization to AI model inputs and training data. Reduce PII exposure."
             ),
         ),
         FrameworkRequirement(
@@ -3450,8 +3425,7 @@ def _build_gdpr_ai() -> FrameworkDefinition:
             metrics=["correctness"],
             deterministic_checks=["contains"],
             remediation=(
-                "Implement data subject access mechanisms for "
-                "AI-processed personal data."
+                "Implement data subject access mechanisms for AI-processed personal data."
             ),
         ),
         FrameworkRequirement(
@@ -3573,8 +3547,7 @@ def _build_gdpr_ai() -> FrameworkDefinition:
             metrics=["bias", "pii_detection", "toxicity"],
             deterministic_checks=["not_contains", "no_pii"],
             remediation=(
-                "Conduct DPIAs for high-risk AI processing. "
-                "Document and mitigate identified risks."
+                "Conduct DPIAs for high-risk AI processing. Document and mitigate identified risks."
             ),
         ),
     ]
@@ -3657,10 +3630,7 @@ def _build_pci_dss_ai() -> FrameworkDefinition:
             ],
             metrics=["pii_detection"],
             deterministic_checks=["no_pii", "not_contains"],
-            remediation=(
-                "Use TLS 1.2+ for all AI API communications "
-                "involving cardholder data."
-            ),
+            remediation=("Use TLS 1.2+ for all AI API communications involving cardholder data."),
         ),
         FrameworkRequirement(
             id="Req-5.2",
@@ -3683,8 +3653,7 @@ def _build_pci_dss_ai() -> FrameworkDefinition:
             ],
             deterministic_checks=["not_contains"],
             remediation=(
-                "Implement input validation and adversarial "
-                "defenses for AI systems in the CDE."
+                "Implement input validation and adversarial defenses for AI systems in the CDE."
             ),
         ),
         FrameworkRequirement(
@@ -3726,8 +3695,7 @@ def _build_pci_dss_ai() -> FrameworkDefinition:
             metrics=["role_adherence", "role_violation"],
             deterministic_checks=["not_contains"],
             remediation=(
-                "Implement least-privilege access to AI systems "
-                "in the cardholder data environment."
+                "Implement least-privilege access to AI systems in the cardholder data environment."
             ),
         ),
         FrameworkRequirement(
@@ -3746,10 +3714,7 @@ def _build_pci_dss_ai() -> FrameworkDefinition:
             ],
             metrics=["role_adherence"],
             deterministic_checks=["not_contains"],
-            remediation=(
-                "Implement MFA for AI system access. Use "
-                "strong credential policies."
-            ),
+            remediation=("Implement MFA for AI system access. Use strong credential policies."),
         ),
         FrameworkRequirement(
             id="Req-10.2",
@@ -3855,10 +3820,7 @@ def _build_nist_csf() -> FrameworkDefinition:
             vulnerability_types=["data_extraction"],
             metrics=["correctness"],
             deterministic_checks=[],
-            remediation=(
-                "Maintain inventory of all AI models, endpoints, "
-                "and data assets."
-            ),
+            remediation=("Maintain inventory of all AI models, endpoints, and data assets."),
         ),
         FrameworkRequirement(
             id="ID.RA-1",
@@ -3885,8 +3847,7 @@ def _build_nist_csf() -> FrameworkDefinition:
             id="ID.RA-3",
             title="Risk Assessment - Threats",
             description=(
-                "Threats, both internal and external, are identified "
-                "and documented for AI systems."
+                "Threats, both internal and external, are identified and documented for AI systems."
             ),
             severity="high",
             category="Identify",
@@ -3919,16 +3880,14 @@ def _build_nist_csf() -> FrameworkDefinition:
             metrics=["role_adherence", "role_violation"],
             deterministic_checks=["not_contains"],
             remediation=(
-                "Implement strong access controls for AI systems. "
-                "Apply least-privilege principles."
+                "Implement strong access controls for AI systems. Apply least-privilege principles."
             ),
         ),
         FrameworkRequirement(
             id="PR.AT-1",
             title="Protect - Awareness Training",
             description=(
-                "All users are informed and trained about AI "
-                "system risks and responsible use."
+                "All users are informed and trained about AI system risks and responsible use."
             ),
             severity="medium",
             category="Protect",
@@ -4042,8 +4001,7 @@ def _build_nist_csf() -> FrameworkDefinition:
             metrics=["task_completion", "step_efficiency"],
             deterministic_checks=["latency", "cost"],
             remediation=(
-                "Implement real-time monitoring of AI systems. "
-                "Set up alerts for security events."
+                "Implement real-time monitoring of AI systems. Set up alerts for security events."
             ),
         ),
         FrameworkRequirement(
@@ -4062,10 +4020,7 @@ def _build_nist_csf() -> FrameworkDefinition:
             ],
             metrics=["toxicity", "pii_detection"],
             deterministic_checks=["not_contains", "no_pii"],
-            remediation=(
-                "Develop and test AI-specific incident response "
-                "procedures."
-            ),
+            remediation=("Develop and test AI-specific incident response procedures."),
         ),
         FrameworkRequirement(
             id="RC.RP-1",
@@ -4182,8 +4137,7 @@ def _build_cis_ai_controls() -> FrameworkDefinition:
             ],
             deterministic_checks=["not_contains", "no_pii"],
             remediation=(
-                "Deploy content safety classifiers and PII "
-                "detectors on all model outputs."
+                "Deploy content safety classifiers and PII detectors on all model outputs."
             ),
         ),
         FrameworkRequirement(
@@ -4203,8 +4157,7 @@ def _build_cis_ai_controls() -> FrameworkDefinition:
             metrics=["role_adherence", "role_violation"],
             deterministic_checks=["not_contains"],
             remediation=(
-                "Implement RBAC for all AI system interfaces. "
-                "Apply least-privilege principles."
+                "Implement RBAC for all AI system interfaces. Apply least-privilege principles."
             ),
         ),
         FrameworkRequirement(
@@ -4226,8 +4179,7 @@ def _build_cis_ai_controls() -> FrameworkDefinition:
             metrics=["pii_detection"],
             deterministic_checks=["no_pii", "not_contains"],
             remediation=(
-                "Encrypt AI data at rest and in transit. "
-                "Implement DLP for model outputs."
+                "Encrypt AI data at rest and in transit. Implement DLP for model outputs."
             ),
         ),
         FrameworkRequirement(
@@ -4356,8 +4308,7 @@ def _build_cis_ai_controls() -> FrameworkDefinition:
             metrics=["faithfulness", "correctness"],
             deterministic_checks=["json_schema"],
             remediation=(
-                "Maintain AI SBOM. Verify checksums for all "
-                "third-party models and datasets."
+                "Maintain AI SBOM. Verify checksums for all third-party models and datasets."
             ),
         ),
         FrameworkRequirement(
@@ -4417,7 +4368,9 @@ _FRAMEWORK_BUILDERS: dict[ComplianceFramework, Any] = {
 }
 
 
-def get_framework_definition(framework: ComplianceFramework | str) -> FrameworkDefinition:
+def get_framework_definition(
+    framework: ComplianceFramework | str,
+) -> FrameworkDefinition:
     """Retrieve the complete definition for a compliance framework.
 
     Args:
@@ -4433,14 +4386,10 @@ def get_framework_definition(framework: ComplianceFramework | str) -> FrameworkD
         try:
             framework = ComplianceFramework(framework)
         except ValueError:
-            raise ValueError(
-                f"No definition available for framework: {framework}"
-            )
+            raise ValueError(f"No definition available for framework: {framework}")
     builder = _FRAMEWORK_BUILDERS.get(framework)
     if builder is None:
-        raise ValueError(
-            f"No definition available for framework: {framework.value}"
-        )
+        raise ValueError(f"No definition available for framework: {framework.value}")
     return builder()
 
 

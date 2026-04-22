@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
 
 from checkllm.check import CheckCollector
 from checkllm.config import CheckllmConfig
@@ -302,7 +301,9 @@ class TestDeterministicMixinMethods:
 
     def test_has_structure(self):
         c = _c()
-        r = c.has_structure("## Section\n- bullet point\n1. numbered\n", ["headers", "bullet_points"])
+        r = c.has_structure(
+            "## Section\n- bullet point\n1. numbered\n", ["headers", "bullet_points"]
+        )
         assert r.passed is True
 
     def test_semantic_similarity(self):

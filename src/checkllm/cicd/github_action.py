@@ -87,7 +87,9 @@ class GitHubActionGenerator:
         lines.append("        run: |")
         lines.append("          python -m pip install --upgrade pip")
         lines.append("          pip install checkllm")
-        lines.append("          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi")
+        lines.append(
+            "          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi"
+        )
         lines.append("")
         lines.append("      - name: Run checkllm evaluations")
         lines.append("        env:")
@@ -117,13 +119,17 @@ class GitHubActionGenerator:
             lines.append("            const fs = require('fs');")
             lines.append("            let body = '## checkllm Evaluation Results\\n\\n';")
             lines.append("            try {")
-            lines.append("              const report = fs.readFileSync('eval-results.json', 'utf8');")
+            lines.append(
+                "              const report = fs.readFileSync('eval-results.json', 'utf8');"
+            )
             lines.append("              const data = JSON.parse(report);")
             lines.append("              body += `**Pass rate:** ${data.pass_rate || 'N/A'}\\n`;")
             lines.append("              body += `**Total checks:** ${data.total || 'N/A'}\\n`;")
             lines.append("              body += `**Cost:** $${data.total_cost || '0.00'}\\n`;")
             lines.append("            } catch {")
-            lines.append("              body += '_No structured results found. Check the workflow logs._\\n';")
+            lines.append(
+                "              body += '_No structured results found. Check the workflow logs._\\n';"
+            )
             lines.append("            }")
             lines.append("            github.rest.issues.createComment({")
             lines.append("              issue_number: context.issue.number,")
@@ -200,9 +206,7 @@ class GitHubActionGenerator:
                 main()
         """)
 
-    def save(
-        self, output_dir: str = ".github/workflows"
-    ) -> list[str]:
+    def save(self, output_dir: str = ".github/workflows") -> list[str]:
         """Save generated files to disk.
 
         Args:
@@ -227,4 +231,3 @@ class GitHubActionGenerator:
         paths.append(script_path)
 
         return paths
-

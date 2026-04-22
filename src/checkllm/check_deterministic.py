@@ -1,4 +1,5 @@
 """Mixin providing deterministic check methods for CheckCollector."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Type
@@ -67,7 +68,10 @@ class DeterministicChecksMixin:
         return result
 
     def exact_match(self, output: str, expected: str, ignore_case: bool = False) -> CheckResult:
-        self._fire_before_hook("exact_match", {"output": output, "expected": expected, "ignore_case": ignore_case})
+        self._fire_before_hook(
+            "exact_match",
+            {"output": output, "expected": expected, "ignore_case": ignore_case},
+        )
         result = self._deterministic.exact_match(output, expected, ignore_case)
         self.results.append(result)
         self._fire_after_hook(result)
@@ -94,36 +98,80 @@ class DeterministicChecksMixin:
         self._fire_after_hook(result)
         return result
 
-    def word_count(self, output: str, min_words: int | None = None, max_words: int | None = None) -> CheckResult:
-        self._fire_before_hook("word_count", {"output": output, "min_words": min_words, "max_words": max_words})
+    def word_count(
+        self, output: str, min_words: int | None = None, max_words: int | None = None
+    ) -> CheckResult:
+        self._fire_before_hook(
+            "word_count",
+            {"output": output, "min_words": min_words, "max_words": max_words},
+        )
         result = self._deterministic.word_count(output, min_words, max_words)
         self.results.append(result)
         self._fire_after_hook(result)
         return result
 
-    def char_count(self, output: str, min_chars: int | None = None, max_chars: int | None = None) -> CheckResult:
-        self._fire_before_hook("char_count", {"output": output, "min_chars": min_chars, "max_chars": max_chars})
+    def char_count(
+        self, output: str, min_chars: int | None = None, max_chars: int | None = None
+    ) -> CheckResult:
+        self._fire_before_hook(
+            "char_count",
+            {"output": output, "min_chars": min_chars, "max_chars": max_chars},
+        )
         result = self._deterministic.char_count(output, min_chars, max_chars)
         self.results.append(result)
         self._fire_after_hook(result)
         return result
 
-    def similarity(self, output: str, expected: str, threshold: float = 0.8, ignore_case: bool = False) -> CheckResult:
-        self._fire_before_hook("similarity", {"output": output, "expected": expected, "threshold": threshold, "ignore_case": ignore_case})
+    def similarity(
+        self,
+        output: str,
+        expected: str,
+        threshold: float = 0.8,
+        ignore_case: bool = False,
+    ) -> CheckResult:
+        self._fire_before_hook(
+            "similarity",
+            {
+                "output": output,
+                "expected": expected,
+                "threshold": threshold,
+                "ignore_case": ignore_case,
+            },
+        )
         result = self._deterministic.similarity(output, expected, threshold, ignore_case)
         self.results.append(result)
         self._fire_after_hook(result)
         return result
 
-    def readability(self, output: str, max_grade: float | None = None, min_grade: float | None = None) -> CheckResult:
-        self._fire_before_hook("readability", {"output": output, "max_grade": max_grade, "min_grade": min_grade})
+    def readability(
+        self,
+        output: str,
+        max_grade: float | None = None,
+        min_grade: float | None = None,
+    ) -> CheckResult:
+        self._fire_before_hook(
+            "readability",
+            {"output": output, "max_grade": max_grade, "min_grade": min_grade},
+        )
         result = self._deterministic.readability(output, max_grade, min_grade)
         self.results.append(result)
         self._fire_after_hook(result)
         return result
 
-    def sentence_count(self, output: str, min_sentences: int | None = None, max_sentences: int | None = None) -> CheckResult:
-        self._fire_before_hook("sentence_count", {"output": output, "min_sentences": min_sentences, "max_sentences": max_sentences})
+    def sentence_count(
+        self,
+        output: str,
+        min_sentences: int | None = None,
+        max_sentences: int | None = None,
+    ) -> CheckResult:
+        self._fire_before_hook(
+            "sentence_count",
+            {
+                "output": output,
+                "min_sentences": min_sentences,
+                "max_sentences": max_sentences,
+            },
+        )
         result = self._deterministic.sentence_count(output, min_sentences, max_sentences)
         self.results.append(result)
         self._fire_after_hook(result)
@@ -200,21 +248,40 @@ class DeterministicChecksMixin:
         return result
 
     def bleu(self, output: str, reference: str, threshold: float = 0.5) -> CheckResult:
-        self._fire_before_hook("bleu", {"output": output, "reference": reference, "threshold": threshold})
+        self._fire_before_hook(
+            "bleu", {"output": output, "reference": reference, "threshold": threshold}
+        )
         result = self._deterministic.bleu(output, reference, threshold)
         self.results.append(result)
         self._fire_after_hook(result)
         return result
 
     def rouge_l(self, output: str, reference: str, threshold: float = 0.5) -> CheckResult:
-        self._fire_before_hook("rouge_l", {"output": output, "reference": reference, "threshold": threshold})
+        self._fire_before_hook(
+            "rouge_l",
+            {"output": output, "reference": reference, "threshold": threshold},
+        )
         result = self._deterministic.rouge_l(output, reference, threshold)
         self.results.append(result)
         self._fire_after_hook(result)
         return result
 
-    def json_field(self, output: str, field_path: str, expected: Any = None, condition: str | None = None) -> CheckResult:
-        self._fire_before_hook("json_field", {"output": output, "field_path": field_path, "expected": expected, "condition": condition})
+    def json_field(
+        self,
+        output: str,
+        field_path: str,
+        expected: Any = None,
+        condition: str | None = None,
+    ) -> CheckResult:
+        self._fire_before_hook(
+            "json_field",
+            {
+                "output": output,
+                "field_path": field_path,
+                "expected": expected,
+                "condition": condition,
+            },
+        )
         result = self._deterministic.json_field(output, field_path, expected, condition)
         self.results.append(result)
         self._fire_after_hook(result)
@@ -227,9 +294,25 @@ class DeterministicChecksMixin:
         self._fire_after_hook(result)
         return result
 
-    def is_valid_markdown(self, output: str, require_headers: bool = False, require_lists: bool = False, require_code_blocks: bool = False) -> CheckResult:
-        self._fire_before_hook("is_valid_markdown", {"output": output, "require_headers": require_headers, "require_lists": require_lists, "require_code_blocks": require_code_blocks})
-        result = self._deterministic.is_valid_markdown(output, require_headers, require_lists, require_code_blocks)
+    def is_valid_markdown(
+        self,
+        output: str,
+        require_headers: bool = False,
+        require_lists: bool = False,
+        require_code_blocks: bool = False,
+    ) -> CheckResult:
+        self._fire_before_hook(
+            "is_valid_markdown",
+            {
+                "output": output,
+                "require_headers": require_headers,
+                "require_lists": require_lists,
+                "require_code_blocks": require_code_blocks,
+            },
+        )
+        result = self._deterministic.is_valid_markdown(
+            output, require_headers, require_lists, require_code_blocks
+        )
         self.results.append(result)
         self._fire_after_hook(result)
         return result
@@ -291,21 +374,28 @@ class DeterministicChecksMixin:
         return result
 
     def levenshtein(self, output: str, reference: str, threshold: float = 0.7) -> CheckResult:
-        self._fire_before_hook("levenshtein", {"output": output, "reference": reference, "threshold": threshold})
+        self._fire_before_hook(
+            "levenshtein",
+            {"output": output, "reference": reference, "threshold": threshold},
+        )
         result = self._deterministic.levenshtein(output, reference, threshold)
         self.results.append(result)
         self._fire_after_hook(result)
         return result
 
     def meteor(self, output: str, reference: str, threshold: float = 0.5) -> CheckResult:
-        self._fire_before_hook("meteor", {"output": output, "reference": reference, "threshold": threshold})
+        self._fire_before_hook(
+            "meteor", {"output": output, "reference": reference, "threshold": threshold}
+        )
         result = self._deterministic.meteor(output, reference, threshold)
         self.results.append(result)
         self._fire_after_hook(result)
         return result
 
     def perplexity_check(self, output: str, max_perplexity: float = 50.0) -> CheckResult:
-        self._fire_before_hook("perplexity_check", {"output": output, "max_perplexity": max_perplexity})
+        self._fire_before_hook(
+            "perplexity_check", {"output": output, "max_perplexity": max_perplexity}
+        )
         result = self._deterministic.perplexity_check(output, max_perplexity)
         self.results.append(result)
         self._fire_after_hook(result)
@@ -326,14 +416,21 @@ class DeterministicChecksMixin:
         return result
 
     def no_repetition(self, output: str, max_ngram_repeat: int = 3) -> CheckResult:
-        self._fire_before_hook("no_repetition", {"output": output, "max_ngram_repeat": max_ngram_repeat})
+        self._fire_before_hook(
+            "no_repetition", {"output": output, "max_ngram_repeat": max_ngram_repeat}
+        )
         result = self._deterministic.no_repetition(output, max_ngram_repeat)
         self.results.append(result)
         self._fire_after_hook(result)
         return result
 
-    def semantic_similarity(self, output: str, reference: str, threshold: float = 0.7) -> CheckResult:
-        self._fire_before_hook("semantic_similarity", {"output": output, "reference": reference, "threshold": threshold})
+    def semantic_similarity(
+        self, output: str, reference: str, threshold: float = 0.7
+    ) -> CheckResult:
+        self._fire_before_hook(
+            "semantic_similarity",
+            {"output": output, "reference": reference, "threshold": threshold},
+        )
         result = self._deterministic.semantic_similarity(output, reference, threshold)
         self.results.append(result)
         self._fire_after_hook(result)
@@ -354,43 +451,92 @@ class DeterministicChecksMixin:
         return result
 
     def gleu(self, output: str, reference: str, threshold: float = 0.5) -> CheckResult:
-        self._fire_before_hook("gleu", {"output": output, "reference": reference, "threshold": threshold})
+        self._fire_before_hook(
+            "gleu", {"output": output, "reference": reference, "threshold": threshold}
+        )
         result = self._deterministic.gleu(output, reference, threshold)
         self.results.append(result)
         self._fire_after_hook(result)
         return result
 
     def chrf(self, output: str, reference: str, threshold: float = 0.5) -> CheckResult:
-        self._fire_before_hook("chrf", {"output": output, "reference": reference, "threshold": threshold})
+        self._fire_before_hook(
+            "chrf", {"output": output, "reference": reference, "threshold": threshold}
+        )
         result = self._deterministic.chrf(output, reference, threshold)
         self.results.append(result)
         self._fire_after_hook(result)
         return result
 
-    def latency_check(self, start_time: float, end_time: float, max_ms: float = 5000.0) -> CheckResult:
-        self._fire_before_hook("latency_check", {"start_time": start_time, "end_time": end_time, "max_ms": max_ms})
+    def latency_check(
+        self, start_time: float, end_time: float, max_ms: float = 5000.0
+    ) -> CheckResult:
+        self._fire_before_hook(
+            "latency_check",
+            {"start_time": start_time, "end_time": end_time, "max_ms": max_ms},
+        )
         result = self._deterministic.latency_check(start_time, end_time, max_ms)
         self.results.append(result)
         self._fire_after_hook(result)
         return result
 
-    def cost_check(self, input_tokens: int, output_tokens: int, model: str, max_cost: float = 1.0) -> CheckResult:
-        self._fire_before_hook("cost_check", {"input_tokens": input_tokens, "output_tokens": output_tokens, "model": model, "max_cost": max_cost})
+    def cost_check(
+        self, input_tokens: int, output_tokens: int, model: str, max_cost: float = 1.0
+    ) -> CheckResult:
+        self._fire_before_hook(
+            "cost_check",
+            {
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens,
+                "model": model,
+                "max_cost": max_cost,
+            },
+        )
         result = self._deterministic.cost_check(input_tokens, output_tokens, model, max_cost)
         self.results.append(result)
         self._fire_after_hook(result)
         return result
 
-    def string_distance(self, output: str, reference: str, method: str = "levenshtein", threshold: float = 0.7) -> CheckResult:
-        self._fire_before_hook("string_distance", {"output": output, "reference": reference, "method": method, "threshold": threshold})
+    def string_distance(
+        self,
+        output: str,
+        reference: str,
+        method: str = "levenshtein",
+        threshold: float = 0.7,
+    ) -> CheckResult:
+        self._fire_before_hook(
+            "string_distance",
+            {
+                "output": output,
+                "reference": reference,
+                "method": method,
+                "threshold": threshold,
+            },
+        )
         result = self._deterministic.string_distance(output, reference, method, threshold)
         self.results.append(result)
         self._fire_after_hook(result)
         return result
 
-    def exact_match_strict(self, output: str, reference: str, ignore_case: bool = False, ignore_whitespace: bool = False) -> CheckResult:
-        self._fire_before_hook("exact_match_strict", {"output": output, "reference": reference, "ignore_case": ignore_case, "ignore_whitespace": ignore_whitespace})
-        result = self._deterministic.exact_match_strict(output, reference, ignore_case, ignore_whitespace)
+    def exact_match_strict(
+        self,
+        output: str,
+        reference: str,
+        ignore_case: bool = False,
+        ignore_whitespace: bool = False,
+    ) -> CheckResult:
+        self._fire_before_hook(
+            "exact_match_strict",
+            {
+                "output": output,
+                "reference": reference,
+                "ignore_case": ignore_case,
+                "ignore_whitespace": ignore_whitespace,
+            },
+        )
+        result = self._deterministic.exact_match_strict(
+            output, reference, ignore_case, ignore_whitespace
+        )
         self.results.append(result)
         self._fire_after_hook(result)
         return result

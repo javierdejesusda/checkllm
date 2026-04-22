@@ -64,9 +64,11 @@ def _build_adapters(frameworks: list[str], judge_model: str):
         out.append(CheckllmAdapter(judge=judge))
     if "deepeval" in frameworks:
         from deepeval.models import GPTModel
+
         out.append(DeepEvalAdapter(model=GPTModel(model=judge_model)))
     if "ragas" in frameworks:
         from langchain_openai import ChatOpenAI
+
         out.append(RagasAdapter(llm=ChatOpenAI(model=judge_model)))
     if "promptfoo" in frameworks:
         out.append(PromptfooAdapter(judge_model=judge_model))
@@ -113,7 +115,8 @@ def run(
     out.mkdir(parents=True, exist_ok=True)
     raw_path = out / f"{dataset}-{family}-{judge}.json"
     raw_path.write_text(
-        json.dumps([s.model_dump(mode="json") for s in scores], indent=2), encoding="utf-8"
+        json.dumps([s.model_dump(mode="json") for s in scores], indent=2),
+        encoding="utf-8",
     )
     typer.echo(f"wrote {len(scores)} scores to {raw_path}")
 
@@ -124,7 +127,9 @@ def report(
     out_md: Path = typer.Option(Path("docs/benchmarks/competitor-comparison.md"), "--out-md"),
     out_csv: Path = typer.Option(Path("docs/benchmarks/competitor-comparison.csv"), "--out-csv"),
     out_html: Path = typer.Option(Path("docs/benchmarks/competitor-comparison.html"), "--out-html"),
-    labels_file: Path = typer.Option(..., "--labels", help="JSON file: {dataset: {family: {sample_id: label}}}"),
+    labels_file: Path = typer.Option(
+        ..., "--labels", help="JSON file: {dataset: {family: {sample_id: label}}}"
+    ),
 ) -> None:
     """Build a leaderboard from raw score JSON files and write MD/CSV/HTML."""
     scores: list[BenchmarkScore] = []

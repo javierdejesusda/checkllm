@@ -17,6 +17,7 @@ Usage::
         context="France's capital is Paris.",
     )
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -111,9 +112,7 @@ class ConsensusJudge:
     # JudgeBackend protocol
     # ------------------------------------------------------------------
 
-    async def evaluate(
-        self, prompt: str, system_prompt: str | None = None
-    ) -> JudgeResponse:
+    async def evaluate(self, prompt: str, system_prompt: str | None = None) -> JudgeResponse:
         """Evaluate using consensus and return a JudgeResponse for protocol compatibility."""
         result = await self._evaluate_parallel(prompt, system_prompt)
         return JudgeResponse(
@@ -127,7 +126,10 @@ class ConsensusJudge:
     # ------------------------------------------------------------------
 
     async def evaluate_consensus(
-        self, prompt: str, system_prompt: str | None = None, metric_name: str = "consensus"
+        self,
+        prompt: str,
+        system_prompt: str | None = None,
+        metric_name: str = "consensus",
     ) -> ConsensusResult:
         """Run all judges in parallel and aggregate their results."""
         return await self._evaluate_parallel(prompt, system_prompt, metric_name=metric_name)
@@ -299,11 +301,11 @@ def _get_metric_class(metric_name: str) -> type:
     """Lazily import and return the metric class for a given name."""
     if metric_name not in _METRIC_MAP:
         raise ValueError(
-            f"Unknown metric '{metric_name}'. "
-            f"Available: {', '.join(sorted(_METRIC_MAP))}"
+            f"Unknown metric '{metric_name}'. Available: {', '.join(sorted(_METRIC_MAP))}"
         )
     module_path, class_name = _METRIC_MAP[metric_name]
     import importlib
+
     mod = importlib.import_module(module_path)
     return getattr(mod, class_name)
 

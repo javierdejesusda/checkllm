@@ -53,9 +53,7 @@ class TestPromptOptimizer:
     @pytest.mark.asyncio
     async def test_custom_metric_fn(self):
         judge = AsyncMock()
-        judge.evaluate.return_value = JudgeResponse(
-            score=0.8, reasoning="Mutation", cost=0.001
-        )
+        judge.evaluate.return_value = JudgeResponse(score=0.8, reasoning="Mutation", cost=0.001)
 
         async def custom_metric(prompt: str) -> float:
             return 0.9 if len(prompt) > 20 else 0.5
@@ -71,9 +69,7 @@ class TestPromptOptimizer:
 
     def test_sync_run(self):
         judge = AsyncMock()
-        judge.evaluate.return_value = JudgeResponse(
-            score=0.8, reasoning="Test", cost=0.001
-        )
+        judge.evaluate.return_value = JudgeResponse(score=0.8, reasoning="Test", cost=0.001)
         optimizer = PromptOptimizer(judge=judge)
         result = optimizer.optimize(
             prompt="Test prompt",

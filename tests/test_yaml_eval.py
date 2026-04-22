@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 import yaml
@@ -321,9 +321,7 @@ class TestYAMLEvaluator:
             new_callable=AsyncMock,
             return_value="The answer is 4.",
         ):
-            result = asyncio.new_event_loop().run_until_complete(
-                evaluator.run_from_config(config)
-            )
+            result = asyncio.new_event_loop().run_until_complete(evaluator.run_from_config(config))
 
         assert isinstance(result, YAMLEvalResult)
         assert result.total_tests == 1
@@ -354,9 +352,7 @@ class TestYAMLEvaluator:
             new_callable=AsyncMock,
             return_value="Hello world",
         ):
-            result = asyncio.new_event_loop().run_until_complete(
-                evaluator.run_from_config(config)
-            )
+            result = asyncio.new_event_loop().run_until_complete(evaluator.run_from_config(config))
 
         assert result.total_tests == 1
         assert result.passed == 0
@@ -384,9 +380,7 @@ class TestYAMLEvaluator:
             new_callable=AsyncMock,
             return_value="This is a clean response with no personal data.",
         ):
-            result = asyncio.new_event_loop().run_until_complete(
-                evaluator.run_from_config(config)
-            )
+            result = asyncio.new_event_loop().run_until_complete(evaluator.run_from_config(config))
 
         assert result.passed == 1
         assert result.failed == 0
@@ -412,9 +406,7 @@ class TestYAMLEvaluator:
             new_callable=AsyncMock,
             return_value="Short response.",
         ):
-            result = asyncio.new_event_loop().run_until_complete(
-                evaluator.run_from_config(config)
-            )
+            result = asyncio.new_event_loop().run_until_complete(evaluator.run_from_config(config))
 
         assert result.passed == 1
 
@@ -441,9 +433,7 @@ class TestYAMLEvaluator:
             new_callable=AsyncMock,
             return_value="The price is $9.99.",
         ):
-            result = asyncio.new_event_loop().run_until_complete(
-                evaluator.run_from_config(config)
-            )
+            result = asyncio.new_event_loop().run_until_complete(evaluator.run_from_config(config))
 
         assert result.total_tests == 3
         assert result.passed == 3
@@ -472,9 +462,7 @@ class TestYAMLEvaluator:
             new_callable=AsyncMock,
             return_value="hello world",
         ):
-            result = asyncio.new_event_loop().run_until_complete(
-                evaluator.run_from_config(config)
-            )
+            result = asyncio.new_event_loop().run_until_complete(evaluator.run_from_config(config))
 
         assert result.total_tests == 2
         assert result.passed == 2
@@ -500,9 +488,7 @@ class TestYAMLEvaluator:
             return "AI is artificial intelligence."
 
         with patch.object(evaluator, "_generate_output", side_effect=mock_generate):
-            asyncio.new_event_loop().run_until_complete(
-                evaluator.run_from_config(config)
-            )
+            asyncio.new_event_loop().run_until_complete(evaluator.run_from_config(config))
 
         assert len(captured_prompts) == 1
         assert captured_prompts[0] == "Answer this: What is AI?"
@@ -526,9 +512,7 @@ class TestYAMLEvaluator:
             new_callable=AsyncMock,
             return_value="output",
         ):
-            result = asyncio.new_event_loop().run_until_complete(
-                evaluator.run_from_config(config)
-            )
+            result = asyncio.new_event_loop().run_until_complete(evaluator.run_from_config(config))
 
         assert result.failed == 1
         assert result.results[0].passed is False
@@ -546,19 +530,20 @@ class TestYAMLEvaluator:
 
         evaluator = YAMLEvaluator()
 
-        with patch.object(
-            evaluator,
-            "_generate_output",
-            new_callable=AsyncMock,
-            return_value="some output",
-        ), patch.object(
-            evaluator,
-            "_create_judge",
-            return_value=None,
+        with (
+            patch.object(
+                evaluator,
+                "_generate_output",
+                new_callable=AsyncMock,
+                return_value="some output",
+            ),
+            patch.object(
+                evaluator,
+                "_create_judge",
+                return_value=None,
+            ),
         ):
-            result = asyncio.new_event_loop().run_until_complete(
-                evaluator.run_from_config(config)
-            )
+            result = asyncio.new_event_loop().run_until_complete(evaluator.run_from_config(config))
 
         assert result.failed == 1
         assertion_result = result.results[0].assertions[0]
@@ -586,9 +571,7 @@ class TestYAMLEvaluator:
             new_callable=AsyncMock,
             return_value="a and b",
         ):
-            result = asyncio.new_event_loop().run_until_complete(
-                evaluator.run_from_config(config)
-            )
+            result = asyncio.new_event_loop().run_until_complete(evaluator.run_from_config(config))
 
         assert result.cost == 0.0
         assert result.duration_ms > 0

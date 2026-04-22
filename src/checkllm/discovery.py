@@ -1,4 +1,5 @@
 """Auto-detect the best available judge backend from environment."""
+
 from __future__ import annotations
 
 import os

@@ -1,4 +1,5 @@
 """Tests for real CLI command implementations."""
+
 from unittest.mock import patch, MagicMock
 
 from typer.testing import CliRunner
@@ -57,6 +58,7 @@ class TestCliReport:
 class TestCliDiff:
     def test_diff_compares_two_snapshots(self, tmp_path):
         import json
+
         baseline = tmp_path / "baseline.json"
         current = tmp_path / "current.json"
 
@@ -69,7 +71,7 @@ class TestCliDiff:
                     {"metrics": {"h": {"score": 0.88, "passed": True}}},
                     {"metrics": {"h": {"score": 0.91, "passed": True}}},
                 ]
-            }
+            },
         }
         baseline.write_text(json.dumps(snap_data))
 
@@ -82,58 +84,86 @@ class TestCliDiff:
                     {"metrics": {"h": {"score": 0.90, "passed": True}}},
                     {"metrics": {"h": {"score": 0.87, "passed": True}}},
                 ]
-            }
+            },
         }
         current.write_text(json.dumps(current_data))
 
-        result = runner.invoke(app, [
-            "diff", "--baseline", str(baseline), "--current", str(current),
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "diff",
+                "--baseline",
+                str(baseline),
+                "--current",
+                str(current),
+            ],
+        )
         assert result.exit_code == 0
         # "No regressions detected" is printed by console.print in diff cmd
         assert "No regressions" in result.output or result.exit_code == 0
 
     def test_diff_detects_regression(self, tmp_path):
         import json
+
         baseline = tmp_path / "baseline.json"
         current = tmp_path / "current.json"
 
         snap_data = {
-            "version": 1, "timestamp": "2026-03-28T12:00:00Z",
-            "tests": {"test_foo": [
-                {"metrics": {"h": {"score": s, "passed": True}}}
-                for s in [0.9, 0.92, 0.88, 0.91, 0.90]
-            ]}
+            "version": 1,
+            "timestamp": "2026-03-28T12:00:00Z",
+            "tests": {
+                "test_foo": [
+                    {"metrics": {"h": {"score": s, "passed": True}}}
+                    for s in [0.9, 0.92, 0.88, 0.91, 0.90]
+                ]
+            },
         }
         baseline.write_text(json.dumps(snap_data))
 
         current_data = {
-            "version": 1, "timestamp": "2026-03-28T13:00:00Z",
-            "tests": {"test_foo": [
-                {"metrics": {"h": {"score": s, "passed": False}}}
-                for s in [0.5, 0.52, 0.48, 0.51, 0.50]
-            ]}
+            "version": 1,
+            "timestamp": "2026-03-28T13:00:00Z",
+            "tests": {
+                "test_foo": [
+                    {"metrics": {"h": {"score": s, "passed": False}}}
+                    for s in [0.5, 0.52, 0.48, 0.51, 0.50]
+                ]
+            },
         }
         current.write_text(json.dumps(current_data))
 
-        result = runner.invoke(app, [
-            "diff", "--baseline", str(baseline), "--current", str(current),
-            "--fail-on-regression",
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "diff",
+                "--baseline",
+                str(baseline),
+                "--current",
+                str(current),
+                "--fail-on-regression",
+            ],
+        )
         # With --fail-on-regression, should exit 1 when regression detected
         assert result.exit_code == 1
 
     def test_diff_fails_when_baseline_missing(self, tmp_path):
-        result = runner.invoke(app, [
-            "diff", "--baseline", str(tmp_path / "nope.json"),
-            "--current", str(tmp_path / "also_nope.json"),
-        ])
+        result = runner.invoke(
+            app,
+            [
+                "diff",
+                "--baseline",
+                str(tmp_path / "nope.json"),
+                "--current",
+                str(tmp_path / "also_nope.json"),
+            ],
+        )
         assert result.exit_code == 1
 
 
 class TestCliVersion:
     def test_version_flag(self):
         from checkllm import __version__
+
         result = runner.invoke(app, ["--version"])
         assert __version__ in result.output
 

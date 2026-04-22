@@ -56,9 +56,7 @@ class CitationAccuracyMetric:
         Returns:
             CheckResult with citation accuracy score.
         """
-        sources_str = "\n\n".join(
-            f"[Source {i + 1}]:\n{src}" for i, src in enumerate(sources)
-        )
+        sources_str = "\n\n".join(f"[Source {i + 1}]:\n{src}" for i, src in enumerate(sources))
         prompt = (
             f"Source Texts:\n{sources_str}\n\n"
             f"Response with citations to verify:\n{output}\n\n"
@@ -66,9 +64,7 @@ class CitationAccuracyMetric:
             "Are citations accurate and properly attributed? Score it."
         )
         start = time.perf_counter_ns()
-        response = await self.judge.evaluate(
-            prompt=prompt, system_prompt=self.system_prompt
-        )
+        response = await self.judge.evaluate(prompt=prompt, system_prompt=self.system_prompt)
         elapsed_ms = (time.perf_counter_ns() - start) // 1_000_000
 
         return CheckResult(

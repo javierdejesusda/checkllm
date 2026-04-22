@@ -39,9 +39,7 @@ class MisuseDetectionMetric:
             "Is this output within the intended scope? Score it."
         )
         start = time.perf_counter_ns()
-        response = await self.judge.evaluate(
-            prompt=prompt, system_prompt=self.system_prompt
-        )
+        response = await self.judge.evaluate(prompt=prompt, system_prompt=self.system_prompt)
         elapsed_ms = (time.perf_counter_ns() - start) // 1_000_000
         return CheckResult(
             passed=response.score >= self.threshold,

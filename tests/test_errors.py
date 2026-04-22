@@ -1,4 +1,5 @@
 """Tests for user-friendly error messages."""
+
 from checkllm.errors import (
     format_budget_error,
     format_missing_dependency_error,

@@ -1,5 +1,10 @@
 """Tests for pre-run cost estimation."""
-from checkllm.estimator import estimate_check_cost, estimate_from_test_file, CostEstimate
+
+from checkllm.estimator import (
+    estimate_check_cost,
+    estimate_from_test_file,
+    CostEstimate,
+)
 
 
 def test_deterministic_check_costs_zero():
@@ -23,12 +28,12 @@ def test_judge_check_mini_is_cheaper():
 def test_estimate_from_test_file(tmp_path):
     test_file = tmp_path / "test_example.py"
     test_file.write_text(
-        'def test_my_llm(check):\n'
+        "def test_my_llm(check):\n"
         '    output = "hello"\n'
         '    check.contains(output, "hello")\n'
         '    check.hallucination(output, context="world")\n'
-        '    check.toxicity(output)\n'
-        '    check.max_tokens(output, limit=100)\n'
+        "    check.toxicity(output)\n"
+        "    check.max_tokens(output, limit=100)\n"
     )
     result = estimate_from_test_file(str(test_file), model="gpt-4o")
     assert result.deterministic_count == 2  # contains, max_tokens
@@ -38,7 +43,7 @@ def test_estimate_from_test_file(tmp_path):
 
 def test_estimate_returns_zero_for_no_checks(tmp_path):
     test_file = tmp_path / "test_empty.py"
-    test_file.write_text('def test_nothing():\n    pass\n')
+    test_file.write_text("def test_nothing():\n    pass\n")
     result = estimate_from_test_file(str(test_file), model="gpt-4o")
     assert result.total_cost == 0.0
     assert result.deterministic_count == 0

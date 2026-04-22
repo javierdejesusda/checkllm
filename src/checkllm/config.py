@@ -15,7 +15,9 @@ except ModuleNotFoundError:
 class CheckllmConfig(BaseModel):
     """Configuration for checkllm, loaded from pyproject.toml."""
 
-    judge_backend: str = "auto"  # "auto", "openai", "anthropic", "gemini", "azure", "ollama", "litellm"
+    judge_backend: str = (
+        "auto"  # "auto", "openai", "anthropic", "gemini", "azure", "ollama", "litellm"
+    )
     judge_model: str = "gpt-4o"
     default_threshold: float = Field(default=0.8, ge=0.0, le=1.0)
     runs_per_test: int = Field(default=1, ge=1)

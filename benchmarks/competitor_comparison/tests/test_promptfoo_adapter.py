@@ -22,22 +22,24 @@ def sample():
 
 @pytest.mark.asyncio
 async def test_promptfoo_adapter_parses_rubric_score(sample):
-    fake_output = json.dumps({
-        "results": {
-            "results": [
-                {
-                    "gradingResult": {
-                        "pass": True,
-                        "score": 0.91,
-                        "reason": "ok",
-                        "tokensUsed": {"prompt": 400, "completion": 50},
-                    },
-                    "latencyMs": 250,
-                    "cost": 0.0,
-                }
-            ]
+    fake_output = json.dumps(
+        {
+            "results": {
+                "results": [
+                    {
+                        "gradingResult": {
+                            "pass": True,
+                            "score": 0.91,
+                            "reason": "ok",
+                            "tokensUsed": {"prompt": 400, "completion": 50},
+                        },
+                        "latencyMs": 250,
+                        "cost": 0.0,
+                    }
+                ]
+            }
         }
-    })
+    )
 
     async def fake_run(args, cwd):
         return (fake_output, "")
@@ -47,25 +49,25 @@ async def test_promptfoo_adapter_parses_rubric_score(sample):
     assert result.framework == "promptfoo"
     assert result.score == 0.91
     assert result.latency_ms == 250
-    assert result.cost_usd == pytest.approx(
-        (400 * 0.15 + 50 * 0.60) / 1_000_000
-    )
+    assert result.cost_usd == pytest.approx((400 * 0.15 + 50 * 0.60) / 1_000_000)
 
 
 @pytest.mark.asyncio
 async def test_promptfoo_adapter_tolerates_missing_grading_result(sample):
-    fake_output = json.dumps({
-        "results": {
-            "results": [
-                {
-                    "gradingResult": None,
-                    "error": "API error: 400",
-                    "latencyMs": 0,
-                    "cost": 0.0,
-                }
-            ]
+    fake_output = json.dumps(
+        {
+            "results": {
+                "results": [
+                    {
+                        "gradingResult": None,
+                        "error": "API error: 400",
+                        "latencyMs": 0,
+                        "cost": 0.0,
+                    }
+                ]
+            }
         }
-    })
+    )
 
     async def fake_run(args, cwd):
         return (fake_output, "")
@@ -98,7 +100,11 @@ async def test_promptfoo_adapter_uses_resolved_npx_launcher(sample, monkeypatch)
                     "results": {
                         "results": [
                             {
-                                "gradingResult": {"pass": True, "score": 1.0, "reason": "ok"},
+                                "gradingResult": {
+                                    "pass": True,
+                                    "score": 1.0,
+                                    "reason": "ok",
+                                },
                                 "latencyMs": 1,
                                 "cost": 0.0,
                             }
@@ -120,9 +126,7 @@ async def test_promptfoo_adapter_uses_resolved_npx_launcher(sample, monkeypatch)
 
 
 def test_resolve_npx_raises_when_missing(monkeypatch):
-    monkeypatch.setattr(
-        "bench.adapters.promptfoo_adapter.shutil.which", lambda _: None
-    )
+    monkeypatch.setattr("bench.adapters.promptfoo_adapter.shutil.which", lambda _: None)
     with pytest.raises(FileNotFoundError, match="npx not found"):
         _resolve_npx()
 
@@ -132,8 +136,6 @@ def test_promptfoo_adapter_fails_fast_when_npx_missing(monkeypatch):
     per sample — otherwise a 600-sample run produces 600 identical
     FileNotFoundErrors spaced across the wall-clock.
     """
-    monkeypatch.setattr(
-        "bench.adapters.promptfoo_adapter.shutil.which", lambda _: None
-    )
+    monkeypatch.setattr("bench.adapters.promptfoo_adapter.shutil.which", lambda _: None)
     with pytest.raises(FileNotFoundError, match="npx not found"):
         PromptfooAdapter(judge_model="gpt-4o-mini")

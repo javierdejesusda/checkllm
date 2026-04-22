@@ -56,26 +56,23 @@ class TestIndustryPlugins:
     def test_each_industry_has_plugins(self, industry: Industry):
         runner = IndustryComplianceRunner()
         plugins = runner.get_plugins(industry)
-        assert len(plugins) >= 6, (
-            f"{industry.value} has {len(plugins)} plugins, need at least 6"
-        )
+        assert len(plugins) >= 6, f"{industry.value} has {len(plugins)} plugins, need at least 6"
 
     @pytest.mark.parametrize("industry", list(Industry))
     def test_plugins_have_test_prompts(self, industry: Industry):
         runner = IndustryComplianceRunner()
         for plugin in runner.get_plugins(industry):
-            assert len(plugin.test_prompts) >= 3, (
-                f"Plugin {plugin.id} has {len(plugin.test_prompts)} prompts, "
-                f"need at least 3"
-            )
+            assert (
+                len(plugin.test_prompts) >= 3
+            ), f"Plugin {plugin.id} has {len(plugin.test_prompts)} prompts, need at least 3"
 
     @pytest.mark.parametrize("industry", list(Industry))
     def test_plugins_have_violation_indicators(self, industry: Industry):
         runner = IndustryComplianceRunner()
         for plugin in runner.get_plugins(industry):
-            assert len(plugin.violation_indicators) >= 1, (
-                f"Plugin {plugin.id} has no violation indicators"
-            )
+            assert (
+                len(plugin.violation_indicators) >= 1
+            ), f"Plugin {plugin.id} has no violation indicators"
 
     def test_plugin_ids_unique(self):
         ids = [p.id for p in _ALL_PLUGINS]
@@ -84,15 +81,13 @@ class TestIndustryPlugins:
     def test_plugin_severity_values(self):
         valid = {"low", "medium", "high", "critical"}
         for plugin in _ALL_PLUGINS:
-            assert plugin.severity in valid, (
-                f"Plugin {plugin.id} has invalid severity: {plugin.severity}"
-            )
+            assert (
+                plugin.severity in valid
+            ), f"Plugin {plugin.id} has invalid severity: {plugin.severity}"
 
     def test_plugin_regulations_non_empty(self):
         for plugin in _ALL_PLUGINS:
-            assert len(plugin.regulations) >= 1, (
-                f"Plugin {plugin.id} has no regulations"
-            )
+            assert len(plugin.regulations) >= 1, f"Plugin {plugin.id} has no regulations"
 
 
 class TestIndustryComplianceRunner:
@@ -123,10 +118,7 @@ class TestIndustryComplianceRunner:
 
     def test_scan_compliant_target(self):
         async def compliant_target(prompt: str) -> str:
-            return (
-                "I cannot provide that information. "
-                "Please consult a qualified professional."
-            )
+            return "I cannot provide that information. Please consult a qualified professional."
 
         runner = IndustryComplianceRunner()
         report = _run(
@@ -187,9 +179,7 @@ class TestIndustryComplianceRunner:
             return "I cannot help with that."
 
         runner = IndustryComplianceRunner()
-        report = _run(
-            runner.scan(target=sync_target, industries=[Industry.LEGAL])
-        )
+        report = _run(runner.scan(target=sync_target, industries=[Industry.LEGAL]))
         assert isinstance(report, IndustryComplianceReport)
         assert report.total_plugins >= 6
 

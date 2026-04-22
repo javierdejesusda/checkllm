@@ -1,4 +1,5 @@
 """Tests for the checkllm.benchmarks subpackage."""
+
 from __future__ import annotations
 
 import pytest
@@ -15,9 +16,22 @@ from checkllm.benchmarks.runner import BenchmarkResult, BenchmarkSuite
 def test_list_benchmarks_returns_expected_names():
     names = list_benchmarks()
     expected = {
-        "arc", "bbh", "bbq", "boolq", "drop", "gsm8k", "hellaswag",
-        "humaneval", "ifeval", "lambada", "logiqa", "mathqa", "mmlu",
-        "squad", "truthfulqa", "winogrande",
+        "arc",
+        "bbh",
+        "bbq",
+        "boolq",
+        "drop",
+        "gsm8k",
+        "hellaswag",
+        "humaneval",
+        "ifeval",
+        "lambada",
+        "logiqa",
+        "mathqa",
+        "mmlu",
+        "squad",
+        "truthfulqa",
+        "winogrande",
     }
     assert set(names) == expected
 
@@ -85,9 +99,7 @@ def test_load_benchmark_case_insensitive():
 def test_all_benchmarks_have_at_least_15_samples():
     for name in list_benchmarks():
         dataset = load_benchmark(name)
-        assert len(dataset.samples) >= 15, (
-            f"{name} has only {len(dataset.samples)} samples"
-        )
+        assert len(dataset.samples) >= 15, f"{name} has only {len(dataset.samples)} samples"
 
 
 def test_benchmark_result_summary_contains_name_and_accuracy():

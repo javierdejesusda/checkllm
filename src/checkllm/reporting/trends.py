@@ -1,4 +1,5 @@
 """Trend reporting — track scores, pass rates and costs over time."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -60,6 +61,7 @@ class TrendData:
 # ---------------------------------------------------------------------------
 # SVG chart helpers (no external dependencies)
 # ---------------------------------------------------------------------------
+
 
 def _build_line_svg(
     points: list[tuple[str, float]],
@@ -123,17 +125,18 @@ def _build_line_svg(
         f'style="background:#fff;border:1px solid #ddd;border-radius:4px;margin:8px 0">\n'
         f'<text x="{width // 2}" y="20" text-anchor="middle" font-size="14" '
         f'font-weight="bold" fill="#333">{title}</text>\n'
-        f'{gridlines}'
+        f"{gridlines}"
         f'<polyline points="{coords}" fill="none" stroke="#3498db" stroke-width="2" />\n'
-        f'{circles}\n'
-        f'{x_labels}\n'
-        f'</svg>'
+        f"{circles}\n"
+        f"{x_labels}\n"
+        f"</svg>"
     )
 
 
 # ---------------------------------------------------------------------------
 # HTML trend report
 # ---------------------------------------------------------------------------
+
 
 def generate_trend_html(
     data: list[TrendData],
@@ -178,7 +181,13 @@ def generate_trend_html(
     cost_max = max(cost_vals) if cost_vals else 1.0
     cost_points = [(lbl, d.total_cost) for lbl, d in zip(labels, sorted_data)]
     charts.append(
-        _build_line_svg(cost_points, "Total Cost", y_min=0.0, y_max=cost_max * 1.2 if cost_max > 0 else 1.0, fmt=".4f")
+        _build_line_svg(
+            cost_points,
+            "Total Cost",
+            y_min=0.0,
+            y_max=cost_max * 1.2 if cost_max > 0 else 1.0,
+            fmt=".4f",
+        )
     )
 
     # 4. Per-metric charts

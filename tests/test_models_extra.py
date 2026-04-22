@@ -1,7 +1,7 @@
 """Additional tests for checkllm.models covering format_failure branches."""
+
 from __future__ import annotations
 
-import pytest
 
 from checkllm.models import CheckFailedError, CheckResult, JudgeResponse
 
@@ -111,12 +111,20 @@ class TestCheckFailedErrorExtra:
     def test_multiple_failed(self):
         results = [
             CheckResult(
-                passed=False, score=0.1, reasoning="bad1", cost=0.0,
-                latency_ms=0, metric_name="metric1",
+                passed=False,
+                score=0.1,
+                reasoning="bad1",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="metric1",
             ),
             CheckResult(
-                passed=False, score=0.2, reasoning="bad2", cost=0.0,
-                latency_ms=0, metric_name="metric2",
+                passed=False,
+                score=0.2,
+                reasoning="bad2",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="metric2",
             ),
         ]
         error = CheckFailedError(results)

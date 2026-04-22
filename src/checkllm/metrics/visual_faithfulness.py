@@ -8,6 +8,7 @@ This is distinct from the existing ``multimodal_faithfulness`` metric, which
 operates on a text description of the image; ``visual_faithfulness`` sends
 the actual image to a vision-capable judge.
 """
+
 from __future__ import annotations
 
 import time

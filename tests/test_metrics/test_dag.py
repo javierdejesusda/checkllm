@@ -64,7 +64,11 @@ class TestDAGMetric:
         dag = DAGMetric(
             judge=mock_judge,
             nodes=[
-                DAGNode(name="safety", prompt_template="Is this safe? {output}", threshold=0.5),
+                DAGNode(
+                    name="safety",
+                    prompt_template="Is this safe? {output}",
+                    threshold=0.5,
+                ),
             ],
             root="safety",
         )
@@ -82,7 +86,11 @@ class TestDAGMetric:
         dag = DAGMetric(
             judge=mock_judge,
             nodes=[
-                DAGNode(name="safety", prompt_template="Is this safe? {output}", threshold=0.5),
+                DAGNode(
+                    name="safety",
+                    prompt_template="Is this safe? {output}",
+                    threshold=0.5,
+                ),
             ],
             root="safety",
             threshold=0.5,
@@ -93,9 +101,7 @@ class TestDAGMetric:
 
     @pytest.mark.asyncio
     async def test_linear_chain_visits_all_nodes(self, mock_judge):
-        mock_judge.evaluate.return_value = JudgeResponse(
-            score=0.8, reasoning="ok", raw_output=None
-        )
+        mock_judge.evaluate.return_value = JudgeResponse(score=0.8, reasoning="ok", raw_output=None)
         dag = DAGMetric(
             judge=mock_judge,
             nodes=[
@@ -151,7 +157,11 @@ class TestDAGMetric:
                     children_on_fail=["rejection"],
                 ),
                 DAGNode(name="quality", prompt_template="Quality? {output}", threshold=0.5),
-                DAGNode(name="rejection", prompt_template="Rejection? {output}", threshold=0.5),
+                DAGNode(
+                    name="rejection",
+                    prompt_template="Rejection? {output}",
+                    threshold=0.5,
+                ),
             ],
             root="safety",
         )
@@ -187,7 +197,11 @@ class TestDAGMetric:
                     children_on_fail=["rejection"],
                 ),
                 DAGNode(name="quality", prompt_template="Quality? {output}", threshold=0.5),
-                DAGNode(name="rejection", prompt_template="Rejection? {output}", threshold=0.5),
+                DAGNode(
+                    name="rejection",
+                    prompt_template="Rejection? {output}",
+                    threshold=0.5,
+                ),
             ],
             root="safety",
         )
@@ -238,9 +252,7 @@ class TestDAGMetric:
     @pytest.mark.asyncio
     async def test_no_cycles_visited_twice(self, mock_judge):
         """A node already visited should not be evaluated again."""
-        mock_judge.evaluate.return_value = JudgeResponse(
-            score=0.8, reasoning="ok", raw_output=None
-        )
+        mock_judge.evaluate.return_value = JudgeResponse(score=0.8, reasoning="ok", raw_output=None)
         dag = DAGMetric(
             judge=mock_judge,
             nodes=[
@@ -280,13 +292,15 @@ class TestDAGMetric:
 
     @pytest.mark.asyncio
     async def test_output_placeholder_substituted(self, mock_judge):
-        mock_judge.evaluate.return_value = JudgeResponse(
-            score=0.8, reasoning="ok", raw_output=None
-        )
+        mock_judge.evaluate.return_value = JudgeResponse(score=0.8, reasoning="ok", raw_output=None)
         dag = DAGMetric(
             judge=mock_judge,
             nodes=[
-                DAGNode(name="node", prompt_template="Evaluate this: {output}", threshold=0.5),
+                DAGNode(
+                    name="node",
+                    prompt_template="Evaluate this: {output}",
+                    threshold=0.5,
+                ),
             ],
             root="node",
         )
@@ -296,9 +310,7 @@ class TestDAGMetric:
 
     @pytest.mark.asyncio
     async def test_result_includes_pass_fail_label(self, mock_judge):
-        mock_judge.evaluate.return_value = JudgeResponse(
-            score=0.6, reasoning="ok", raw_output=None
-        )
+        mock_judge.evaluate.return_value = JudgeResponse(score=0.6, reasoning="ok", raw_output=None)
         dag = DAGMetric(
             judge=mock_judge,
             nodes=[
@@ -311,9 +323,7 @@ class TestDAGMetric:
 
     @pytest.mark.asyncio
     async def test_latency_ms_is_non_negative(self, mock_judge):
-        mock_judge.evaluate.return_value = JudgeResponse(
-            score=0.7, reasoning="ok", raw_output=None
-        )
+        mock_judge.evaluate.return_value = JudgeResponse(score=0.7, reasoning="ok", raw_output=None)
         dag = DAGMetric(
             judge=mock_judge,
             nodes=[

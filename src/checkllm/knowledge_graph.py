@@ -141,9 +141,7 @@ class KnowledgeGraph(BaseModel):
 
         return [n for n in self.nodes if n.id in neighbor_ids]
 
-    def get_connected_chunks(
-        self, node_id: str, max_hops: int = 2
-    ) -> list[KGNode]:
+    def get_connected_chunks(self, node_id: str, max_hops: int = 2) -> list[KGNode]:
         """Return chunk nodes reachable within max_hops from node_id.
 
         Uses breadth-first search to find all chunk-type nodes within the
@@ -187,11 +185,7 @@ class KnowledgeGraph(BaseModel):
         """
         id_set = set(node_ids)
         sub_nodes = [n for n in self.nodes if n.id in id_set]
-        sub_edges = [
-            e
-            for e in self.edges
-            if e.source_id in id_set and e.target_id in id_set
-        ]
+        sub_edges = [e for e in self.edges if e.source_id in id_set and e.target_id in id_set]
         return KnowledgeGraph(nodes=sub_nodes, edges=sub_edges)
 
     def get_nodes_by_type(self, node_type: str) -> list[KGNode]:
@@ -214,9 +208,7 @@ class BaseTransform(ABC):
     """
 
     @abstractmethod
-    async def apply(
-        self, kg: KnowledgeGraph, judge: JudgeBackend | None = None
-    ) -> KnowledgeGraph:
+    async def apply(self, kg: KnowledgeGraph, judge: JudgeBackend | None = None) -> KnowledgeGraph:
         """Apply this transform to the knowledge graph.
 
         Args:
@@ -247,9 +239,7 @@ class EntityExtractor(BaseTransform):
         (r"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b", "email"),
     ]
 
-    async def apply(
-        self, kg: KnowledgeGraph, judge: JudgeBackend | None = None
-    ) -> KnowledgeGraph:
+    async def apply(self, kg: KnowledgeGraph, judge: JudgeBackend | None = None) -> KnowledgeGraph:
         """Extract entities from chunk nodes and add them to the graph.
 
         For each chunk node, applies regex patterns to find entities, creates
@@ -288,9 +278,7 @@ class EntityExtractor(BaseTransform):
                         existing_entities[match_text] = entity_id
 
                     already_linked = any(
-                        e.source_id == chunk.id
-                        and e.target_id == entity_id
-                        for e in kg.edges
+                        e.source_id == chunk.id and e.target_id == entity_id for e in kg.edges
                     )
                     if not already_linked:
                         kg.add_edge(
@@ -307,9 +295,7 @@ class EntityExtractor(BaseTransform):
 class ThemeExtractor(BaseTransform):
     """Extract themes/topics from chunks using an LLM, add as concept nodes."""
 
-    async def apply(
-        self, kg: KnowledgeGraph, judge: JudgeBackend | None = None
-    ) -> KnowledgeGraph:
+    async def apply(self, kg: KnowledgeGraph, judge: JudgeBackend | None = None) -> KnowledgeGraph:
         """Extract themes from chunk nodes using the LLM judge.
 
         For each chunk node, asks the LLM to identify 3-5 themes, creates
@@ -378,9 +364,7 @@ class ThemeExtractor(BaseTransform):
 class SummaryExtractor(BaseTransform):
     """Generate summaries for document nodes using an LLM."""
 
-    async def apply(
-        self, kg: KnowledgeGraph, judge: JudgeBackend | None = None
-    ) -> KnowledgeGraph:
+    async def apply(self, kg: KnowledgeGraph, judge: JudgeBackend | None = None) -> KnowledgeGraph:
         """Generate summaries for document-type nodes.
 
         Calls the LLM to produce a concise summary for each document node
@@ -430,9 +414,7 @@ class KeyphraseExtractor(BaseTransform):
         self.max_phrases = max_phrases
         self.min_word_length = min_word_length
 
-    async def apply(
-        self, kg: KnowledgeGraph, judge: JudgeBackend | None = None
-    ) -> KnowledgeGraph:
+    async def apply(self, kg: KnowledgeGraph, judge: JudgeBackend | None = None) -> KnowledgeGraph:
         """Extract key phrases from chunk nodes and store them in metadata.
 
         Uses a simplified TF-IDF approach: for each chunk, scores words by
@@ -496,9 +478,7 @@ class SentenceSplitter(BaseTransform):
         self.min_tokens = min_tokens
         self.max_tokens = max_tokens
 
-    async def apply(
-        self, kg: KnowledgeGraph, judge: JudgeBackend | None = None
-    ) -> KnowledgeGraph:
+    async def apply(self, kg: KnowledgeGraph, judge: JudgeBackend | None = None) -> KnowledgeGraph:
         """Split document nodes into chunk nodes.
 
         Splits each document node into sentences, groups them to meet the
@@ -582,9 +562,7 @@ class HeadlineSplitter(BaseTransform):
         r"(?:^|\n)(?:#{1,6}\s+.+|<h[1-6][^>]*>.*?</h[1-6]>)", re.IGNORECASE
     )
 
-    async def apply(
-        self, kg: KnowledgeGraph, judge: JudgeBackend | None = None
-    ) -> KnowledgeGraph:
+    async def apply(self, kg: KnowledgeGraph, judge: JudgeBackend | None = None) -> KnowledgeGraph:
         """Split document nodes by headline boundaries.
 
         Finds markdown or HTML headers in each document node and creates
@@ -663,9 +641,7 @@ class SimilarityBuilder(BaseTransform):
     def __init__(self, threshold: float = 0.3) -> None:
         self.threshold = threshold
 
-    async def apply(
-        self, kg: KnowledgeGraph, judge: JudgeBackend | None = None
-    ) -> KnowledgeGraph:
+    async def apply(self, kg: KnowledgeGraph, judge: JudgeBackend | None = None) -> KnowledgeGraph:
         """Add similarity edges between chunk nodes.
 
         Computes pairwise Jaccard similarity between all chunk node pairs
@@ -710,9 +686,7 @@ class OverlapBuilder(BaseTransform):
     def __init__(self, min_shared: int = 2) -> None:
         self.min_shared = min_shared
 
-    async def apply(
-        self, kg: KnowledgeGraph, judge: JudgeBackend | None = None
-    ) -> KnowledgeGraph:
+    async def apply(self, kg: KnowledgeGraph, judge: JudgeBackend | None = None) -> KnowledgeGraph:
         """Add overlap edges between chunk nodes sharing keyphrases.
 
         Compares keyphrase lists on chunk nodes and creates 'related_to'
@@ -867,9 +841,7 @@ class SingleHopSynthesizer(BaseSynthesizer):
         for i in range(num_samples):
             chunk = chunks[i % len(chunks)]
             tasks.append(
-                asyncio.ensure_future(
-                    self._generate_one(judge, chunk, persona, style, length)
-                )
+                asyncio.ensure_future(self._generate_one(judge, chunk, persona, style, length))
             )
 
         results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -982,9 +954,7 @@ class MultiHopAbstractSynthesizer(BaseSynthesizer):
         for i in range(num_samples):
             pair = pairs[i % len(pairs)]
             tasks.append(
-                asyncio.ensure_future(
-                    self._generate_one(judge, pair, persona, style, length)
-                )
+                asyncio.ensure_future(self._generate_one(judge, pair, persona, style, length))
             )
 
         results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -1099,9 +1069,7 @@ class MultiHopSpecificSynthesizer(BaseSynthesizer):
         for i in range(num_samples):
             pair = pairs[i % len(pairs)]
             tasks.append(
-                asyncio.ensure_future(
-                    self._generate_one(judge, pair, persona, style, length)
-                )
+                asyncio.ensure_future(self._generate_one(judge, pair, persona, style, length))
             )
 
         results = await asyncio.gather(*tasks, return_exceptions=True)
@@ -1261,9 +1229,7 @@ class KGTestGenerator:
 
         return kg
 
-    async def generate_personas(
-        self, kg: KnowledgeGraph, num_personas: int = 5
-    ) -> list[Persona]:
+    async def generate_personas(self, kg: KnowledgeGraph, num_personas: int = 5) -> list[Persona]:
         """Auto-generate diverse personas based on the knowledge graph content.
 
         Asks the LLM to create personas that vary in expertise level and
@@ -1278,9 +1244,7 @@ class KGTestGenerator:
             A list of Persona objects.
         """
         chunk_nodes = kg.get_nodes_by_type("chunk")
-        sample_content = " ".join(
-            c.content[:200] for c in chunk_nodes[:5]
-        )
+        sample_content = " ".join(c.content[:200] for c in chunk_nodes[:5])
 
         prompt = (
             f"Based on the following content samples, generate {num_personas} "
@@ -1305,9 +1269,7 @@ class KGTestGenerator:
                     Persona(
                         name=str(p.get("name", "User")),
                         description=str(p.get("description", "")),
-                        expertise_level=str(
-                            p.get("expertise_level", "intermediate")
-                        ),
+                        expertise_level=str(p.get("expertise_level", "intermediate")),
                     )
                 )
             return personas
@@ -1398,9 +1360,7 @@ class KGTestGenerator:
             if persona_list:
                 persona = persona_list[len(all_samples) % len(persona_list)]
 
-            samples = await synth.synthesize(
-                kg, self.judge, count, persona, style, length
-            )
+            samples = await synth.synthesize(kg, self.judge, count, persona, style, length)
             all_samples.extend(samples)
 
         logger.info(
@@ -1431,9 +1391,7 @@ class KGTestGenerator:
                 "length": sample.length.value,
                 "source_nodes": sample.source_nodes,
                 "strategy": "knowledge_graph_v2",
-                "difficulty": (
-                    "easy" if sample.query_type == "single_hop" else "medium"
-                ),
+                "difficulty": ("easy" if sample.query_type == "single_hop" else "medium"),
             }
             if sample.persona:
                 metadata["persona"] = sample.persona.name
@@ -1463,7 +1421,7 @@ def _strip_code_fences(text: str) -> str:
     text = text.strip()
     for fence in ("```json", "```"):
         if text.startswith(fence):
-            text = text[len(fence):]
+            text = text[len(fence) :]
         if text.endswith("```"):
             text = text[:-3]
     return text.strip()
@@ -1530,12 +1488,8 @@ def _style_instruction(style: QueryStyle) -> str:
         QueryStyle.WEB_SEARCH: (
             "Write the question as a web search query (short, keyword-style). "
         ),
-        QueryStyle.MISSPELLED: (
-            "Include 1-2 realistic typos or misspellings in the question. "
-        ),
-        QueryStyle.CONVERSATIONAL: (
-            "Write the question in a casual, conversational tone. "
-        ),
+        QueryStyle.MISSPELLED: ("Include 1-2 realistic typos or misspellings in the question. "),
+        QueryStyle.CONVERSATIONAL: ("Write the question in a casual, conversational tone. "),
     }
     return instructions.get(style, "")
 
@@ -1584,9 +1538,7 @@ def _get_chunk_pairs(kg: KnowledgeGraph) -> list[tuple[KGNode, KGNode]]:
             )
             if key not in seen:
                 seen.add(key)
-                pairs.append(
-                    (chunk_map[edge.source_id], chunk_map[edge.target_id])
-                )
+                pairs.append((chunk_map[edge.source_id], chunk_map[edge.target_id]))
 
     if not pairs and len(chunks) >= 2:
         for i in range(0, len(chunks) - 1, 2):

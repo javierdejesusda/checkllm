@@ -26,6 +26,7 @@ Environment variables:
 
 Install with ``pip install checkllm[datadog]``.
 """
+
 from __future__ import annotations
 
 import logging

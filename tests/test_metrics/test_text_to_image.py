@@ -57,9 +57,7 @@ class TestTextToImageMetric:
 
     @pytest.mark.asyncio
     async def test_prompt_contains_inputs(self, mock_judge):
-        mock_judge.evaluate.return_value = JudgeResponse(
-            score=0.9, reasoning="ok", raw_output=""
-        )
+        mock_judge.evaluate.return_value = JudgeResponse(score=0.9, reasoning="ok", raw_output="")
         metric = TextToImageMetric(judge=mock_judge, threshold=0.8)
         await metric.evaluate(
             image_description="test generated image",

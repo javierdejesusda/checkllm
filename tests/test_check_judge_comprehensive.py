@@ -28,7 +28,9 @@ def _conv():
 
 class TestHallucination:
     def test_basic(self):
-        result = _c().hallucination("The sky is blue.", "The sky is blue because of Rayleigh scattering.")
+        result = _c().hallucination(
+            "The sky is blue.", "The sky is blue because of Rayleigh scattering."
+        )
         assert isinstance(result, CheckResult)
         assert result.metric_name == "hallucination"
         assert result.passed is True
@@ -57,7 +59,6 @@ class TestRelevance:
         assert result.metric_name == "relevance"
 
 
-
 class TestToxicity:
     def test_basic(self):
         result = _c().toxicity("This is a helpful response.")
@@ -73,10 +74,11 @@ class TestToxicity:
         assert result.metric_name == "toxicity"
 
 
-
 class TestRubric:
     def test_basic(self):
-        result = _c().rubric("The answer covers all required topics.", "Must address the main question.")
+        result = _c().rubric(
+            "The answer covers all required topics.", "Must address the main question."
+        )
         assert result.metric_name == "rubric"
         assert result.passed is True
 
@@ -87,7 +89,6 @@ class TestRubric:
     def test_with_system_prompt(self):
         result = _c().rubric("output", "criteria", system_prompt="custom")
         assert result.metric_name == "rubric"
-
 
 
 class TestFluency:
@@ -101,7 +102,6 @@ class TestFluency:
         assert result.metric_name == "fluency"
 
 
-
 class TestCoherence:
     def test_basic(self):
         result = _c().coherence("The argument flows logically from premise to conclusion.")
@@ -111,7 +111,6 @@ class TestCoherence:
     def test_with_system_prompt(self):
         result = _c().coherence("output", system_prompt="custom")
         assert result.metric_name == "coherence"
-
 
 
 class TestSentiment:
@@ -124,7 +123,6 @@ class TestSentiment:
         assert result.metric_name == "sentiment"
 
 
-
 class TestCorrectness:
     def test_basic(self):
         result = _c().correctness("Paris is the capital of France.", "Paris")
@@ -134,7 +132,6 @@ class TestCorrectness:
     def test_with_system_prompt(self):
         result = _c().correctness("output", "expected", system_prompt="custom")
         assert result.metric_name == "correctness"
-
 
 
 class TestFaithfulness:
@@ -156,7 +153,6 @@ class TestFaithfulness:
         assert result.metric_name == "faithfulness"
 
 
-
 class TestContextRelevance:
     def test_basic(self):
         result = _c().context_relevance("Relevant context text.", "What is the context about?")
@@ -168,17 +164,17 @@ class TestContextRelevance:
         assert result.metric_name == "context_relevance"
 
 
-
 class TestAnswerCompleteness:
     def test_basic(self):
-        result = _c().answer_completeness("A complete answer addressing all parts.", "What are the key points?")
+        result = _c().answer_completeness(
+            "A complete answer addressing all parts.", "What are the key points?"
+        )
         assert result.metric_name == "answer_completeness"
         assert result.passed is True
 
     def test_with_system_prompt(self):
         result = _c().answer_completeness("output", "query", system_prompt="custom")
         assert result.metric_name == "answer_completeness"
-
 
 
 class TestInstructionFollowing:
@@ -192,17 +188,17 @@ class TestInstructionFollowing:
         assert result.metric_name == "instruction_following"
 
 
-
 class TestSummarization:
     def test_basic(self):
-        result = _c().summarization("A brief summary.", "A very long document with lots of content.")
+        result = _c().summarization(
+            "A brief summary.", "A very long document with lots of content."
+        )
         assert result.metric_name == "summarization"
         assert result.passed is True
 
     def test_with_system_prompt(self):
         result = _c().summarization("output", "source", system_prompt="custom")
         assert result.metric_name == "summarization"
-
 
 
 class TestBias:
@@ -224,7 +220,6 @@ class TestBias:
         assert result.metric_name == "bias"
 
 
-
 class TestConsistency:
     def test_basic(self):
         result = _c().consistency(["Paris is the capital.", "The capital is Paris."])
@@ -236,17 +231,17 @@ class TestConsistency:
         assert result.metric_name == "consistency"
 
 
-
 class TestGroundedness:
     def test_basic(self):
-        result = _c().groundedness("The paper states X.", ["Source A: X is true.", "Source B: X confirmed."])
+        result = _c().groundedness(
+            "The paper states X.", ["Source A: X is true.", "Source B: X confirmed."]
+        )
         assert result.metric_name == "groundedness"
         assert result.passed is True
 
     def test_with_system_prompt(self):
         result = _c().groundedness("output", ["src1", "src2"], system_prompt="custom")
         assert result.metric_name == "groundedness"
-
 
 
 class TestGEval:
@@ -280,7 +275,9 @@ class TestContextualPrecision:
         assert result.passed is True
 
     def test_with_system_prompt(self):
-        result = _c().contextual_precision("out", ["ctx"], "query", "expected", system_prompt="custom")
+        result = _c().contextual_precision(
+            "out", ["ctx"], "query", "expected", system_prompt="custom"
+        )
         assert result.metric_name == "contextual_precision"
 
 
@@ -299,15 +296,18 @@ class TestContextualRecall:
         assert result.metric_name == "contextual_recall"
 
 
-
 class TestTaskCompletion:
     def test_basic(self):
-        result = _c().task_completion("Task completed successfully.", "Write a hello world program.")
+        result = _c().task_completion(
+            "Task completed successfully.", "Write a hello world program."
+        )
         assert result.metric_name == "task_completion"
         assert result.passed is True
 
     def test_with_constraints(self):
-        result = _c().task_completion("output", "task", constraints=["Must be in Python", "No imports"])
+        result = _c().task_completion(
+            "output", "task", constraints=["Must be in Python", "No imports"]
+        )
         assert result.metric_name == "task_completion"
 
     def test_without_constraints(self):
@@ -317,9 +317,6 @@ class TestTaskCompletion:
     def test_with_system_prompt(self):
         result = _c().task_completion("output", "task", system_prompt="custom")
         assert result.metric_name == "task_completion"
-
-
-
 
 
 class TestRoleAdherence:
@@ -390,7 +387,6 @@ class TestPlanQuality:
         assert result.metric_name == "plan_quality"
 
 
-
 class TestGoalAccuracy:
     def test_basic(self):
         result = _c().goal_accuracy("The goal was achieved.", "Achieve a passing score.")
@@ -400,7 +396,6 @@ class TestGoalAccuracy:
     def test_with_system_prompt(self):
         result = _c().goal_accuracy("output", "goal", system_prompt="custom")
         assert result.metric_name == "goal_accuracy"
-
 
 
 class TestStepEfficiency:
@@ -414,7 +409,6 @@ class TestStepEfficiency:
         assert result.metric_name == "step_efficiency"
 
 
-
 class TestArgumentCorrectness:
     def test_basic(self):
         result = _c().argument_correctness("search(q=test)", "search(q=test)")
@@ -424,7 +418,6 @@ class TestArgumentCorrectness:
     def test_with_system_prompt(self):
         result = _c().argument_correctness("tool_calls", "expected_calls", system_prompt="custom")
         assert result.metric_name == "argument_correctness"
-
 
 
 class TestPlanAdherence:
@@ -438,7 +431,6 @@ class TestPlanAdherence:
         assert result.metric_name == "plan_adherence"
 
 
-
 class TestPIIDetection:
     def test_basic(self):
         result = _c().pii_detection("The weather today is sunny.")
@@ -448,7 +440,6 @@ class TestPIIDetection:
     def test_with_system_prompt(self):
         result = _c().pii_detection("output", system_prompt="custom")
         assert result.metric_name == "pii_detection"
-
 
 
 class TestMisuseDetection:
@@ -462,10 +453,11 @@ class TestMisuseDetection:
         assert result.metric_name == "misuse_detection"
 
 
-
 class TestRoleViolation:
     def test_basic(self):
-        result = _c().role_violation("I will help you as a customer service agent.", "customer service agent")
+        result = _c().role_violation(
+            "I will help you as a customer service agent.", "customer service agent"
+        )
         assert result.metric_name == "role_violation"
         assert result.passed is True
 
@@ -474,10 +466,12 @@ class TestRoleViolation:
         assert result.metric_name == "role_violation"
 
 
-
 class TestImageCoherence:
     def test_basic(self):
-        result = _c().image_coherence("A photo of a sunset over the ocean.", "Article about tropical destinations.")
+        result = _c().image_coherence(
+            "A photo of a sunset over the ocean.",
+            "Article about tropical destinations.",
+        )
         assert result.metric_name == "image_coherence"
         assert result.passed is True
 
@@ -486,17 +480,17 @@ class TestImageCoherence:
         assert result.metric_name == "image_coherence"
 
 
-
 class TestImageHelpfulness:
     def test_basic(self):
-        result = _c().image_helpfulness("A diagram showing the architecture.", "Explain the system design.")
+        result = _c().image_helpfulness(
+            "A diagram showing the architecture.", "Explain the system design."
+        )
         assert result.metric_name == "image_helpfulness"
         assert result.passed is True
 
     def test_with_system_prompt(self):
         result = _c().image_helpfulness("img desc", "query", system_prompt="custom")
         assert result.metric_name == "image_helpfulness"
-
 
 
 class TestImageRelevance:
@@ -510,7 +504,6 @@ class TestImageRelevance:
         assert result.metric_name == "image_relevance"
 
 
-
 class TestTextToImage:
     def test_basic(self):
         result = _c().text_to_image("A bright red apple on a white background.", "red apple")
@@ -522,10 +515,11 @@ class TestTextToImage:
         assert result.metric_name == "text_to_image"
 
 
-
 class TestFactualCorrectness:
     def test_basic(self):
-        result = _c().factual_correctness("Water is H2O.", "Water is composed of hydrogen and oxygen.")
+        result = _c().factual_correctness(
+            "Water is H2O.", "Water is composed of hydrogen and oxygen."
+        )
         assert result.metric_name == "factual_correctness"
         assert result.passed is True
 
@@ -534,10 +528,11 @@ class TestFactualCorrectness:
         assert result.metric_name == "factual_correctness"
 
 
-
 class TestContextEntityRecall:
     def test_basic(self):
-        result = _c().context_entity_recall("The Eiffel Tower is in Paris.", "Paris, Eiffel Tower, France")
+        result = _c().context_entity_recall(
+            "The Eiffel Tower is in Paris.", "Paris, Eiffel Tower, France"
+        )
         assert result.metric_name == "context_entity_recall"
         assert result.passed is True
 
@@ -546,10 +541,11 @@ class TestContextEntityRecall:
         assert result.metric_name == "context_entity_recall"
 
 
-
 class TestTopicAdherence:
     def test_basic(self):
-        result = _c().topic_adherence("Python is great for machine learning.", ["programming", "machine learning"])
+        result = _c().topic_adherence(
+            "Python is great for machine learning.", ["programming", "machine learning"]
+        )
         assert result.metric_name == "topic_adherence"
         assert result.passed is True
 
@@ -558,17 +554,17 @@ class TestTopicAdherence:
         assert result.metric_name == "topic_adherence"
 
 
-
 class TestResponseCompleteness:
     def test_basic(self):
-        result = _c().response_completeness("This answer covers all aspects of the question.", "What is Python?")
+        result = _c().response_completeness(
+            "This answer covers all aspects of the question.", "What is Python?"
+        )
         assert result.metric_name == "response_completeness"
         assert result.passed is True
 
     def test_with_system_prompt(self):
         result = _c().response_completeness("output", "query", system_prompt="custom")
         assert result.metric_name == "response_completeness"
-
 
 
 class TestCodeCorrectness:
@@ -631,9 +627,7 @@ class TestMCPTaskCompletion:
         assert result.passed is True
 
     def test_with_system_prompt(self):
-        result = _c().mcp_task_completion(
-            "output", "task", ["tool1"], system_prompt="custom"
-        )
+        result = _c().mcp_task_completion("output", "task", ["tool1"], system_prompt="custom")
         assert result.metric_name == "mcp_task_completion"
 
 
@@ -649,9 +643,7 @@ class TestMCPUse:
         assert result.passed is True
 
     def test_with_system_prompt(self):
-        result = _c().mcp_use(
-            "output", ["t1"], ["t1"], "query", system_prompt="custom"
-        )
+        result = _c().mcp_use("output", ["t1"], ["t1"], "query", system_prompt="custom")
         assert result.metric_name == "mcp_use"
 
 
@@ -666,9 +658,7 @@ class TestMultiTurnMCPUse:
         assert result.passed is True
 
     def test_with_system_prompt(self):
-        result = _c().multi_turn_mcp_use(
-            "trace", ["t1"], ["t1"], system_prompt="custom"
-        )
+        result = _c().multi_turn_mcp_use("trace", ["t1"], ["t1"], system_prompt="custom")
         assert result.metric_name == "multi_turn_mcp_use"
 
 
@@ -742,9 +732,7 @@ class TestInstructionCompleteness:
         assert result.passed is True
 
     def test_with_system_prompt(self):
-        result = _c().instruction_completeness(
-            "output", ["inst1", "inst2"], system_prompt="custom"
-        )
+        result = _c().instruction_completeness("output", ["inst1", "inst2"], system_prompt="custom")
         assert result.metric_name == "instruction_completeness"
 
 
@@ -781,9 +769,7 @@ class TestAsyncHallucination:
     def test_with_threshold(self):
         c = _c(0.6)
         loop = asyncio.new_event_loop()
-        result = loop.run_until_complete(
-            c.ahallucination("output", "context", threshold=0.5)
-        )
+        result = loop.run_until_complete(c.ahallucination("output", "context", threshold=0.5))
         assert result.passed is True
 
 
@@ -834,9 +820,7 @@ class TestAsyncRubric:
     def test_with_threshold(self):
         c = _c(0.8)
         loop = asyncio.new_event_loop()
-        result = loop.run_until_complete(
-            c.arubric("output", "criteria", threshold=0.7)
-        )
+        result = loop.run_until_complete(c.arubric("output", "criteria", threshold=0.7))
         assert result.passed is True
 
 
@@ -853,9 +837,7 @@ class TestAsyncFluency:
     def test_with_system_prompt(self):
         c = _c()
         loop = asyncio.new_event_loop()
-        result = loop.run_until_complete(
-            c.afluency("output", system_prompt="Be strict.")
-        )
+        result = loop.run_until_complete(c.afluency("output", system_prompt="Be strict."))
         assert result.metric_name == "fluency"
 
 
@@ -863,9 +845,7 @@ class TestAsyncCoherence:
     def test_basic(self):
         c = _c()
         loop = asyncio.new_event_loop()
-        result = loop.run_until_complete(
-            c.acoherence("This is a coherent and logical paragraph.")
-        )
+        result = loop.run_until_complete(c.acoherence("This is a coherent and logical paragraph."))
         assert result.metric_name == "coherence"
         assert result.passed is True
 
@@ -880,18 +860,14 @@ class TestAsyncSentiment:
     def test_basic(self):
         c = _c()
         loop = asyncio.new_event_loop()
-        result = loop.run_until_complete(
-            c.asentiment("I love this product! It is amazing.")
-        )
+        result = loop.run_until_complete(c.asentiment("I love this product! It is amazing."))
         assert result.metric_name == "sentiment"
         assert result.passed is True
 
     def test_with_system_prompt(self):
         c = _c()
         loop = asyncio.new_event_loop()
-        result = loop.run_until_complete(
-            c.asentiment("output", system_prompt="custom")
-        )
+        result = loop.run_until_complete(c.asentiment("output", system_prompt="custom"))
         assert result.metric_name == "sentiment"
 
 
@@ -899,18 +875,14 @@ class TestAsyncCorrectness:
     def test_basic(self):
         c = _c()
         loop = asyncio.new_event_loop()
-        result = loop.run_until_complete(
-            c.acorrectness("Paris", "What is the capital of France?")
-        )
+        result = loop.run_until_complete(c.acorrectness("Paris", "What is the capital of France?"))
         assert result.metric_name == "correctness"
         assert result.passed is True
 
     def test_with_threshold(self):
         c = _c(0.8)
         loop = asyncio.new_event_loop()
-        result = loop.run_until_complete(
-            c.acorrectness("output", "expected", threshold=0.7)
-        )
+        result = loop.run_until_complete(c.acorrectness("output", "expected", threshold=0.7))
         assert result.passed is True
 
 

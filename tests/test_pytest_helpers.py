@@ -1,4 +1,5 @@
 """Tests for pytest helper fixtures."""
+
 from checkllm.pytest_helpers import _BudgetTracker
 from checkllm.check import CheckCollector
 from checkllm.config import CheckllmConfig
@@ -39,9 +40,11 @@ def test_budget_tracker_track_collector():
 def test_shared_judge_fixture_importable():
     """Verify the fixture function exists and is importable."""
     from checkllm.pytest_helpers import shared_judge
+
     assert callable(shared_judge)
 
 
 def test_auto_snapshot_fixture_importable():
     from checkllm.pytest_helpers import auto_snapshot
+
     assert callable(auto_snapshot)

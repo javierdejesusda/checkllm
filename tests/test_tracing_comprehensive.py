@@ -12,7 +12,6 @@ from checkllm.tracing import (
     Tracer,
     asyncio_iscoroutinefunction,
     get_tracer,
-    trace,
 )
 
 

@@ -15,7 +15,9 @@ class TestImageRelevanceMetric:
     @pytest.mark.asyncio
     async def test_pass(self, mock_judge):
         mock_judge.evaluate.return_value = JudgeResponse(
-            score=0.95, reasoning="Image is directly relevant to the topic", raw_output=""
+            score=0.95,
+            reasoning="Image is directly relevant to the topic",
+            raw_output="",
         )
         metric = ImageRelevanceMetric(judge=mock_judge, threshold=0.8)
         result = await metric.evaluate(
@@ -53,9 +55,7 @@ class TestImageRelevanceMetric:
 
     @pytest.mark.asyncio
     async def test_prompt_contains_inputs(self, mock_judge):
-        mock_judge.evaluate.return_value = JudgeResponse(
-            score=0.9, reasoning="ok", raw_output=""
-        )
+        mock_judge.evaluate.return_value = JudgeResponse(score=0.9, reasoning="ok", raw_output="")
         metric = ImageRelevanceMetric(judge=mock_judge, threshold=0.8)
         await metric.evaluate(
             image_description="test image description",

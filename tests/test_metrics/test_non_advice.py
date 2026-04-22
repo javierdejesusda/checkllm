@@ -17,9 +17,7 @@ class TestNonAdviceMetric:
             score=1.0, reasoning="No restricted advice given", raw_output=""
         )
         metric = NonAdviceMetric(judge=mock_judge, threshold=0.8)
-        result = await metric.evaluate(
-            output="I recommend consulting a doctor for your symptoms."
-        )
+        result = await metric.evaluate(output="I recommend consulting a doctor for your symptoms.")
         assert result.passed
         assert result.metric_name == "non_advice"
         assert result.score == 1.0
@@ -51,9 +49,7 @@ class TestNonAdviceMetric:
 
     @pytest.mark.asyncio
     async def test_default_domains_in_prompt(self, mock_judge):
-        mock_judge.evaluate.return_value = JudgeResponse(
-            score=1.0, reasoning="ok", raw_output=""
-        )
+        mock_judge.evaluate.return_value = JudgeResponse(score=1.0, reasoning="ok", raw_output="")
         metric = NonAdviceMetric(judge=mock_judge)
         await metric.evaluate(output="some output text")
         call_args = mock_judge.evaluate.call_args
@@ -64,13 +60,9 @@ class TestNonAdviceMetric:
 
     @pytest.mark.asyncio
     async def test_custom_domains(self, mock_judge):
-        mock_judge.evaluate.return_value = JudgeResponse(
-            score=1.0, reasoning="ok", raw_output=""
-        )
+        mock_judge.evaluate.return_value = JudgeResponse(score=1.0, reasoning="ok", raw_output="")
         metric = NonAdviceMetric(judge=mock_judge)
-        await metric.evaluate(
-            output="some output", restricted_domains=["nutrition", "fitness"]
-        )
+        await metric.evaluate(output="some output", restricted_domains=["nutrition", "fitness"])
         call_args = mock_judge.evaluate.call_args
         prompt = call_args.kwargs["prompt"]
         assert "nutrition" in prompt

@@ -1,4 +1,5 @@
 """Tests for auto-detection integration in CheckCollector."""
+
 from unittest.mock import patch
 import pytest
 from checkllm.check import CheckCollector
@@ -12,6 +13,7 @@ def test_auto_detect_creates_openai_judge():
     with patch.dict("os.environ", {"OPENAI_API_KEY": "sk-test"}, clear=False):
         judge = collector._get_judge()
         from checkllm.judge import OpenAIJudge
+
         assert isinstance(judge, OpenAIJudge)
 
 
@@ -26,6 +28,7 @@ def test_auto_detect_creates_anthropic_judge():
         with patch.dict(sys.modules, {"anthropic": mock_anthropic}):
             judge = collector._get_judge()
             from checkllm.judge import AnthropicJudge
+
             assert isinstance(judge, AnthropicJudge)
 
 
@@ -45,5 +48,6 @@ def test_explicit_backend_skips_auto_detect():
     with patch.dict("os.environ", {"OPENAI_API_KEY": "sk-test"}, clear=False):
         judge = collector._get_judge()
         from checkllm.judge import OpenAIJudge
+
         assert isinstance(judge, OpenAIJudge)
         assert judge.model == "gpt-4o-mini"

@@ -30,14 +30,18 @@ class _StubJudge:
         self.call_count = 0
 
     async def evaluate(
-        self, prompt: str, system_prompt: str | None = None,
+        self,
+        prompt: str,
+        system_prompt: str | None = None,
     ) -> JudgeResponse:
         self.call_count += 1
-        raw = json.dumps({
-            "content": f"{self._content} (variant {self.call_count})",
-            "detection_hint": self._detection_hint,
-            "severity": self._severity,
-        })
+        raw = json.dumps(
+            {
+                "content": f"{self._content} (variant {self.call_count})",
+                "detection_hint": self._detection_hint,
+                "severity": self._severity,
+            }
+        )
         return JudgeResponse(
             score=0.5,
             reasoning="generated",
@@ -50,7 +54,9 @@ class _RawTextJudge:
     """Judge stub that returns non-JSON raw text."""
 
     async def evaluate(
-        self, prompt: str, system_prompt: str | None = None,
+        self,
+        prompt: str,
+        system_prompt: str | None = None,
     ) -> JudgeResponse:
         return JudgeResponse(
             score=0.5,

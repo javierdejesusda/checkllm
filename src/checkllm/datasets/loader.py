@@ -63,7 +63,7 @@ def load_csv_dataset(path: Path) -> list[Case]:
 
 
 def load_dataset(
-    source: Union[Path, str, Callable[..., Generator[Case, None, None]]]
+    source: Union[Path, str, Callable[..., Generator[Case, None, None]]],
 ) -> list[Case]:
     """Load a dataset from a file path (YAML, JSON, CSV) or a generator function."""
     if isinstance(source, (str, Path)):
@@ -75,8 +75,7 @@ def load_dataset(
         if path.suffix == ".csv":
             return load_csv_dataset(path)
         raise ValueError(
-            f"Unsupported dataset file format: {path.suffix}. "
-            "Supported: .yaml, .yml, .json, .csv"
+            f"Unsupported dataset file format: {path.suffix}. Supported: .yaml, .yml, .json, .csv"
         )
     if callable(source):
         return list(source())

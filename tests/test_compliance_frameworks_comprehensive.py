@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import pytest
 
 from checkllm.compliance_frameworks import (
     ComplianceFramework,

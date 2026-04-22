@@ -1,4 +1,5 @@
 """Tests for the sentiment metric."""
+
 from unittest.mock import AsyncMock
 
 import pytest

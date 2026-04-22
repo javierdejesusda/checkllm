@@ -53,9 +53,7 @@ def compare_snapshot(
             if not baseline_scores or not current_scores:
                 continue
 
-            comparison = compare_scores(
-                baseline_scores, current_scores, p_threshold=p_threshold
-            )
+            comparison = compare_scores(baseline_scores, current_scores, p_threshold=p_threshold)
             item = RegressionItem(
                 test_name=test_name,
                 metric_name=metric_name,

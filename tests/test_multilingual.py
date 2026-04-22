@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import json
 import os
 import tempfile
@@ -87,9 +86,7 @@ class TestPromptTemplate:
         template = PromptTemplate(
             name="relevance",
             instruction="Rate the relevance of the answer.",
-            few_shot_examples=[
-                {"input": "What is Python?", "output": "A programming language."}
-            ],
+            few_shot_examples=[{"input": "What is Python?", "output": "A programming language."}],
         )
         assert len(template.few_shot_examples) == 1
 
@@ -120,9 +117,7 @@ class TestPromptAdapter:
         return PromptTemplate(
             name="faithfulness",
             instruction="Rate whether the answer is faithful to the context.",
-            few_shot_examples=[
-                {"input": "Is the sky blue?", "answer": "Yes, the sky is blue."}
-            ],
+            few_shot_examples=[{"input": "Is the sky blue?", "answer": "Yes, the sky is blue."}],
         )
 
     @pytest.mark.asyncio
@@ -199,9 +194,7 @@ class TestPromptAdapter:
 
     @pytest.mark.asyncio
     async def test_detect_language_english(self, adapter):
-        lang = await adapter.detect_language(
-            "This is a longer English sentence with enough words"
-        )
+        lang = await adapter.detect_language("This is a longer English sentence with enough words")
         assert lang == "en"
 
 

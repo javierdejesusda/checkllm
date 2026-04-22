@@ -85,9 +85,7 @@ def _jaro_similarity(s1: str, s2: str) -> float:
             transpositions += 1
         k += 1
 
-    return (
-        matches / len1 + matches / len2 + (matches - transpositions / 2) / matches
-    ) / 3.0
+    return (matches / len1 + matches / len2 + (matches - transpositions / 2) / matches) / 3.0
 
 
 def _jaro_winkler_similarity(s1: str, s2: str, p: float = 0.1) -> float:
@@ -133,7 +131,7 @@ def _levenshtein_ratio(s1: str, s2: str) -> float:
 
 def _flesch_kincaid_grade(text: str) -> float:
     """Compute approximate Flesch-Kincaid Grade Level."""
-    sentences = re.split(r'[.!?]+', text)
+    sentences = re.split(r"[.!?]+", text)
     sentences = [s.strip() for s in sentences if s.strip()]
     if not sentences:
         return 0.0
@@ -143,11 +141,7 @@ def _flesch_kincaid_grade(text: str) -> float:
     syllable_count = sum(_count_syllables(w) for w in words)
     num_sentences = len(sentences)
     num_words = len(words)
-    return (
-        0.39 * (num_words / num_sentences)
-        + 11.8 * (syllable_count / num_words)
-        - 15.59
-    )
+    return 0.39 * (num_words / num_sentences) + 11.8 * (syllable_count / num_words) - 15.59
 
 
 def _count_syllables(word: str) -> int:
@@ -223,7 +217,9 @@ class DeterministicChecks:
             input_preview=output[:200],
         )
 
-    def word_count(self, output: str, min_words: int | None = None, max_words: int | None = None) -> CheckResult:
+    def word_count(
+        self, output: str, min_words: int | None = None, max_words: int | None = None
+    ) -> CheckResult:
         count = len(output.split())
         passed = True
         reasons = [f"Word count: {count}"]
@@ -256,7 +252,9 @@ class DeterministicChecks:
             input_preview=output[:200],
         )
 
-    def char_count(self, output: str, min_chars: int | None = None, max_chars: int | None = None) -> CheckResult:
+    def char_count(
+        self, output: str, min_chars: int | None = None, max_chars: int | None = None
+    ) -> CheckResult:
         count = len(output)
         passed = True
         reasons = [f"Char count: {count}"]
@@ -385,7 +383,13 @@ class DeterministicChecks:
             input_preview=output[:200],
         )
 
-    def similarity(self, output: str, expected: str, threshold: float = 0.8, ignore_case: bool = False) -> CheckResult:
+    def similarity(
+        self,
+        output: str,
+        expected: str,
+        threshold: float = 0.8,
+        ignore_case: bool = False,
+    ) -> CheckResult:
         """Lexical similarity using Levenshtein ratio."""
         a, b = (output.lower(), expected.lower()) if ignore_case else (output, expected)
         ratio = _levenshtein_ratio(a, b)
@@ -401,7 +405,12 @@ class DeterministicChecks:
             threshold=threshold,
         )
 
-    def readability(self, output: str, max_grade: float | None = None, min_grade: float | None = None) -> CheckResult:
+    def readability(
+        self,
+        output: str,
+        max_grade: float | None = None,
+        min_grade: float | None = None,
+    ) -> CheckResult:
         """Flesch-Kincaid Grade Level check."""
         grade = _flesch_kincaid_grade(output)
         passed = True
@@ -440,9 +449,14 @@ class DeterministicChecks:
             input_preview=output[:200],
         )
 
-    def sentence_count(self, output: str, min_sentences: int | None = None, max_sentences: int | None = None) -> CheckResult:
+    def sentence_count(
+        self,
+        output: str,
+        min_sentences: int | None = None,
+        max_sentences: int | None = None,
+    ) -> CheckResult:
         """Count sentences and check against bounds."""
-        sentences = re.split(r'[.!?]+', output)
+        sentences = re.split(r"[.!?]+", output)
         sentences = [s.strip() for s in sentences if s.strip()]
         count = len(sentences)
         passed = True
@@ -489,8 +503,12 @@ class DeterministicChecks:
         else:
             reasoning = f"All {len(substrings)} substrings found"
         return CheckResult(
-            passed=passed, score=score, reasoning=reasoning,
-            cost=0.0, latency_ms=0, metric_name="all_of",
+            passed=passed,
+            score=score,
+            reasoning=reasoning,
+            cost=0.0,
+            latency_ms=0,
+            metric_name="all_of",
             input_preview=output[:200],
         )
 
@@ -504,8 +522,12 @@ class DeterministicChecks:
         else:
             reasoning = f"None of {len(substrings)} substrings found"
         return CheckResult(
-            passed=passed, score=score, reasoning=reasoning,
-            cost=0.0, latency_ms=0, metric_name="any_of",
+            passed=passed,
+            score=score,
+            reasoning=reasoning,
+            cost=0.0,
+            latency_ms=0,
+            metric_name="any_of",
             input_preview=output[:200],
         )
 
@@ -519,8 +541,12 @@ class DeterministicChecks:
         else:
             reasoning = f"None of {len(substrings)} substrings found (good)"
         return CheckResult(
-            passed=passed, score=score, reasoning=reasoning,
-            cost=0.0, latency_ms=0, metric_name="none_of",
+            passed=passed,
+            score=score,
+            reasoning=reasoning,
+            cost=0.0,
+            latency_ms=0,
+            metric_name="none_of",
             input_preview=output[:200],
         )
 
@@ -531,15 +557,22 @@ class DeterministicChecks:
         try:
             json.loads(output)
             return CheckResult(
-                passed=True, score=1.0, reasoning="Valid JSON",
-                cost=0.0, latency_ms=0, metric_name="is_json",
+                passed=True,
+                score=1.0,
+                reasoning="Valid JSON",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="is_json",
                 input_preview=output[:200],
             )
         except json.JSONDecodeError as e:
             return CheckResult(
-                passed=False, score=0.0,
+                passed=False,
+                score=0.0,
                 reasoning=f"Invalid JSON: {e}",
-                cost=0.0, latency_ms=0, metric_name="is_json",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="is_json",
                 input_preview=output[:200],
             )
 
@@ -548,7 +581,7 @@ class DeterministicChecks:
         # Strip common markdown code fences
         code = output.strip()
         if code.startswith("```python"):
-            code = code[len("```python"):]
+            code = code[len("```python") :]
         elif code.startswith("```"):
             code = code[3:]
         if code.endswith("```"):
@@ -558,15 +591,22 @@ class DeterministicChecks:
         try:
             compile(code, "<checkllm>", "exec")
             return CheckResult(
-                passed=True, score=1.0, reasoning="Valid Python syntax",
-                cost=0.0, latency_ms=0, metric_name="is_valid_python",
+                passed=True,
+                score=1.0,
+                reasoning="Valid Python syntax",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="is_valid_python",
                 input_preview=output[:200],
             )
         except SyntaxError as e:
             return CheckResult(
-                passed=False, score=0.0,
+                passed=False,
+                score=0.0,
                 reasoning=f"Syntax error: {e.msg} (line {e.lineno})",
-                cost=0.0, latency_ms=0, metric_name="is_valid_python",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="is_valid_python",
                 input_preview=output[:200],
             )
 
@@ -615,11 +655,116 @@ class DeterministicChecks:
     # --- Language detection (heuristic) ---
 
     _COMMON_WORDS: dict[str, set[str]] = {
-        "en": {"the", "is", "and", "of", "to", "in", "a", "that", "it", "for", "was", "with", "as", "are", "be", "this", "have", "from", "not", "but"},
-        "es": {"el", "la", "de", "en", "y", "que", "es", "un", "los", "del", "las", "por", "con", "una", "para", "no", "se", "su", "al", "lo"},
-        "fr": {"le", "la", "de", "et", "en", "un", "une", "est", "que", "les", "des", "du", "dans", "qui", "pour", "pas", "sur", "ce", "par", "avec"},
-        "de": {"der", "die", "und", "in", "den", "von", "zu", "das", "mit", "sich", "des", "auf", "ist", "ein", "eine", "dem", "nicht", "auch", "es", "ich"},
-        "pt": {"de", "a", "o", "que", "e", "do", "da", "em", "um", "para", "com", "uma", "os", "no", "se", "na", "por", "mais", "as", "dos"},
+        "en": {
+            "the",
+            "is",
+            "and",
+            "of",
+            "to",
+            "in",
+            "a",
+            "that",
+            "it",
+            "for",
+            "was",
+            "with",
+            "as",
+            "are",
+            "be",
+            "this",
+            "have",
+            "from",
+            "not",
+            "but",
+        },
+        "es": {
+            "el",
+            "la",
+            "de",
+            "en",
+            "y",
+            "que",
+            "es",
+            "un",
+            "los",
+            "del",
+            "las",
+            "por",
+            "con",
+            "una",
+            "para",
+            "no",
+            "se",
+            "su",
+            "al",
+            "lo",
+        },
+        "fr": {
+            "le",
+            "la",
+            "de",
+            "et",
+            "en",
+            "un",
+            "une",
+            "est",
+            "que",
+            "les",
+            "des",
+            "du",
+            "dans",
+            "qui",
+            "pour",
+            "pas",
+            "sur",
+            "ce",
+            "par",
+            "avec",
+        },
+        "de": {
+            "der",
+            "die",
+            "und",
+            "in",
+            "den",
+            "von",
+            "zu",
+            "das",
+            "mit",
+            "sich",
+            "des",
+            "auf",
+            "ist",
+            "ein",
+            "eine",
+            "dem",
+            "nicht",
+            "auch",
+            "es",
+            "ich",
+        },
+        "pt": {
+            "de",
+            "a",
+            "o",
+            "que",
+            "e",
+            "do",
+            "da",
+            "em",
+            "um",
+            "para",
+            "com",
+            "uma",
+            "os",
+            "no",
+            "se",
+            "na",
+            "por",
+            "mais",
+            "as",
+            "dos",
+        },
     }
 
     def language(self, output: str, expected: str) -> CheckResult:
@@ -630,17 +775,24 @@ class DeterministicChecks:
         expected = expected.lower()
         if expected not in self._COMMON_WORDS:
             return CheckResult(
-                passed=False, score=0.0,
+                passed=False,
+                score=0.0,
                 reasoning=f"Unsupported language '{expected}'. Supported: {', '.join(sorted(self._COMMON_WORDS))}",
-                cost=0.0, latency_ms=0, metric_name="language",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="language",
                 input_preview=output[:200],
             )
 
         words = set(re.findall(r"\b[a-zA-ZÀ-ÿ]+\b", output.lower()))
         if not words:
             return CheckResult(
-                passed=False, score=0.0, reasoning="No words found in output",
-                cost=0.0, latency_ms=0, metric_name="language",
+                passed=False,
+                score=0.0,
+                reasoning="No words found in output",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="language",
                 input_preview=output[:200],
             )
 
@@ -677,17 +829,27 @@ class DeterministicChecks:
         value = self._extract_number(output)
         if value is None:
             return CheckResult(
-                passed=False, score=0.0,
+                passed=False,
+                score=0.0,
                 reasoning="No number found in output",
-                cost=0.0, latency_ms=0, metric_name="greater_than",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="greater_than",
                 input_preview=output[:200],
             )
         passed = value > threshold
-        score = min(1.0, value / max(abs(threshold), 0.001)) if passed else max(0.0, value / max(abs(threshold), 0.001))
+        score = (
+            min(1.0, value / max(abs(threshold), 0.001))
+            if passed
+            else max(0.0, value / max(abs(threshold), 0.001))
+        )
         return CheckResult(
-            passed=passed, score=min(1.0, max(0.0, score)),
+            passed=passed,
+            score=min(1.0, max(0.0, score)),
             reasoning=f"Value: {value}, must be > {threshold}",
-            cost=0.0, latency_ms=0, metric_name="greater_than",
+            cost=0.0,
+            latency_ms=0,
+            metric_name="greater_than",
             input_preview=output[:200],
         )
 
@@ -696,17 +858,27 @@ class DeterministicChecks:
         value = self._extract_number(output)
         if value is None:
             return CheckResult(
-                passed=False, score=0.0,
+                passed=False,
+                score=0.0,
                 reasoning="No number found in output",
-                cost=0.0, latency_ms=0, metric_name="less_than",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="less_than",
                 input_preview=output[:200],
             )
         passed = value < threshold
-        score = min(1.0, threshold / max(abs(value), 0.001)) if passed else max(0.0, threshold / max(abs(value), 0.001))
+        score = (
+            min(1.0, threshold / max(abs(value), 0.001))
+            if passed
+            else max(0.0, threshold / max(abs(value), 0.001))
+        )
         return CheckResult(
-            passed=passed, score=min(1.0, max(0.0, score)),
+            passed=passed,
+            score=min(1.0, max(0.0, score)),
             reasoning=f"Value: {value}, must be < {threshold}",
-            cost=0.0, latency_ms=0, metric_name="less_than",
+            cost=0.0,
+            latency_ms=0,
+            metric_name="less_than",
             input_preview=output[:200],
         )
 
@@ -715,9 +887,12 @@ class DeterministicChecks:
         value = self._extract_number(output)
         if value is None:
             return CheckResult(
-                passed=False, score=0.0,
+                passed=False,
+                score=0.0,
                 reasoning="No number found in output",
-                cost=0.0, latency_ms=0, metric_name="between",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="between",
                 input_preview=output[:200],
             )
         passed = low <= value <= high
@@ -728,9 +903,12 @@ class DeterministicChecks:
             span = high - low if high > low else 1.0
             score = max(0.0, 1.0 - dist / span)
         return CheckResult(
-            passed=passed, score=score,
+            passed=passed,
+            score=score,
             reasoning=f"Value: {value}, must be in [{low}, {high}]",
-            cost=0.0, latency_ms=0, metric_name="between",
+            cost=0.0,
+            latency_ms=0,
+            metric_name="between",
             input_preview=output[:200],
         )
 
@@ -743,9 +921,12 @@ class DeterministicChecks:
 
         if not output_tokens or not reference_tokens:
             return CheckResult(
-                passed=False, score=0.0,
+                passed=False,
+                score=0.0,
                 reasoning="Empty output or reference",
-                cost=0.0, latency_ms=0, metric_name="bleu",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="bleu",
                 input_preview=output[:200],
                 threshold=threshold,
             )
@@ -755,19 +936,22 @@ class DeterministicChecks:
         max_n = min(4, len(output_tokens))
         if max_n == 0:
             return CheckResult(
-                passed=False, score=0.0,
+                passed=False,
+                score=0.0,
                 reasoning="Output too short to compute BLEU",
-                cost=0.0, latency_ms=0, metric_name="bleu",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="bleu",
                 input_preview=output[:200],
                 threshold=threshold,
             )
 
         for n in range(1, max_n + 1):
             out_ngrams: Counter[tuple[str, ...]] = Counter(
-                tuple(output_tokens[i:i + n]) for i in range(len(output_tokens) - n + 1)
+                tuple(output_tokens[i : i + n]) for i in range(len(output_tokens) - n + 1)
             )
             ref_ngrams: Counter[tuple[str, ...]] = Counter(
-                tuple(reference_tokens[i:i + n]) for i in range(len(reference_tokens) - n + 1)
+                tuple(reference_tokens[i : i + n]) for i in range(len(reference_tokens) - n + 1)
             )
             clipped = {ng: min(count, ref_ngrams.get(ng, 0)) for ng, count in out_ngrams.items()}
             numerator = sum(clipped.values())
@@ -777,9 +961,12 @@ class DeterministicChecks:
                 score = 0.0
                 passed = score >= threshold
                 return CheckResult(
-                    passed=passed, score=score,
+                    passed=passed,
+                    score=score,
                     reasoning=f"BLEU: {score:.4f} (threshold: {threshold}) — zero {n}-gram matches",
-                    cost=0.0, latency_ms=0, metric_name="bleu",
+                    cost=0.0,
+                    latency_ms=0,
+                    metric_name="bleu",
                     input_preview=output[:200],
                     threshold=threshold,
                 )
@@ -794,9 +981,12 @@ class DeterministicChecks:
         score = min(1.0, max(0.0, score))
         passed = score >= threshold
         return CheckResult(
-            passed=passed, score=score,
+            passed=passed,
+            score=score,
             reasoning=f"BLEU: {score:.4f} (threshold: {threshold}, BP: {bp:.4f})",
-            cost=0.0, latency_ms=0, metric_name="bleu",
+            cost=0.0,
+            latency_ms=0,
+            metric_name="bleu",
             input_preview=output[:200],
             threshold=threshold,
         )
@@ -808,9 +998,12 @@ class DeterministicChecks:
 
         if not output_tokens or not reference_tokens:
             return CheckResult(
-                passed=False, score=0.0,
+                passed=False,
+                score=0.0,
                 reasoning="Empty output or reference",
-                cost=0.0, latency_ms=0, metric_name="rouge_l",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="rouge_l",
                 input_preview=output[:200],
                 threshold=threshold,
             )
@@ -840,24 +1033,36 @@ class DeterministicChecks:
         score = min(1.0, max(0.0, f1))
         passed = score >= threshold
         return CheckResult(
-            passed=passed, score=score,
+            passed=passed,
+            score=score,
             reasoning=f"ROUGE-L F1: {score:.4f} (P: {precision:.4f}, R: {recall:.4f}, threshold: {threshold})",
-            cost=0.0, latency_ms=0, metric_name="rouge_l",
+            cost=0.0,
+            latency_ms=0,
+            metric_name="rouge_l",
             input_preview=output[:200],
             threshold=threshold,
         )
 
     # --- JSON field-level assertion ---
 
-    def json_field(self, output: str, field_path: str, expected: Any = None, condition: str | None = None) -> CheckResult:
+    def json_field(
+        self,
+        output: str,
+        field_path: str,
+        expected: Any = None,
+        condition: str | None = None,
+    ) -> CheckResult:
         """JSON field-level assertion with dot-notation navigation and condition support."""
         try:
             data = json.loads(output)
         except json.JSONDecodeError as e:
             return CheckResult(
-                passed=False, score=0.0,
+                passed=False,
+                score=0.0,
                 reasoning=f"Invalid JSON: {e}",
-                cost=0.0, latency_ms=0, metric_name="json_field",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="json_field",
                 input_preview=output[:200],
             )
 
@@ -873,16 +1078,22 @@ class DeterministicChecks:
                     current = current[idx]
                 except (ValueError, IndexError):
                     return CheckResult(
-                        passed=False, score=0.0,
+                        passed=False,
+                        score=0.0,
                         reasoning=f"Field path '{field_path}' not found — invalid list index '{part}'",
-                        cost=0.0, latency_ms=0, metric_name="json_field",
+                        cost=0.0,
+                        latency_ms=0,
+                        metric_name="json_field",
                         input_preview=output[:200],
                     )
             else:
                 return CheckResult(
-                    passed=False, score=0.0,
+                    passed=False,
+                    score=0.0,
                     reasoning=f"Field path '{field_path}' not found at segment '{part}'",
-                    cost=0.0, latency_ms=0, metric_name="json_field",
+                    cost=0.0,
+                    latency_ms=0,
+                    metric_name="json_field",
                     input_preview=output[:200],
                 )
 
@@ -893,17 +1104,23 @@ class DeterministicChecks:
         if expected is not None:
             passed = current == expected
             return CheckResult(
-                passed=passed, score=1.0 if passed else 0.0,
+                passed=passed,
+                score=1.0 if passed else 0.0,
                 reasoning=f"Field '{field_path}' = {current!r}, expected {expected!r}",
-                cost=0.0, latency_ms=0, metric_name="json_field",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="json_field",
                 input_preview=output[:200],
             )
 
         # No condition and no expected — just check that the field exists
         return CheckResult(
-            passed=True, score=1.0,
+            passed=True,
+            score=1.0,
             reasoning=f"Field '{field_path}' exists with value: {current!r}",
-            cost=0.0, latency_ms=0, metric_name="json_field",
+            cost=0.0,
+            latency_ms=0,
+            metric_name="json_field",
             input_preview=output[:200],
         )
 
@@ -912,9 +1129,12 @@ class DeterministicChecks:
         if condition == "exists":
             # If we got here, the field exists
             return CheckResult(
-                passed=True, score=1.0,
+                passed=True,
+                score=1.0,
                 reasoning=f"Field '{field_path}' exists",
-                cost=0.0, latency_ms=0, metric_name="json_field",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="json_field",
             )
         elif condition == "not_empty":
             if value is None:
@@ -924,9 +1144,12 @@ class DeterministicChecks:
             else:
                 passed = True  # Numbers, booleans are considered not empty
             return CheckResult(
-                passed=passed, score=1.0 if passed else 0.0,
+                passed=passed,
+                score=1.0 if passed else 0.0,
                 reasoning=f"Field '{field_path}' {'is not empty' if passed else 'is empty'}: {value!r}",
-                cost=0.0, latency_ms=0, metric_name="json_field",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="json_field",
             )
         elif condition.startswith("gt:"):
             threshold = float(condition[3:])
@@ -934,15 +1157,21 @@ class DeterministicChecks:
                 num_val = float(value)
             except (TypeError, ValueError):
                 return CheckResult(
-                    passed=False, score=0.0,
+                    passed=False,
+                    score=0.0,
                     reasoning=f"Field '{field_path}' value {value!r} is not numeric (condition: {condition})",
-                    cost=0.0, latency_ms=0, metric_name="json_field",
+                    cost=0.0,
+                    latency_ms=0,
+                    metric_name="json_field",
                 )
             passed = num_val > threshold
             return CheckResult(
-                passed=passed, score=1.0 if passed else 0.0,
+                passed=passed,
+                score=1.0 if passed else 0.0,
                 reasoning=f"Field '{field_path}' = {num_val}, {'>' if passed else '<='} {threshold}",
-                cost=0.0, latency_ms=0, metric_name="json_field",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="json_field",
             )
         elif condition.startswith("lt:"):
             threshold = float(condition[3:])
@@ -950,54 +1179,78 @@ class DeterministicChecks:
                 num_val = float(value)
             except (TypeError, ValueError):
                 return CheckResult(
-                    passed=False, score=0.0,
+                    passed=False,
+                    score=0.0,
                     reasoning=f"Field '{field_path}' value {value!r} is not numeric (condition: {condition})",
-                    cost=0.0, latency_ms=0, metric_name="json_field",
+                    cost=0.0,
+                    latency_ms=0,
+                    metric_name="json_field",
                 )
             passed = num_val < threshold
             return CheckResult(
-                passed=passed, score=1.0 if passed else 0.0,
+                passed=passed,
+                score=1.0 if passed else 0.0,
                 reasoning=f"Field '{field_path}' = {num_val}, {'<' if passed else '>='} {threshold}",
-                cost=0.0, latency_ms=0, metric_name="json_field",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="json_field",
             )
         elif condition.startswith("contains:"):
             substr = condition[9:]
             str_val = str(value)
             passed = substr in str_val
             return CheckResult(
-                passed=passed, score=1.0 if passed else 0.0,
+                passed=passed,
+                score=1.0 if passed else 0.0,
                 reasoning=f"Field '{field_path}': '{substr}' {'found' if passed else 'not found'} in {str_val!r}",
-                cost=0.0, latency_ms=0, metric_name="json_field",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="json_field",
             )
         elif condition.startswith("type:"):
             expected_type = condition[5:]
             type_map = {
-                "str": str, "string": str,
-                "int": int, "integer": int,
+                "str": str,
+                "string": str,
+                "int": int,
+                "integer": int,
                 "float": float,
-                "bool": bool, "boolean": bool,
-                "list": list, "array": list,
-                "dict": dict, "object": dict,
-                "none": type(None), "null": type(None),
+                "bool": bool,
+                "boolean": bool,
+                "list": list,
+                "array": list,
+                "dict": dict,
+                "object": dict,
+                "none": type(None),
+                "null": type(None),
             }
             target_type = type_map.get(expected_type)
             if target_type is None:
                 return CheckResult(
-                    passed=False, score=0.0,
+                    passed=False,
+                    score=0.0,
                     reasoning=f"Unknown type '{expected_type}' in condition",
-                    cost=0.0, latency_ms=0, metric_name="json_field",
+                    cost=0.0,
+                    latency_ms=0,
+                    metric_name="json_field",
                 )
             passed = isinstance(value, target_type)
             return CheckResult(
-                passed=passed, score=1.0 if passed else 0.0,
+                passed=passed,
+                score=1.0 if passed else 0.0,
                 reasoning=f"Field '{field_path}' type is {type(value).__name__}, expected {expected_type}",
-                cost=0.0, latency_ms=0, metric_name="json_field",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="json_field",
             )
         else:
             return CheckResult(
-                passed=False, score=0.0,
+                passed=False,
+                score=0.0,
                 reasoning=f"Unknown condition: '{condition}'",
-                cost=0.0, latency_ms=0, metric_name="json_field",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="json_field",
             )
 
     # --- SQL validation ---
@@ -1007,7 +1260,7 @@ class DeterministicChecks:
         # Strip markdown code fences
         code = output.strip()
         if code.startswith("```sql"):
-            code = code[len("```sql"):]
+            code = code[len("```sql") :]
         elif code.startswith("```"):
             code = code[3:]
         if code.endswith("```"):
@@ -1016,9 +1269,12 @@ class DeterministicChecks:
 
         if not code:
             return CheckResult(
-                passed=False, score=0.0,
+                passed=False,
+                score=0.0,
                 reasoning="Empty SQL statement",
-                cost=0.0, latency_ms=0, metric_name="is_valid_sql",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="is_valid_sql",
                 input_preview=output[:200],
             )
 
@@ -1027,9 +1283,9 @@ class DeterministicChecks:
         # Check balanced parentheses
         depth = 0
         for ch in code:
-            if ch == '(':
+            if ch == "(":
                 depth += 1
-            elif ch == ')':
+            elif ch == ")":
                 depth -= 1
             if depth < 0:
                 errors.append("Unbalanced parentheses: extra closing ')'")
@@ -1039,17 +1295,39 @@ class DeterministicChecks:
 
         # Check that it starts with a known SQL keyword
         sql_start_keywords = {
-            "SELECT", "INSERT", "UPDATE", "DELETE", "CREATE", "DROP", "ALTER",
-            "WITH", "MERGE", "REPLACE", "TRUNCATE", "EXPLAIN", "DESCRIBE",
-            "SHOW", "USE", "SET", "BEGIN", "COMMIT", "ROLLBACK", "GRANT",
-            "REVOKE", "EXEC", "EXECUTE", "CALL",
+            "SELECT",
+            "INSERT",
+            "UPDATE",
+            "DELETE",
+            "CREATE",
+            "DROP",
+            "ALTER",
+            "WITH",
+            "MERGE",
+            "REPLACE",
+            "TRUNCATE",
+            "EXPLAIN",
+            "DESCRIBE",
+            "SHOW",
+            "USE",
+            "SET",
+            "BEGIN",
+            "COMMIT",
+            "ROLLBACK",
+            "GRANT",
+            "REVOKE",
+            "EXEC",
+            "EXECUTE",
+            "CALL",
         }
         # Get the first word (uppercase)
-        first_word_match = re.match(r'\s*(\w+)', code, re.IGNORECASE)
+        first_word_match = re.match(r"\s*(\w+)", code, re.IGNORECASE)
         if first_word_match:
             first_word = first_word_match.group(1).upper()
             if first_word not in sql_start_keywords:
-                errors.append(f"Statement does not start with a recognized SQL keyword (found '{first_word}')")
+                errors.append(
+                    f"Statement does not start with a recognized SQL keyword (found '{first_word}')"
+                )
         else:
             errors.append("Could not identify a SQL keyword at the start")
 
@@ -1068,16 +1346,22 @@ class DeterministicChecks:
 
         if errors:
             return CheckResult(
-                passed=False, score=max(0.0, 1.0 - len(errors) * 0.25),
+                passed=False,
+                score=max(0.0, 1.0 - len(errors) * 0.25),
                 reasoning=f"SQL validation errors: {'; '.join(errors)}",
-                cost=0.0, latency_ms=0, metric_name="is_valid_sql",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="is_valid_sql",
                 input_preview=output[:200],
             )
 
         return CheckResult(
-            passed=True, score=1.0,
+            passed=True,
+            score=1.0,
             reasoning="Valid SQL syntax (basic validation passed)",
-            cost=0.0, latency_ms=0, metric_name="is_valid_sql",
+            cost=0.0,
+            latency_ms=0,
+            metric_name="is_valid_sql",
             input_preview=output[:200],
         )
 
@@ -1093,9 +1377,12 @@ class DeterministicChecks:
         """Check for valid markdown structure and optionally require specific elements."""
         if not output.strip():
             return CheckResult(
-                passed=False, score=0.0,
+                passed=False,
+                score=0.0,
                 reasoning="Empty output",
-                cost=0.0, latency_ms=0, metric_name="is_valid_markdown",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="is_valid_markdown",
                 input_preview=output[:200],
             )
 
@@ -1103,15 +1390,15 @@ class DeterministicChecks:
         elements_found: list[str] = []
 
         # Check for headers
-        has_headers = bool(re.search(r'^#{1,6}\s+\S', output, re.MULTILINE))
+        has_headers = bool(re.search(r"^#{1,6}\s+\S", output, re.MULTILINE))
         if has_headers:
             elements_found.append("headers")
         if require_headers and not has_headers:
             errors.append("No headers found (expected at least one)")
 
         # Check for lists (unordered or ordered)
-        has_unordered = bool(re.search(r'^[\s]*[-*+]\s+\S', output, re.MULTILINE))
-        has_ordered = bool(re.search(r'^[\s]*\d+\.\s+\S', output, re.MULTILINE))
+        has_unordered = bool(re.search(r"^[\s]*[-*+]\s+\S", output, re.MULTILINE))
+        has_ordered = bool(re.search(r"^[\s]*\d+\.\s+\S", output, re.MULTILINE))
         has_lists = has_unordered or has_ordered
         if has_lists:
             elements_found.append("lists")
@@ -1119,11 +1406,11 @@ class DeterministicChecks:
             errors.append("No lists found (expected at least one)")
 
         # Check for code blocks (fenced)
-        has_code_blocks = bool(re.search(r'^```', output, re.MULTILINE))
+        has_code_blocks = bool(re.search(r"^```", output, re.MULTILINE))
         if has_code_blocks:
             elements_found.append("code blocks")
             # Check that code blocks are properly closed
-            fence_count = len(re.findall(r'^```', output, re.MULTILINE))
+            fence_count = len(re.findall(r"^```", output, re.MULTILINE))
             if fence_count % 2 != 0:
                 errors.append("Unclosed code block (odd number of ``` fences)")
         if require_code_blocks and not has_code_blocks:
@@ -1141,9 +1428,12 @@ class DeterministicChecks:
             reasoning = f"Valid markdown structure (elements: {found_str})"
 
         return CheckResult(
-            passed=passed, score=score,
+            passed=passed,
+            score=score,
             reasoning=reasoning,
-            cost=0.0, latency_ms=0, metric_name="is_valid_markdown",
+            cost=0.0,
+            latency_ms=0,
+            metric_name="is_valid_markdown",
             input_preview=output[:200],
         )
 
@@ -1162,7 +1452,9 @@ class DeterministicChecks:
             passed=found,
             score=1.0 if found else 0.0,
             reasoning=f"Substring '{substring}' (case-insensitive) {'found' if found else 'not found'} in output",
-            cost=0.0, latency_ms=0, metric_name="icontains",
+            cost=0.0,
+            latency_ms=0,
+            metric_name="icontains",
             input_preview=output[:200],
         )
 
@@ -1185,8 +1477,12 @@ class DeterministicChecks:
         else:
             reasoning = f"None of {len(substrings)} substrings found (case-insensitive)"
         return CheckResult(
-            passed=passed, score=score, reasoning=reasoning,
-            cost=0.0, latency_ms=0, metric_name="icontains_any",
+            passed=passed,
+            score=score,
+            reasoning=reasoning,
+            cost=0.0,
+            latency_ms=0,
+            metric_name="icontains_any",
             input_preview=output[:200],
         )
 
@@ -1210,8 +1506,12 @@ class DeterministicChecks:
         else:
             reasoning = f"All {len(substrings)} substrings found (case-insensitive)"
         return CheckResult(
-            passed=passed, score=score, reasoning=reasoning,
-            cost=0.0, latency_ms=0, metric_name="icontains_all",
+            passed=passed,
+            score=score,
+            reasoning=reasoning,
+            cost=0.0,
+            latency_ms=0,
+            metric_name="icontains_all",
             input_preview=output[:200],
         )
 
@@ -1230,24 +1530,43 @@ class DeterministicChecks:
         text = output.strip()
         if not text:
             return CheckResult(
-                passed=False, score=0.0, reasoning="Empty output",
-                cost=0.0, latency_ms=0, metric_name="is_html",
+                passed=False,
+                score=0.0,
+                reasoning="Empty output",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="is_html",
                 input_preview=output[:200],
             )
 
-        html_tag_pattern = re.compile(r'<(/?)(\w+)(?:\s[^>]*)?\s*(/?)>')
+        html_tag_pattern = re.compile(r"<(/?)(\w+)(?:\s[^>]*)?\s*(/?)>")
         tags = html_tag_pattern.findall(text)
         if not tags:
             return CheckResult(
-                passed=False, score=0.0,
+                passed=False,
+                score=0.0,
                 reasoning="No HTML tags found in output",
-                cost=0.0, latency_ms=0, metric_name="is_html",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="is_html",
                 input_preview=output[:200],
             )
 
         void_elements = {
-            "area", "base", "br", "col", "embed", "hr", "img", "input",
-            "link", "meta", "param", "source", "track", "wbr",
+            "area",
+            "base",
+            "br",
+            "col",
+            "embed",
+            "hr",
+            "img",
+            "input",
+            "link",
+            "meta",
+            "param",
+            "source",
+            "track",
+            "wbr",
         }
         stack: list[str] = []
         for is_closing, tag_name, is_self_closing in tags:
@@ -1257,9 +1576,12 @@ class DeterministicChecks:
             if is_closing:
                 if not stack or stack[-1] != tag_lower:
                     return CheckResult(
-                        passed=False, score=0.0,
+                        passed=False,
+                        score=0.0,
                         reasoning=f"Unbalanced HTML: unexpected closing </{tag_lower}>",
-                        cost=0.0, latency_ms=0, metric_name="is_html",
+                        cost=0.0,
+                        latency_ms=0,
+                        metric_name="is_html",
                         input_preview=output[:200],
                     )
                 stack.pop()
@@ -1268,16 +1590,22 @@ class DeterministicChecks:
 
         if stack:
             return CheckResult(
-                passed=False, score=0.0,
+                passed=False,
+                score=0.0,
                 reasoning=f"Unclosed HTML tags: {', '.join(stack)}",
-                cost=0.0, latency_ms=0, metric_name="is_html",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="is_html",
                 input_preview=output[:200],
             )
 
         return CheckResult(
-            passed=True, score=1.0,
+            passed=True,
+            score=1.0,
             reasoning=f"Valid HTML with {len(tags)} tags, all balanced",
-            cost=0.0, latency_ms=0, metric_name="is_html",
+            cost=0.0,
+            latency_ms=0,
+            metric_name="is_html",
             input_preview=output[:200],
         )
 
@@ -1290,14 +1618,16 @@ class DeterministicChecks:
         Returns:
             CheckResult with pass/fail based on HTML element presence.
         """
-        html_pattern = re.compile(r'<(\w+)(?:\s[^>]*)?\s*/?>|</(\w+)\s*>')
+        html_pattern = re.compile(r"<(\w+)(?:\s[^>]*)?\s*/?>|</(\w+)\s*>")
         matches = html_pattern.findall(output)
         found = len(matches) > 0
         return CheckResult(
             passed=found,
             score=1.0 if found else 0.0,
             reasoning=f"{'Found' if found else 'No'} HTML elements in output ({len(matches)} tags)",
-            cost=0.0, latency_ms=0, metric_name="contains_html",
+            cost=0.0,
+            latency_ms=0,
+            metric_name="contains_html",
             input_preview=output[:200],
         )
 
@@ -1313,23 +1643,33 @@ class DeterministicChecks:
         text = output.strip()
         if not text:
             return CheckResult(
-                passed=False, score=0.0, reasoning="Empty output",
-                cost=0.0, latency_ms=0, metric_name="is_xml",
+                passed=False,
+                score=0.0,
+                reasoning="Empty output",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="is_xml",
                 input_preview=output[:200],
             )
         try:
             ET.fromstring(text)
             return CheckResult(
-                passed=True, score=1.0,
+                passed=True,
+                score=1.0,
                 reasoning="Valid XML document",
-                cost=0.0, latency_ms=0, metric_name="is_xml",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="is_xml",
                 input_preview=output[:200],
             )
         except ET.ParseError as e:
             return CheckResult(
-                passed=False, score=0.0,
+                passed=False,
+                score=0.0,
                 reasoning=f"Invalid XML: {e}",
-                cost=0.0, latency_ms=0, metric_name="is_xml",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="is_xml",
                 input_preview=output[:200],
             )
 
@@ -1342,14 +1682,16 @@ class DeterministicChecks:
         Returns:
             CheckResult with pass/fail based on XML element presence.
         """
-        xml_pattern = re.compile(r'<(\w+)(?:\s[^>]*)?>.*?</\1>', re.DOTALL)
+        xml_pattern = re.compile(r"<(\w+)(?:\s[^>]*)?>.*?</\1>", re.DOTALL)
         match = xml_pattern.search(output)
         found = match is not None
         return CheckResult(
             passed=found,
             score=1.0 if found else 0.0,
             reasoning=f"XML elements {'found' if found else 'not found'} in output",
-            cost=0.0, latency_ms=0, metric_name="contains_xml",
+            cost=0.0,
+            latency_ms=0,
+            metric_name="contains_xml",
             input_preview=output[:200],
         )
 
@@ -1400,7 +1742,9 @@ class DeterministicChecks:
             passed=is_refusal,
             score=1.0 if is_refusal else 0.0,
             reasoning=reasoning,
-            cost=0.0, latency_ms=0, metric_name="is_refusal",
+            cost=0.0,
+            latency_ms=0,
+            metric_name="is_refusal",
             input_preview=output[:200],
         )
 
@@ -1421,9 +1765,12 @@ class DeterministicChecks:
         ratio = _levenshtein_ratio(output, reference)
         passed = ratio >= threshold
         return CheckResult(
-            passed=passed, score=ratio,
+            passed=passed,
+            score=ratio,
             reasoning=f"Levenshtein ratio: {ratio:.4f} (threshold: {threshold})",
-            cost=0.0, latency_ms=0, metric_name="levenshtein",
+            cost=0.0,
+            latency_ms=0,
+            metric_name="levenshtein",
             input_preview=output[:200],
             threshold=threshold,
         )
@@ -1442,23 +1789,43 @@ class DeterministicChecks:
         Returns:
             CheckResult with METEOR-like score.
         """
+
         def simple_stem(word: str) -> str:
             """Approximate English stemming by stripping common suffixes."""
             w = word.lower()
-            for suffix in ("ing", "tion", "sion", "ment", "ness", "able", "ible",
-                           "ful", "less", "ous", "ive", "ly", "ed", "er", "es", "s"):
+            for suffix in (
+                "ing",
+                "tion",
+                "sion",
+                "ment",
+                "ness",
+                "able",
+                "ible",
+                "ful",
+                "less",
+                "ous",
+                "ive",
+                "ly",
+                "ed",
+                "er",
+                "es",
+                "s",
+            ):
                 if w.endswith(suffix) and len(w) - len(suffix) >= 3:
-                    return w[:-len(suffix)]
+                    return w[: -len(suffix)]
             return w
 
-        out_tokens = [simple_stem(w) for w in re.findall(r'\w+', output.lower())]
-        ref_tokens = [simple_stem(w) for w in re.findall(r'\w+', reference.lower())]
+        out_tokens = [simple_stem(w) for w in re.findall(r"\w+", output.lower())]
+        ref_tokens = [simple_stem(w) for w in re.findall(r"\w+", reference.lower())]
 
         if not out_tokens or not ref_tokens:
             return CheckResult(
-                passed=False, score=0.0,
+                passed=False,
+                score=0.0,
                 reasoning="Empty output or reference for METEOR computation",
-                cost=0.0, latency_ms=0, metric_name="meteor",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="meteor",
                 input_preview=output[:200],
                 threshold=threshold,
             )
@@ -1499,9 +1866,12 @@ class DeterministicChecks:
 
         passed = score >= threshold
         return CheckResult(
-            passed=passed, score=score,
+            passed=passed,
+            score=score,
             reasoning=f"METEOR: {score:.4f} (P: {precision:.4f}, R: {recall:.4f}, threshold: {threshold})",
-            cost=0.0, latency_ms=0, metric_name="meteor",
+            cost=0.0,
+            latency_ms=0,
+            metric_name="meteor",
             input_preview=output[:200],
             threshold=threshold,
         )
@@ -1519,12 +1889,15 @@ class DeterministicChecks:
         Returns:
             CheckResult with pseudo-perplexity score.
         """
-        tokens = re.findall(r'\w+', output.lower())
+        tokens = re.findall(r"\w+", output.lower())
         if not tokens:
             return CheckResult(
-                passed=True, score=1.0,
+                passed=True,
+                score=1.0,
                 reasoning="Empty output, perplexity not applicable",
-                cost=0.0, latency_ms=0, metric_name="perplexity_check",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="perplexity_check",
                 input_preview=output[:200],
             )
 
@@ -1541,9 +1914,12 @@ class DeterministicChecks:
         passed = pseudo_perplexity <= max_perplexity
         score = min(1.0, max_perplexity / max(pseudo_perplexity, 0.01)) if not passed else 1.0
         return CheckResult(
-            passed=passed, score=score,
+            passed=passed,
+            score=score,
             reasoning=f"Pseudo-perplexity: {pseudo_perplexity:.2f} (max: {max_perplexity}, vocab diversity: {vocab_diversity:.3f})",
-            cost=0.0, latency_ms=0, metric_name="perplexity_check",
+            cost=0.0,
+            latency_ms=0,
+            metric_name="perplexity_check",
             input_preview=output[:200],
         )
 
@@ -1560,7 +1936,7 @@ class DeterministicChecks:
 
         text = output.strip()
         if text.startswith("```yaml"):
-            text = text[len("```yaml"):]
+            text = text[len("```yaml") :]
         elif text.startswith("```"):
             text = text[3:]
         if text.endswith("```"):
@@ -1569,39 +1945,52 @@ class DeterministicChecks:
 
         if not text:
             return CheckResult(
-                passed=False, score=0.0, reasoning="Empty output",
-                cost=0.0, latency_ms=0, metric_name="is_valid_yaml",
+                passed=False,
+                score=0.0,
+                reasoning="Empty output",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="is_valid_yaml",
                 input_preview=output[:200],
             )
         try:
             result = yaml.safe_load(text)
             if result is None:
                 return CheckResult(
-                    passed=False, score=0.0,
+                    passed=False,
+                    score=0.0,
                     reasoning="YAML parsed as None/empty",
-                    cost=0.0, latency_ms=0, metric_name="is_valid_yaml",
+                    cost=0.0,
+                    latency_ms=0,
+                    metric_name="is_valid_yaml",
                     input_preview=output[:200],
                 )
             return CheckResult(
-                passed=True, score=1.0,
+                passed=True,
+                score=1.0,
                 reasoning=f"Valid YAML (parsed as {type(result).__name__})",
-                cost=0.0, latency_ms=0, metric_name="is_valid_yaml",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="is_valid_yaml",
                 input_preview=output[:200],
             )
         except yaml.YAMLError as e:
             return CheckResult(
-                passed=False, score=0.0,
+                passed=False,
+                score=0.0,
                 reasoning=f"Invalid YAML: {e}",
-                cost=0.0, latency_ms=0, metric_name="is_valid_yaml",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="is_valid_yaml",
                 input_preview=output[:200],
             )
 
     _CITATION_PATTERNS: list[str] = [
-        r'\[\d+\]',
-        r'\(\w[\w\s&.,]+,\s*\d{4}\)',
-        r'\(\w[\w\s&.,]+\s+\d{4}\)',
-        r'\b(?:doi|DOI):\s*\S+',
-        r'https?://\S+',
+        r"\[\d+\]",
+        r"\(\w[\w\s&.,]+,\s*\d{4}\)",
+        r"\(\w[\w\s&.,]+\s+\d{4}\)",
+        r"\b(?:doi|DOI):\s*\S+",
+        r"https?://\S+",
     ]
 
     def has_citations(self, output: str, min_count: int = 1) -> CheckResult:
@@ -1624,9 +2013,12 @@ class DeterministicChecks:
         passed = count >= min_count
         score = min(1.0, count / max(min_count, 1))
         return CheckResult(
-            passed=passed, score=score,
+            passed=passed,
+            score=score,
             reasoning=f"Found {count} citation(s), minimum required: {min_count}",
-            cost=0.0, latency_ms=0, metric_name="has_citations",
+            cost=0.0,
+            latency_ms=0,
+            metric_name="has_citations",
             input_preview=output[:200],
         )
 
@@ -1646,9 +2038,12 @@ class DeterministicChecks:
         tokens = output.lower().split()
         if len(tokens) < 3:
             return CheckResult(
-                passed=True, score=1.0,
+                passed=True,
+                score=1.0,
                 reasoning="Output too short for repetition analysis",
-                cost=0.0, latency_ms=0, metric_name="no_repetition",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="no_repetition",
                 input_preview=output[:200],
             )
 
@@ -1658,7 +2053,7 @@ class DeterministicChecks:
             if len(tokens) < n:
                 continue
             ngrams: Counter[tuple[str, ...]] = Counter(
-                tuple(tokens[i:i + n]) for i in range(len(tokens) - n + 1)
+                tuple(tokens[i : i + n]) for i in range(len(tokens) - n + 1)
             )
             for ng, count in ngrams.most_common(1):
                 if count > max_ngram_repeat:
@@ -1677,12 +2072,18 @@ class DeterministicChecks:
             reasoning = f"No excessive n-gram repetition detected (max allowed: {max_ngram_repeat})"
 
         return CheckResult(
-            passed=passed, score=score, reasoning=reasoning,
-            cost=0.0, latency_ms=0, metric_name="no_repetition",
+            passed=passed,
+            score=score,
+            reasoning=reasoning,
+            cost=0.0,
+            latency_ms=0,
+            metric_name="no_repetition",
             input_preview=output[:200],
         )
 
-    def semantic_similarity(self, output: str, reference: str, threshold: float = 0.7) -> CheckResult:
+    def semantic_similarity(
+        self, output: str, reference: str, threshold: float = 0.7
+    ) -> CheckResult:
         """Cosine similarity using TF-IDF vectors.
 
         Computes term frequency-inverse document frequency vectors for
@@ -1700,16 +2101,19 @@ class DeterministicChecks:
         from scipy.spatial.distance import cosine as cosine_dist
 
         def tokenize(text: str) -> list[str]:
-            return re.findall(r'\w+', text.lower())
+            return re.findall(r"\w+", text.lower())
 
         out_tokens = tokenize(output)
         ref_tokens = tokenize(reference)
 
         if not out_tokens or not ref_tokens:
             return CheckResult(
-                passed=False, score=0.0,
+                passed=False,
+                score=0.0,
                 reasoning="Empty output or reference for similarity computation",
-                cost=0.0, latency_ms=0, metric_name="semantic_similarity",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="semantic_similarity",
                 input_preview=output[:200],
                 threshold=threshold,
             )
@@ -1748,9 +2152,12 @@ class DeterministicChecks:
         cos_sim = max(0.0, min(1.0, cos_sim))
         passed = cos_sim >= threshold
         return CheckResult(
-            passed=passed, score=cos_sim,
+            passed=passed,
+            score=cos_sim,
             reasoning=f"TF-IDF cosine similarity: {cos_sim:.4f} (threshold: {threshold})",
-            cost=0.0, latency_ms=0, metric_name="semantic_similarity",
+            cost=0.0,
+            latency_ms=0,
+            metric_name="semantic_similarity",
             input_preview=output[:200],
             threshold=threshold,
         )
@@ -1772,9 +2179,12 @@ class DeterministicChecks:
         matches = url_pattern.findall(output)
         if not matches:
             return CheckResult(
-                passed=False, score=0.0,
+                passed=False,
+                score=0.0,
                 reasoning="No valid URL patterns found in output",
-                cost=0.0, latency_ms=0, metric_name="is_valid_url",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="is_valid_url",
                 input_preview=output[:200],
             )
 
@@ -1789,22 +2199,25 @@ class DeterministicChecks:
         passed = len(valid_urls) > 0
         score = len(valid_urls) / max(len(matches), 1)
         return CheckResult(
-            passed=passed, score=score,
+            passed=passed,
+            score=score,
             reasoning=f"Found {len(valid_urls)} valid URL(s) out of {len(matches)} candidates",
-            cost=0.0, latency_ms=0, metric_name="is_valid_url",
+            cost=0.0,
+            latency_ms=0,
+            metric_name="is_valid_url",
             input_preview=output[:200],
         )
 
     _STRUCTURE_DETECTORS: dict[str, str] = {
-        "headers": r'^#{1,6}\s+\S',
-        "bullet_points": r'^[\s]*[-*+]\s+\S',
-        "numbered_lists": r'^[\s]*\d+\.\s+\S',
-        "code_blocks": r'^```',
-        "blockquotes": r'^>\s+',
-        "bold": r'\*\*\S.*?\S\*\*|__\S.*?\S__',
-        "italic": r'(?<!\*)\*(?!\*)(?:\S.*?\S|\S)\*(?!\*)|(?<!_)_(?!_)(?:\S.*?\S|\S)_(?!_)',
-        "links": r'\[.+?\]\(.+?\)',
-        "tables": r'\|.+\|',
+        "headers": r"^#{1,6}\s+\S",
+        "bullet_points": r"^[\s]*[-*+]\s+\S",
+        "numbered_lists": r"^[\s]*\d+\.\s+\S",
+        "code_blocks": r"^```",
+        "blockquotes": r"^>\s+",
+        "bold": r"\*\*\S.*?\S\*\*|__\S.*?\S__",
+        "italic": r"(?<!\*)\*(?!\*)(?:\S.*?\S|\S)\*(?!\*)|(?<!_)_(?!_)(?:\S.*?\S|\S)_(?!_)",
+        "links": r"\[.+?\]\(.+?\)",
+        "tables": r"\|.+\|",
     }
 
     def has_structure(self, output: str, elements: list[str]) -> CheckResult:
@@ -1822,9 +2235,12 @@ class DeterministicChecks:
         """
         if not elements:
             return CheckResult(
-                passed=True, score=1.0,
+                passed=True,
+                score=1.0,
                 reasoning="No structural elements required",
-                cost=0.0, latency_ms=0, metric_name="has_structure",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="has_structure",
                 input_preview=output[:200],
             )
 
@@ -1847,8 +2263,12 @@ class DeterministicChecks:
         else:
             reasoning = f"All {len(elements)} structural elements found: {', '.join(found)}"
         return CheckResult(
-            passed=passed, score=score, reasoning=reasoning,
-            cost=0.0, latency_ms=0, metric_name="has_structure",
+            passed=passed,
+            score=score,
+            reasoning=reasoning,
+            cost=0.0,
+            latency_ms=0,
+            metric_name="has_structure",
             input_preview=output[:200],
         )
 
@@ -1872,9 +2292,12 @@ class DeterministicChecks:
 
         if not out_tokens or not ref_tokens:
             return CheckResult(
-                passed=False, score=0.0,
+                passed=False,
+                score=0.0,
                 reasoning="Empty output or reference for GLEU computation",
-                cost=0.0, latency_ms=0, metric_name="gleu",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="gleu",
                 input_preview=output[:200],
                 threshold=threshold,
             )
@@ -1882,9 +2305,12 @@ class DeterministicChecks:
         max_n = min(4, len(out_tokens), len(ref_tokens))
         if max_n == 0:
             return CheckResult(
-                passed=False, score=0.0,
+                passed=False,
+                score=0.0,
                 reasoning="Texts too short for GLEU computation",
-                cost=0.0, latency_ms=0, metric_name="gleu",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="gleu",
                 input_preview=output[:200],
                 threshold=threshold,
             )
@@ -1892,16 +2318,13 @@ class DeterministicChecks:
         gleu_scores: list[float] = []
         for n in range(1, max_n + 1):
             out_ngrams: Counter[tuple[str, ...]] = Counter(
-                tuple(out_tokens[i:i + n]) for i in range(len(out_tokens) - n + 1)
+                tuple(out_tokens[i : i + n]) for i in range(len(out_tokens) - n + 1)
             )
             ref_ngrams: Counter[tuple[str, ...]] = Counter(
-                tuple(ref_tokens[i:i + n]) for i in range(len(ref_tokens) - n + 1)
+                tuple(ref_tokens[i : i + n]) for i in range(len(ref_tokens) - n + 1)
             )
 
-            clipped = {
-                ng: min(count, ref_ngrams.get(ng, 0))
-                for ng, count in out_ngrams.items()
-            }
+            clipped = {ng: min(count, ref_ngrams.get(ng, 0)) for ng, count in out_ngrams.items()}
             match_count = sum(clipped.values())
             out_total = sum(out_ngrams.values())
             ref_total = sum(ref_ngrams.values())
@@ -1914,9 +2337,12 @@ class DeterministicChecks:
         score = max(0.0, min(1.0, score))
         passed = score >= threshold
         return CheckResult(
-            passed=passed, score=score,
+            passed=passed,
+            score=score,
             reasoning=f"GLEU: {score:.4f} (threshold: {threshold})",
-            cost=0.0, latency_ms=0, metric_name="gleu",
+            cost=0.0,
+            latency_ms=0,
+            metric_name="gleu",
             input_preview=output[:200],
             threshold=threshold,
         )
@@ -1937,9 +2363,12 @@ class DeterministicChecks:
         """
         if not output.strip() or not reference.strip():
             return CheckResult(
-                passed=False, score=0.0,
+                passed=False,
+                score=0.0,
                 reasoning="Empty output or reference for ChrF computation",
-                cost=0.0, latency_ms=0, metric_name="chrf",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="chrf",
                 input_preview=output[:200],
                 threshold=threshold,
             )
@@ -1951,16 +2380,13 @@ class DeterministicChecks:
 
         for n in range(1, max_n + 1):
             out_ngrams: Counter[str] = Counter(
-                output[i:i + n] for i in range(len(output) - n + 1)
+                output[i : i + n] for i in range(len(output) - n + 1)
             )
             ref_ngrams: Counter[str] = Counter(
-                reference[i:i + n] for i in range(len(reference) - n + 1)
+                reference[i : i + n] for i in range(len(reference) - n + 1)
             )
 
-            clipped = {
-                ng: min(count, ref_ngrams.get(ng, 0))
-                for ng, count in out_ngrams.items()
-            }
+            clipped = {ng: min(count, ref_ngrams.get(ng, 0)) for ng, count in out_ngrams.items()}
             match_count = sum(clipped.values())
             out_total = sum(out_ngrams.values())
             ref_total = sum(ref_ngrams.values())
@@ -1974,14 +2400,17 @@ class DeterministicChecks:
         if avg_p + avg_r == 0:
             score = 0.0
         else:
-            score = (1 + beta ** 2) * avg_p * avg_r / (beta ** 2 * avg_p + avg_r)
+            score = (1 + beta**2) * avg_p * avg_r / (beta**2 * avg_p + avg_r)
 
         score = max(0.0, min(1.0, score))
         passed = score >= threshold
         return CheckResult(
-            passed=passed, score=score,
+            passed=passed,
+            score=score,
             reasoning=f"ChrF: {score:.4f} (P: {avg_p:.4f}, R: {avg_r:.4f}, threshold: {threshold})",
-            cost=0.0, latency_ms=0, metric_name="chrf",
+            cost=0.0,
+            latency_ms=0,
+            metric_name="chrf",
             input_preview=output[:200],
             threshold=threshold,
         )
@@ -2090,12 +2519,15 @@ class DeterministicChecks:
         func = methods.get(method_lower)
         if func is None:
             return CheckResult(
-                passed=False, score=0.0,
+                passed=False,
+                score=0.0,
                 reasoning=(
                     f"Unknown string distance method '{method}'. "
                     f"Supported: {', '.join(sorted(methods))}"
                 ),
-                cost=0.0, latency_ms=0, metric_name="string_distance",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="string_distance",
                 input_preview=output[:200],
             )
 
@@ -2103,9 +2535,12 @@ class DeterministicChecks:
         ratio = max(0.0, min(1.0, ratio))
         passed = ratio >= threshold
         return CheckResult(
-            passed=passed, score=ratio,
+            passed=passed,
+            score=ratio,
             reasoning=f"String distance ({method}): {ratio:.4f} (threshold: {threshold})",
-            cost=0.0, latency_ms=0, metric_name="string_distance",
+            cost=0.0,
+            latency_ms=0,
+            metric_name="string_distance",
             input_preview=output[:200],
             threshold=threshold,
         )
@@ -2144,16 +2579,17 @@ class DeterministicChecks:
         text = output.strip()
         if not text:
             return CheckResult(
-                passed=False, score=0.0,
+                passed=False,
+                score=0.0,
                 reasoning="Empty output",
-                cost=0.0, latency_ms=0, metric_name="is_url",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="is_url",
                 input_preview=output[:200],
             )
         parsed = urlparse(text)
         passed = bool(
-            parsed.scheme in ("http", "https", "ftp")
-            and parsed.netloc
-            and "." in parsed.netloc
+            parsed.scheme in ("http", "https", "ftp") and parsed.netloc and "." in parsed.netloc
         )
         return CheckResult(
             passed=passed,

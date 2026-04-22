@@ -5,6 +5,7 @@ file-like object) into a provider-agnostic ``ImagePayload`` and exposes
 helpers that convert the payload into the format each vision-capable provider
 expects (OpenAI chat, Anthropic messages, Gemini inline_data).
 """
+
 from __future__ import annotations
 
 import base64
@@ -95,9 +96,7 @@ def _guess_mime_from_path(path: str | os.PathLike[str]) -> str:
     return guess or "application/octet-stream"
 
 
-def load_image(
-    source: ImageSource | Any, mime_type: str | None = None
-) -> ImagePayload:
+def load_image(source: ImageSource | Any, mime_type: str | None = None) -> ImagePayload:
     """Normalize an image input into an ``ImagePayload``.
 
     Args:
@@ -148,15 +147,11 @@ def load_image(
             try:
                 raw = base64.b64decode(source, validate=True)
             except Exception as exc:  # noqa: BLE001
-                raise ValueError(
-                    "Could not decode source as base64 string"
-                ) from exc
+                raise ValueError("Could not decode source as base64 string") from exc
             resolved_mime = mime_type or _guess_mime_from_bytes(raw)
             return ImagePayload(data=raw, mime_type=resolved_mime)
 
-        raise ValueError(
-            f"Could not interpret string source as image: {source[:40]!r}"
-        )
+        raise ValueError(f"Could not interpret string source as image: {source[:40]!r}")
 
     read_fn = getattr(source, "read", None)
     if callable(read_fn):
@@ -169,9 +164,7 @@ def load_image(
     raise TypeError(f"Unsupported image source type: {type(source).__name__}")
 
 
-def _load_from_path(
-    path: str | os.PathLike[str], mime_type: str | None
-) -> ImagePayload:
+def _load_from_path(path: str | os.PathLike[str], mime_type: str | None) -> ImagePayload:
     """Read image bytes from a filesystem path."""
     resolved = Path(path)
     if not resolved.exists():
@@ -251,9 +244,7 @@ async def call_vision_judge(
     image_list = list(images)
     method = getattr(judge, "evaluate_with_images", None)
     if image_list and callable(method):
-        return await method(
-            prompt=prompt, images=image_list, system_prompt=system_prompt
-        )
+        return await method(prompt=prompt, images=image_list, system_prompt=system_prompt)
     if image_list:
         raise TypeError(
             f"Judge {type(judge).__name__} does not support image inputs. "

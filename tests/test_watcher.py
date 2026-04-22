@@ -37,6 +37,7 @@ class TestFileWatcherDetection:
         existing.write_text("x = 2")
         # Force a different mtime in case the filesystem rounds
         import os
+
         mtime = existing.stat().st_mtime + 1
         os.utime(existing, (mtime, mtime))
 
@@ -100,9 +101,7 @@ class TestFileWatcherPatternFiltering:
         assert changed[0].name == "module.py"
 
     def test_custom_patterns(self, tmp_path: Path) -> None:
-        watcher = FileWatcher(
-            paths=[tmp_path], patterns=["*.py", "*.yaml"]
-        )
+        watcher = FileWatcher(paths=[tmp_path], patterns=["*.py", "*.yaml"])
 
         (tmp_path / "code.py").write_text("x = 1")
         (tmp_path / "config.yaml").write_text("key: val")
@@ -122,6 +121,7 @@ class TestFileWatcherPatternFiltering:
 
         time.sleep(0.05)
         import os
+
         target.write_text("v2")
         mtime = target.stat().st_mtime + 1
         os.utime(target, (mtime, mtime))

@@ -4,6 +4,7 @@ Scores whether a text accurately describes an accompanying image using a
 vision-capable LLM judge. Useful for evaluating captioning, alt-text, and
 image-grounded chat responses on GPT-4V / Claude Vision / Gemini Vision.
 """
+
 from __future__ import annotations
 
 import time
@@ -49,10 +50,7 @@ class ImageTextAlignmentMetric:
             A ``CheckResult`` with the alignment score and reasoning.
         """
         payloads = _ensure_payloads(image)
-        prompt = (
-            f"Candidate text:\n{text}\n\n"
-            "Score how faithfully the text describes the image(s)."
-        )
+        prompt = f"Candidate text:\n{text}\n\nScore how faithfully the text describes the image(s)."
         start = time.perf_counter_ns()
         response = await call_vision_judge(
             self.judge, prompt=prompt, images=payloads, system_prompt=self.system_prompt

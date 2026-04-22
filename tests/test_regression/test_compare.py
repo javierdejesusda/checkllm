@@ -1,4 +1,3 @@
-
 from checkllm.regression.compare import compare_snapshot
 from checkllm.regression.snapshot import (
     MetricRecord,
@@ -10,10 +9,7 @@ from checkllm.regression.snapshot import (
 def _make_snapshot(test_name: str, metric_name: str, scores: list[float]) -> Snapshot:
     """Helper to create a snapshot with N runs of a single metric."""
     runs = [
-        TestRunRecord(
-            metrics={metric_name: MetricRecord(score=s, passed=s >= 0.8)}
-        )
-        for s in scores
+        TestRunRecord(metrics={metric_name: MetricRecord(score=s, passed=s >= 0.8)}) for s in scores
     ]
     return Snapshot(version=1, tests={test_name: runs})
 

@@ -44,9 +44,7 @@ class NoiseSensitivityMetric:
         self.threshold = threshold
         self.system_prompt: str = NOISE_SENSITIVITY_SYSTEM_PROMPT
 
-    async def evaluate(
-        self, output: str, context: str, noisy_context: str
-    ) -> CheckResult:
+    async def evaluate(self, output: str, context: str, noisy_context: str) -> CheckResult:
         """Evaluate whether noisy context inappropriately influenced the response.
 
         Args:
@@ -67,9 +65,7 @@ class NoiseSensitivityMetric:
             "Score the robustness."
         )
         start = time.perf_counter_ns()
-        response = await self.judge.evaluate(
-            prompt=prompt, system_prompt=self.system_prompt
-        )
+        response = await self.judge.evaluate(prompt=prompt, system_prompt=self.system_prompt)
         elapsed_ms = (time.perf_counter_ns() - start) // 1_000_000
 
         return CheckResult(

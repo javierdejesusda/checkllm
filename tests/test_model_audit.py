@@ -202,9 +202,23 @@ class TestAuditResult:
 class TestSupportedExtensions:
     def test_all_extensions_present(self):
         expected = {
-            ".pkl", ".pickle", ".joblib", ".pt", ".pth", ".bin",
-            ".onnx", ".safetensors", ".h5", ".hdf5", ".keras",
-            ".tflite", ".pb", ".gguf", ".ggml", ".npy", ".npz",
+            ".pkl",
+            ".pickle",
+            ".joblib",
+            ".pt",
+            ".pth",
+            ".bin",
+            ".onnx",
+            ".safetensors",
+            ".h5",
+            ".hdf5",
+            ".keras",
+            ".tflite",
+            ".pb",
+            ".gguf",
+            ".ggml",
+            ".npy",
+            ".npz",
         }
         assert set(ModelAuditor.SUPPORTED_EXTENSIONS.keys()) == expected
 
@@ -219,7 +233,8 @@ class TestPickleScanner:
             auditor = ModelAuditor()
             result = auditor.scan(path)
             critical_or_high = [
-                f for f in result.findings
+                f
+                for f in result.findings
                 if f.severity in (SeverityLevel.CRITICAL, SeverityLevel.HIGH)
             ]
             assert len(critical_or_high) == 0
@@ -237,10 +252,7 @@ class TestPickleScanner:
         try:
             auditor = ModelAuditor()
             result = auditor.scan(path)
-            critical = [
-                f for f in result.findings
-                if f.severity == SeverityLevel.CRITICAL
-            ]
+            critical = [f for f in result.findings if f.severity == SeverityLevel.CRITICAL]
             assert len(critical) >= 1
             assert any("os.system" in f.description for f in critical)
         finally:
@@ -256,10 +268,7 @@ class TestPickleScanner:
         try:
             auditor = ModelAuditor()
             result = auditor.scan(path)
-            critical = [
-                f for f in result.findings
-                if f.severity == SeverityLevel.CRITICAL
-            ]
+            critical = [f for f in result.findings if f.severity == SeverityLevel.CRITICAL]
             assert len(critical) >= 1
             assert any("subprocess.Popen" in f.description for f in critical)
         finally:
@@ -273,10 +282,7 @@ class TestPickleScanner:
         try:
             auditor = ModelAuditor()
             result = auditor.scan(path)
-            high = [
-                f for f in result.findings
-                if f.severity == SeverityLevel.HIGH
-            ]
+            high = [f for f in result.findings if f.severity == SeverityLevel.HIGH]
             assert len(high) >= 1
             assert any("__import__" in (f.pattern_matched or "") for f in high)
         finally:
@@ -290,10 +296,7 @@ class TestPickleScanner:
         try:
             auditor = ModelAuditor()
             result = auditor.scan(path)
-            network_findings = [
-                f for f in result.findings
-                if "socket" in (f.pattern_matched or "")
-            ]
+            network_findings = [f for f in result.findings if "socket" in (f.pattern_matched or "")]
             assert len(network_findings) >= 1
         finally:
             Path(path).unlink(missing_ok=True)
@@ -308,10 +311,7 @@ class TestPickleScanner:
         try:
             auditor = ModelAuditor()
             result = auditor.scan(path)
-            critical = [
-                f for f in result.findings
-                if f.severity == SeverityLevel.CRITICAL
-            ]
+            critical = [f for f in result.findings if f.severity == SeverityLevel.CRITICAL]
             assert len(critical) >= 1
         finally:
             Path(path).unlink(missing_ok=True)
@@ -357,8 +357,7 @@ class TestSafetensorsScanner:
             auditor = ModelAuditor()
             result = auditor.scan(path)
             assert any(
-                "Corrupted" in f.title or "exceeds" in f.description
-                for f in result.findings
+                "Corrupted" in f.title or "exceeds" in f.description for f in result.findings
             )
         finally:
             Path(path).unlink(missing_ok=True)
@@ -373,10 +372,7 @@ class TestBinaryScanner:
         try:
             auditor = ModelAuditor()
             result = auditor.scan(path)
-            high = [
-                f for f in result.findings
-                if f.severity == SeverityLevel.HIGH
-            ]
+            high = [f for f in result.findings if f.severity == SeverityLevel.HIGH]
             assert len(high) >= 1
             assert any("/bin/sh" in (f.pattern_matched or "") for f in high)
         finally:
@@ -390,10 +386,7 @@ class TestBinaryScanner:
         try:
             auditor = ModelAuditor()
             result = auditor.scan(path)
-            url_findings = [
-                f for f in result.findings
-                if "URL" in f.title
-            ]
+            url_findings = [f for f in result.findings if "URL" in f.title]
             assert len(url_findings) >= 1
         finally:
             Path(path).unlink(missing_ok=True)
@@ -423,7 +416,8 @@ class TestNumpyScanner:
             auditor = ModelAuditor()
             result = auditor.scan(path)
             high_or_critical = [
-                f for f in result.findings
+                f
+                for f in result.findings
                 if f.severity in (SeverityLevel.CRITICAL, SeverityLevel.HIGH)
             ]
             assert len(high_or_critical) == 0
@@ -440,10 +434,7 @@ class TestNumpyScanner:
         try:
             auditor = ModelAuditor()
             result = auditor.scan(path)
-            object_findings = [
-                f for f in result.findings
-                if "object" in f.description.lower()
-            ]
+            object_findings = [f for f in result.findings if "object" in f.description.lower()]
             assert len(object_findings) >= 1
         finally:
             Path(path).unlink(missing_ok=True)
@@ -526,10 +517,7 @@ class TestPytorchScanner:
             auditor = ModelAuditor()
             result = auditor.scan(path)
             assert result.file_type == "pytorch"
-            critical = [
-                fi for fi in result.findings
-                if fi.severity == SeverityLevel.CRITICAL
-            ]
+            critical = [fi for fi in result.findings if fi.severity == SeverityLevel.CRITICAL]
             assert len(critical) >= 1
         finally:
             Path(path).unlink(missing_ok=True)
@@ -543,8 +531,7 @@ class TestPytorchScanner:
             auditor = ModelAuditor()
             result = auditor.scan(path)
             torch_findings = [
-                f for f in result.findings
-                if "torch.load" in (f.pattern_matched or "")
+                f for f in result.findings if "torch.load" in (f.pattern_matched or "")
             ]
             assert len(torch_findings) >= 1
         finally:

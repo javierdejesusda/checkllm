@@ -1,10 +1,10 @@
 """Additional tests for checkllm.testing to cover remaining branches."""
+
 from __future__ import annotations
 
-import asyncio
 import pytest
 
-from checkllm.testing import MockJudge, make_collector, assert_all_passed, assert_score_above
+from checkllm.testing import MockJudge, make_collector, assert_score_above
 
 
 class TestMockJudgeSetDefault:

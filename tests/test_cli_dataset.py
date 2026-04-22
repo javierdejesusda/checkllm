@@ -18,7 +18,11 @@ runner = CliRunner()
 
 def _make_sample_yaml(path: Path, n: int = 10) -> None:
     records = [
-        {"input": f"case-{i}", "expected": str(i), "metadata": {"label": "A" if i % 2 else "B"}}
+        {
+            "input": f"case-{i}",
+            "expected": str(i),
+            "metadata": {"label": "A" if i % 2 else "B"},
+        }
         for i in range(n)
     ]
     path.write_text(yaml.safe_dump(records, sort_keys=False), encoding="utf-8")
@@ -77,9 +81,7 @@ def test_dataset_versions_lists_registered(tmp_path, monkeypatch):
 
     store = LineageStore()
     store.register([Case(input="hello")], dataset_id="my-ds", source="test")
-    store.register(
-        [Case(input="hello"), Case(input="world")], dataset_id="my-ds"
-    )
+    store.register([Case(input="hello"), Case(input="world")], dataset_id="my-ds")
 
     result = runner.invoke(app, ["dataset", "versions", "my-ds"])
     assert result.exit_code == 0
@@ -94,13 +96,9 @@ def test_dataset_diff_reports_changes(tmp_path, monkeypatch):
 
     store = LineageStore()
     store.register([Case(input="a"), Case(input="b")], dataset_id="my-ds")
-    store.register(
-        [Case(input="a"), Case(input="c")], dataset_id="my-ds"
-    )
+    store.register([Case(input="a"), Case(input="c")], dataset_id="my-ds")
 
-    result = runner.invoke(
-        app, ["dataset", "diff", "v1", "v2", "--dataset-id", "my-ds"]
-    )
+    result = runner.invoke(app, ["dataset", "diff", "v1", "v2", "--dataset-id", "my-ds"])
     assert result.exit_code == 0
     assert "Added:" in result.stdout
     assert "Removed:" in result.stdout
@@ -118,9 +116,7 @@ def test_dataset_load_with_fake_hf(tmp_path, monkeypatch):
     monkeypatch.setitem(sys.modules, "datasets", fake)
 
     output = tmp_path / "out.yaml"
-    result = runner.invoke(
-        app, ["dataset", "load", "fake/ds", "--output", str(output)]
-    )
+    result = runner.invoke(app, ["dataset", "load", "fake/ds", "--output", str(output)])
     assert result.exit_code == 0, result.stdout
     assert output.exists()
 
@@ -144,8 +140,6 @@ def test_dataset_load_missing_datasets_package(tmp_path, monkeypatch):
     monkeypatch.delitem(sys.modules, "datasets", raising=False)
 
     output = tmp_path / "out.yaml"
-    result = runner.invoke(
-        app, ["dataset", "load", "fake/ds", "--output", str(output)]
-    )
+    result = runner.invoke(app, ["dataset", "load", "fake/ds", "--output", str(output)])
     assert result.exit_code == 1
     assert "datasets" in result.stdout

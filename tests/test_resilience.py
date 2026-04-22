@@ -1,4 +1,5 @@
 """Tests for checkllm.resilience -- rate limiting, circuit breaker, and retry."""
+
 from __future__ import annotations
 
 import asyncio
@@ -23,6 +24,7 @@ from checkllm.resilience import (
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _ok_response(score: float = 0.9) -> JudgeResponse:
     return JudgeResponse(score=score, reasoning="ok")
 
@@ -34,9 +36,7 @@ class _SimpleMockJudge:
         self.score = score
         self.calls: list[tuple[str, str | None]] = []
 
-    async def evaluate(
-        self, prompt: str, system_prompt: str | None = None
-    ) -> JudgeResponse:
+    async def evaluate(self, prompt: str, system_prompt: str | None = None) -> JudgeResponse:
         self.calls.append((prompt, system_prompt))
         return _ok_response(self.score)
 
@@ -47,9 +47,7 @@ class _FailingJudge:
     def __init__(self, exc: Exception | None = None) -> None:
         self._exc = exc or RuntimeError("judge failure")
 
-    async def evaluate(
-        self, prompt: str, system_prompt: str | None = None
-    ) -> JudgeResponse:
+    async def evaluate(self, prompt: str, system_prompt: str | None = None) -> JudgeResponse:
         raise self._exc
 
 
@@ -61,9 +59,7 @@ class _FailThenSucceedJudge:
         self._score = score
         self._call_count = 0
 
-    async def evaluate(
-        self, prompt: str, system_prompt: str | None = None
-    ) -> JudgeResponse:
+    async def evaluate(self, prompt: str, system_prompt: str | None = None) -> JudgeResponse:
         self._call_count += 1
         if self._call_count <= self._failures:
             raise RuntimeError(f"failure #{self._call_count}")
@@ -77,9 +73,7 @@ class _SlowJudge:
         self._delay = delay
         self._score = score
 
-    async def evaluate(
-        self, prompt: str, system_prompt: str | None = None
-    ) -> JudgeResponse:
+    async def evaluate(self, prompt: str, system_prompt: str | None = None) -> JudgeResponse:
         await asyncio.sleep(self._delay)
         return _ok_response(self._score)
 
@@ -87,6 +81,7 @@ class _SlowJudge:
 # ===================================================================
 # TokenBucketRateLimiter
 # ===================================================================
+
 
 class TestTokenBucketRateLimiter:
     def test_init_validation(self):
@@ -181,6 +176,7 @@ class TestTokenBucketRateLimiter:
 # PerProviderRateLimiter
 # ===================================================================
 
+
 class TestPerProviderRateLimiter:
     @pytest.mark.asyncio
     async def test_separate_limits(self):
@@ -229,6 +225,7 @@ class TestPerProviderRateLimiter:
 # ===================================================================
 # CircuitBreaker
 # ===================================================================
+
 
 class TestCircuitBreaker:
     def test_init_validation(self):
@@ -327,9 +324,7 @@ class TestCircuitBreaker:
 
     @pytest.mark.asyncio
     async def test_half_open_max_calls(self):
-        cb = CircuitBreaker(
-            failure_threshold=1, recovery_timeout=0.05, half_open_max_calls=1
-        )
+        cb = CircuitBreaker(failure_threshold=1, recovery_timeout=0.05, half_open_max_calls=1)
 
         with pytest.raises(RuntimeError):
             await cb.call(_async_fail(RuntimeError("boom")))
@@ -388,6 +383,7 @@ class TestCircuitBreaker:
 # CircuitOpenError
 # ===================================================================
 
+
 class TestCircuitOpenError:
     def test_message(self):
         err = CircuitOpenError(time_until_retry=12.5)
@@ -406,6 +402,7 @@ class TestCircuitOpenError:
 # ===================================================================
 # ResilientJudge
 # ===================================================================
+
 
 class TestResilientJudge:
     @pytest.mark.asyncio
@@ -463,9 +460,7 @@ class TestResilientJudge:
         primary = _FailingJudge()
         fallback = _SimpleMockJudge(score=0.6)
         cb = CircuitBreaker(failure_threshold=1, recovery_timeout=60.0)
-        rj = ResilientJudge(
-            judge=primary, circuit_breaker=cb, fallback=fallback
-        )
+        rj = ResilientJudge(judge=primary, circuit_breaker=cb, fallback=fallback)
 
         # First call trips the circuit
         resp1 = await rj.evaluate("test")
@@ -515,9 +510,7 @@ class TestResilientJudge:
         judge = _SimpleMockJudge()
         limiter = TokenBucketRateLimiter(rate=1000.0, burst=10)
         cb = CircuitBreaker(failure_threshold=5)
-        rj = ResilientJudge(
-            judge=judge, rate_limiter=limiter, circuit_breaker=cb
-        )
+        rj = ResilientJudge(judge=judge, rate_limiter=limiter, circuit_breaker=cb)
 
         for _ in range(3):
             await rj.evaluate("prompt")
@@ -530,6 +523,7 @@ class TestResilientJudge:
 # ===================================================================
 # RetryPolicy
 # ===================================================================
+
 
 class TestRetryPolicy:
     def test_defaults(self):
@@ -544,10 +538,10 @@ class TestRetryPolicy:
 
     def test_delay_for_exponential(self):
         p = RetryPolicy(base_delay=1.0, exponential_base=2.0, max_delay=100.0)
-        assert p.delay_for(0) == 1.0   # 1 * 2^0
-        assert p.delay_for(1) == 2.0   # 1 * 2^1
-        assert p.delay_for(2) == 4.0   # 1 * 2^2
-        assert p.delay_for(3) == 8.0   # 1 * 2^3
+        assert p.delay_for(0) == 1.0  # 1 * 2^0
+        assert p.delay_for(1) == 2.0  # 1 * 2^1
+        assert p.delay_for(2) == 4.0  # 1 * 2^2
+        assert p.delay_for(3) == 8.0  # 1 * 2^3
 
     def test_delay_for_capped_at_max(self):
         p = RetryPolicy(base_delay=1.0, exponential_base=2.0, max_delay=5.0)
@@ -559,14 +553,15 @@ class TestRetryPolicy:
 
     def test_delay_for_custom_base(self):
         p = RetryPolicy(base_delay=0.5, exponential_base=3.0, max_delay=100.0)
-        assert p.delay_for(0) == 0.5   # 0.5 * 3^0
-        assert p.delay_for(1) == 1.5   # 0.5 * 3^1
-        assert p.delay_for(2) == 4.5   # 0.5 * 3^2
+        assert p.delay_for(0) == 0.5  # 0.5 * 3^0
+        assert p.delay_for(1) == 1.5  # 0.5 * 3^1
+        assert p.delay_for(2) == 4.5  # 0.5 * 3^2
 
 
 # ===================================================================
 # with_retry
 # ===================================================================
+
 
 class TestWithRetry:
     @pytest.mark.asyncio
@@ -594,7 +589,9 @@ class TestWithRetry:
             return "recovered"
 
         policy = RetryPolicy(
-            max_retries=5, base_delay=0.001, jitter=False,
+            max_retries=5,
+            base_delay=0.001,
+            jitter=False,
             retry_on=(TimeoutError,),
         )
         result = await with_retry(fn, policy)
@@ -611,7 +608,9 @@ class TestWithRetry:
             raise ConnectionError("down")
 
         policy = RetryPolicy(
-            max_retries=2, base_delay=0.001, jitter=False,
+            max_retries=2,
+            base_delay=0.001,
+            jitter=False,
             retry_on=(ConnectionError,),
         )
         with pytest.raises(ConnectionError, match="down"):
@@ -629,7 +628,8 @@ class TestWithRetry:
             raise ValueError("bad input")
 
         policy = RetryPolicy(
-            max_retries=5, base_delay=0.001,
+            max_retries=5,
+            base_delay=0.001,
             retry_on=(TimeoutError,),
         )
         with pytest.raises(ValueError, match="bad input"):
@@ -649,7 +649,9 @@ class TestWithRetry:
             return "ok"
 
         policy = RetryPolicy(
-            max_retries=3, base_delay=0.01, jitter=True,
+            max_retries=3,
+            base_delay=0.01,
+            jitter=True,
             retry_on=(TimeoutError,),
         )
         start = time.monotonic()
@@ -661,6 +663,7 @@ class TestWithRetry:
     @pytest.mark.asyncio
     async def test_default_policy(self):
         """with_retry uses default RetryPolicy when None is passed."""
+
         async def fn():
             return 42
 
@@ -671,6 +674,7 @@ class TestWithRetry:
 # ---------------------------------------------------------------------------
 # Async helpers for circuit breaker tests
 # ---------------------------------------------------------------------------
+
 
 async def _async_value(value: T) -> T:
     return value

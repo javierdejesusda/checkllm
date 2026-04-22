@@ -18,6 +18,7 @@ Environment variables:
 
 Install with ``pip install checkllm[langfuse]``.
 """
+
 from __future__ import annotations
 
 import logging
@@ -102,9 +103,7 @@ class LangFuseTracer(Tracer):
         """Lazily create the top-level LangFuse trace object."""
         if self._trace is None:
             try:
-                self._trace = self._client.trace(
-                    id=uuid.uuid4().hex, name="checkllm.evaluation"
-                )
+                self._trace = self._client.trace(id=uuid.uuid4().hex, name="checkllm.evaluation")
             except Exception as exc:  # pragma: no cover - network path
                 logger.debug("langfuse trace creation failed: %s", exc)
                 self._trace = None
@@ -121,9 +120,7 @@ class LangFuseTracer(Tracer):
         ext_span: Any = None
         if parent is not None:
             try:
-                ext_span = parent.span(
-                    name=name, metadata=dict(attributes or {})
-                )
+                ext_span = parent.span(name=name, metadata=dict(attributes or {}))
             except Exception as exc:  # pragma: no cover - network path
                 logger.debug("langfuse span start failed: %s", exc)
                 ext_span = None
@@ -156,9 +153,7 @@ class LangFuseTracer(Tracer):
         """Record a check result and mirror it as a LangFuse score."""
         super().record_check(result)
 
-        target = (
-            self._span_stack_ext[-1] if self._span_stack_ext else self._trace
-        )
+        target = self._span_stack_ext[-1] if self._span_stack_ext else self._trace
         if target is None:
             return
         try:

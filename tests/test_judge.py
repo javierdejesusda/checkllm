@@ -33,9 +33,7 @@ class TestOpenAIJudge:
             judge._client.chat.completions, "create", new_callable=AsyncMock
         ) as mock_create:
             mock_create.return_value = mock_openai_response
-            response = await judge.evaluate(
-                "Rate this output for hallucination: 'The sky is blue'"
-            )
+            response = await judge.evaluate("Rate this output for hallucination: 'The sky is blue'")
         assert isinstance(response, JudgeResponse)
         assert response.score == 0.85
         assert "grounded" in response.reasoning

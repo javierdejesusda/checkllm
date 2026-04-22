@@ -25,9 +25,7 @@ class TestLoadEvalConfig:
     def test_loads_yaml(self, tmp_path):
         config_data = {
             "description": "Test evaluation suite",
-            "providers": [
-                {"id": "openai", "model": "gpt-4o", "options": {"temperature": 0.0}}
-            ],
+            "providers": [{"id": "openai", "model": "gpt-4o", "options": {"temperature": 0.0}}],
             "prompts": [
                 {
                     "name": "default",

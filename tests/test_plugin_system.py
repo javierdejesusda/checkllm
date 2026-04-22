@@ -30,8 +30,12 @@ class TestMetricDecorator:
         @registry.register("dup")
         def metric_a(output: str, **kwargs) -> CheckResult:
             return CheckResult(
-                passed=True, score=1.0, reasoning="", cost=0.0,
-                latency_ms=0, metric_name="dup",
+                passed=True,
+                score=1.0,
+                reasoning="",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="dup",
             )
 
         with pytest.raises(ValueError, match="already registered"):
@@ -39,8 +43,12 @@ class TestMetricDecorator:
             @registry.register("dup")
             def metric_b(output: str, **kwargs) -> CheckResult:
                 return CheckResult(
-                    passed=True, score=1.0, reasoning="", cost=0.0,
-                    latency_ms=0, metric_name="dup",
+                    passed=True,
+                    score=1.0,
+                    reasoning="",
+                    cost=0.0,
+                    latency_ms=0,
+                    metric_name="dup",
                 )
 
     def test_list_registered_metrics(self):
@@ -49,15 +57,23 @@ class TestMetricDecorator:
         @registry.register("alpha")
         def m1(output: str, **kwargs) -> CheckResult:
             return CheckResult(
-                passed=True, score=1.0, reasoning="", cost=0.0,
-                latency_ms=0, metric_name="alpha",
+                passed=True,
+                score=1.0,
+                reasoning="",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="alpha",
             )
 
         @registry.register("beta")
         def m2(output: str, **kwargs) -> CheckResult:
             return CheckResult(
-                passed=True, score=1.0, reasoning="", cost=0.0,
-                latency_ms=0, metric_name="beta",
+                passed=True,
+                score=1.0,
+                reasoning="",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="beta",
             )
 
         assert set(registry.list_metrics()) == {"alpha", "beta"}

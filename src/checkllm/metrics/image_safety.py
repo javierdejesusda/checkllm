@@ -4,6 +4,7 @@ Flags images that contain NSFW, violent, or PII-sensitive visual content.
 Returns a safety score where 1.0 means fully safe under the provided
 categories and 0.0 means the image clearly violates at least one category.
 """
+
 from __future__ import annotations
 
 import time

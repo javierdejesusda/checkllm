@@ -36,7 +36,10 @@ def version_callback(value: bool):
 @app.callback()
 def main(
     version: Optional[bool] = typer.Option(
-        None, "--version", callback=version_callback, is_eager=True,
+        None,
+        "--version",
+        callback=version_callback,
+        is_eager=True,
         help="Show version and exit.",
     ),
 ):
@@ -46,19 +49,32 @@ def main(
 @app.command()
 def run(
     test_path: str = typer.Argument(help="Path to test directory or file"),
-    compare: Optional[str] = typer.Option(None, "--compare", help="Path to baseline snapshot for regression comparison"),
-    fail_on_regression: bool = typer.Option(False, "--fail-on-regression", help="Exit 1 if regression detected"),
-    junit_xml: Optional[str] = typer.Option(None, "--junit-xml", help="Write JUnit XML to this path"),
-    html_report: Optional[str] = typer.Option(None, "--html-report", help="Generate HTML report to this path"),
+    compare: Optional[str] = typer.Option(
+        None, "--compare", help="Path to baseline snapshot for regression comparison"
+    ),
+    fail_on_regression: bool = typer.Option(
+        False, "--fail-on-regression", help="Exit 1 if regression detected"
+    ),
+    junit_xml: Optional[str] = typer.Option(
+        None, "--junit-xml", help="Write JUnit XML to this path"
+    ),
+    html_report: Optional[str] = typer.Option(
+        None, "--html-report", help="Generate HTML report to this path"
+    ),
     snapshot: Optional[str] = typer.Option(None, "--snapshot", help="Save snapshot to this path"),
-    budget: Optional[float] = typer.Option(None, "--budget", help="Maximum USD to spend on judge calls"),
+    budget: Optional[float] = typer.Option(
+        None, "--budget", help="Maximum USD to spend on judge calls"
+    ),
     no_cache: bool = typer.Option(False, "--no-cache", help="Disable judge response caching"),
-    label: Optional[str] = typer.Option(None, "--label", "-l", help="Label for this run in history"),
+    label: Optional[str] = typer.Option(
+        None, "--label", "-l", help="Label for this run in history"
+    ),
     dry_run: bool = typer.Option(False, "--dry-run", help="Estimate costs without running tests"),
 ):
     """Run LLM tests with rich terminal output."""
     if dry_run:
         from checkllm.estimator import estimate_from_test_file, CostEstimate
+
         path = Path(test_path)
         files = [path] if path.is_file() else sorted(path.rglob("test_*.py"))
         config = load_config()
@@ -83,6 +99,7 @@ def run(
 
     # Pass budget and cache settings via environment
     import os
+
     env = os.environ.copy()
     if budget is not None:
         env["CHECKLLM_BUDGET"] = str(budget)
@@ -144,8 +161,14 @@ def snapshot(
 
     console.print(f"[bold]Saving snapshot to:[/] {output}")
 
-    cmd = [sys.executable, "-m", "pytest", test_path, "-v",
-           f"--checkllm-snapshot={output}"]
+    cmd = [
+        sys.executable,
+        "-m",
+        "pytest",
+        test_path,
+        "-v",
+        f"--checkllm-snapshot={output}",
+    ]
     result = subprocess.run(cmd)
 
     if Path(output).exists():
@@ -165,8 +188,14 @@ def report(
     """Run tests and generate an HTML report."""
     console.print(f"[bold]Generating report to:[/] {output}")
 
-    cmd = [sys.executable, "-m", "pytest", test_path, "-v",
-           f"--checkllm-report={output}"]
+    cmd = [
+        sys.executable,
+        "-m",
+        "pytest",
+        test_path,
+        "-v",
+        f"--checkllm-report={output}",
+    ]
     if junit_xml:
         cmd.append(f"--checkllm-junit={junit_xml}")
 
@@ -182,15 +211,32 @@ def report(
 
 @app.command(name="eval")
 def eval_cmd(
-    prompt: str = typer.Option(..., "--prompt", "-p", help="Prompt template with {input} placeholder"),
-    dataset_path: str = typer.Option(..., "--dataset", "-d", help="Path to dataset file (YAML, JSON, CSV)"),
-    model: Optional[str] = typer.Option(None, "--model", "-M", help="Model to generate outputs (default: from config)"),
-    metric: str = typer.Option("rubric", "--metric", "-m", help="Metric to evaluate (hallucination, relevance, toxicity, rubric)"),
+    prompt: str = typer.Option(
+        ..., "--prompt", "-p", help="Prompt template with {input} placeholder"
+    ),
+    dataset_path: str = typer.Option(
+        ..., "--dataset", "-d", help="Path to dataset file (YAML, JSON, CSV)"
+    ),
+    model: Optional[str] = typer.Option(
+        None, "--model", "-M", help="Model to generate outputs (default: from config)"
+    ),
+    metric: str = typer.Option(
+        "rubric",
+        "--metric",
+        "-m",
+        help="Metric to evaluate (hallucination, relevance, toxicity, rubric)",
+    ),
     threshold: float = typer.Option(0.8, "--threshold", "-t", help="Pass/fail threshold"),
-    output: Optional[str] = typer.Option(None, "--output", "-o", help="Save results as snapshot JSON"),
-    budget: Optional[float] = typer.Option(None, "--budget", help="Maximum USD to spend on judge calls"),
+    output: Optional[str] = typer.Option(
+        None, "--output", "-o", help="Save results as snapshot JSON"
+    ),
+    budget: Optional[float] = typer.Option(
+        None, "--budget", help="Maximum USD to spend on judge calls"
+    ),
     no_cache: bool = typer.Option(False, "--no-cache", help="Disable judge response caching"),
-    label: Optional[str] = typer.Option(None, "--label", "-l", help="Label for this run in history"),
+    label: Optional[str] = typer.Option(
+        None, "--label", "-l", help="Label for this run in history"
+    ),
 ):
     """Evaluate a prompt template against a dataset."""
     from checkllm.datasets.loader import load_dataset
@@ -214,12 +260,29 @@ def eval_cmd(
         console.print(f"[dim]Budget: ${config.budget:.2f}[/]")
     console.print()
 
-    valid_metrics = {"hallucination", "relevance", "toxicity", "rubric", "fluency", "coherence", "sentiment", "correctness"}
+    valid_metrics = {
+        "hallucination",
+        "relevance",
+        "toxicity",
+        "rubric",
+        "fluency",
+        "coherence",
+        "sentiment",
+        "correctness",
+    }
     if metric not in valid_metrics:
-        console.print(f"[bold red]Unknown metric: {metric}. Valid: {', '.join(sorted(valid_metrics))}[/]")
+        console.print(
+            f"[bold red]Unknown metric: {metric}. Valid: {', '.join(sorted(valid_metrics))}[/]"
+        )
         raise typer.Exit(code=1)
 
-    from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, MofNCompleteColumn
+    from rich.progress import (
+        Progress,
+        SpinnerColumn,
+        TextColumn,
+        BarColumn,
+        MofNCompleteColumn,
+    )
 
     with Progress(
         SpinnerColumn(),
@@ -285,14 +348,15 @@ def eval_cmd(
 
     if output:
         from checkllm.regression.snapshot import (
-            MetricRecord, Snapshot, TestRunRecord, save_snapshot,
+            MetricRecord,
+            Snapshot,
+            TestRunRecord,
+            save_snapshot,
         )
 
         tests = {
             f"eval_case_{i}": [
-                TestRunRecord(
-                    metrics={r.metric_name: MetricRecord(score=r.score, passed=r.passed)}
-                )
+                TestRunRecord(metrics={r.metric_name: MetricRecord(score=r.score, passed=r.passed)})
             ]
             for i, r in enumerate(collector.results)
         }
@@ -316,9 +380,11 @@ def _generate_output(prompt: str, model: str, config) -> str:
         if config.judge_backend == "anthropic":
             try:
                 from anthropic import AsyncAnthropic
+
                 client = AsyncAnthropic()
                 response = await client.messages.create(
-                    model=model, max_tokens=1024,
+                    model=model,
+                    max_tokens=1024,
                     messages=[{"role": "user", "content": prompt}],
                 )
                 return response.content[0].text if response.content else ""
@@ -326,6 +392,7 @@ def _generate_output(prompt: str, model: str, config) -> str:
                 return f"[Generation failed: {e}]"
         else:
             from openai import AsyncOpenAI
+
             client = AsyncOpenAI()
             response = await client.chat.completions.create(
                 model=model,
@@ -340,6 +407,7 @@ def _generate_output(prompt: str, model: str, config) -> str:
         loop = None
     if loop and loop.is_running():
         import concurrent.futures
+
         with concurrent.futures.ThreadPoolExecutor() as pool:
             return pool.submit(asyncio.run, _call()).result()
     return asyncio.run(_call())
@@ -349,7 +417,9 @@ def _generate_output(prompt: str, model: str, config) -> str:
 def diff(
     baseline: str = typer.Option(..., "--baseline", "-b", help="Path to baseline snapshot"),
     current: str = typer.Option(..., "--current", "-c", help="Path to current snapshot"),
-    fail_on_regression: bool = typer.Option(False, "--fail-on-regression", help="Exit 1 if regression detected"),
+    fail_on_regression: bool = typer.Option(
+        False, "--fail-on-regression", help="Exit 1 if regression detected"
+    ),
 ):
     """Compare two snapshots and detect regressions."""
     from checkllm.regression.snapshot import load_snapshot
@@ -371,7 +441,9 @@ def diff(
 
     config = load_config()
     report = compare_snapshot(
-        baseline_snap, current_snap, p_threshold=config.p_value_threshold,
+        baseline_snap,
+        current_snap,
+        p_threshold=config.p_value_threshold,
     )
 
     render_regression_report(report.comparisons)
@@ -389,9 +461,17 @@ def diff(
 @app.command()
 def history(
     limit: int = typer.Option(20, "--limit", "-n", help="Number of runs to show"),
-    run_id: Optional[int] = typer.Option(None, "--run", "-r", help="Show details for a specific run"),
-    trend: Optional[str] = typer.Option(None, "--trend", help="Show score trend for test::metric (e.g. 'test_qa::hallucination')"),
-    compare_runs: Optional[str] = typer.Option(None, "--compare", help="Compare two runs: 'ID1,ID2'"),
+    run_id: Optional[int] = typer.Option(
+        None, "--run", "-r", help="Show details for a specific run"
+    ),
+    trend: Optional[str] = typer.Option(
+        None,
+        "--trend",
+        help="Show score trend for test::metric (e.g. 'test_qa::hallucination')",
+    ),
+    compare_runs: Optional[str] = typer.Option(
+        None, "--compare", help="Compare two runs: 'ID1,ID2'"
+    ),
 ):
     """View historical run data and trends."""
     from rich.table import Table
@@ -421,7 +501,11 @@ def history(
 
         for point in data:
             ts = datetime.fromtimestamp(point["timestamp"]).strftime("%Y-%m-%d %H:%M")
-            status = Text("PASS", style="bold green") if point["passed"] else Text("FAIL", style="bold red")
+            status = (
+                Text("PASS", style="bold green")
+                if point["passed"]
+                else Text("FAIL", style="bold red")
+            )
             table.add_row(
                 str(point["run_id"]),
                 ts,
@@ -519,7 +603,9 @@ def _render_run_detail(record) -> None:
         table.add_column("Cost", justify="right")
 
         for c in checks:
-            status = Text("PASS", style="bold green") if c["passed"] else Text("FAIL", style="bold red")
+            status = (
+                Text("PASS", style="bold green") if c["passed"] else Text("FAIL", style="bold red")
+            )
             table.add_row(
                 status,
                 c.get("metric_name", ""),
@@ -539,8 +625,12 @@ def _render_run_comparison(run1, run2) -> None:
     ts2 = datetime.fromtimestamp(run2.timestamp).strftime("%m-%d %H:%M")
 
     console.print(f"\n[bold]Comparing Run #{run1.run_id} vs Run #{run2.run_id}[/]")
-    console.print(f"  Run #{run1.run_id}: {ts1} {run1.label or ''} ({run1.git_commit or 'no commit'})")
-    console.print(f"  Run #{run2.run_id}: {ts2} {run2.label or ''} ({run2.git_commit or 'no commit'})")
+    console.print(
+        f"  Run #{run1.run_id}: {ts1} {run1.label or ''} ({run1.git_commit or 'no commit'})"
+    )
+    console.print(
+        f"  Run #{run2.run_id}: {ts2} {run2.label or ''} ({run2.git_commit or 'no commit'})"
+    )
 
     # Build lookup of test->metric->score for each run
     def _build_scores(results):
@@ -594,9 +684,7 @@ def _render_run_comparison(run1, run2) -> None:
     # Summary
     cost_delta = run2.total_cost - run1.total_cost
     pass_delta = run2.passed_checks - run1.passed_checks
-    console.print(
-        f"\n  Cost: ${run1.total_cost:.4f} -> ${run2.total_cost:.4f} ({cost_delta:+.4f})"
-    )
+    console.print(f"\n  Cost: ${run1.total_cost:.4f} -> ${run2.total_cost:.4f} ({cost_delta:+.4f})")
     console.print(
         f"  Pass rate: {run1.passed_checks}/{run1.total_checks} -> "
         f"{run2.passed_checks}/{run2.total_checks} ({pass_delta:+d})"
@@ -679,7 +767,9 @@ def estimate(
 def eval_yaml(
     config: str = typer.Argument(help="Path to YAML config file"),
     budget: Optional[float] = typer.Option(None, "--budget", help="Override budget (USD)"),
-    dry_run: bool = typer.Option(False, "--dry-run", help="Parse config and show plan without running"),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Parse config and show plan without running"
+    ),
 ):
     """Run evaluation from a YAML configuration file.
 
@@ -711,8 +801,12 @@ def eval_yaml(
         cfg.settings.budget = budget
 
     console.print(f"[bold]YAML Evaluation: {cfg.description or config}[/]")
-    console.print(f"[dim]Tests: {len(cfg.tests)} | Prompts: {len(cfg.prompts) or 1} | Providers: {len(cfg.providers) or 1}[/]")
-    console.print(f"[dim]Judge: {cfg.judge.backend}{'/' + cfg.judge.model if cfg.judge.model else ''}[/]")
+    console.print(
+        f"[dim]Tests: {len(cfg.tests)} | Prompts: {len(cfg.prompts) or 1} | Providers: {len(cfg.providers) or 1}[/]"
+    )
+    console.print(
+        f"[dim]Judge: {cfg.judge.backend}{'/' + cfg.judge.model if cfg.judge.model else ''}[/]"
+    )
 
     total_assertions = sum(len(t.assert_) for t in cfg.tests)
     total_combos = (len(cfg.prompts) or 1) * (len(cfg.providers) or 1)
@@ -734,6 +828,7 @@ def eval_yaml(
 
     if loop and loop.is_running():
         import concurrent.futures
+
         with concurrent.futures.ThreadPoolExecutor() as pool:
             result = pool.submit(_asyncio.run, evaluator.run_from_config(cfg)).result()
     else:
@@ -755,7 +850,9 @@ def eval_yaml(
 def init(
     path: str = typer.Argument(".", help="Directory to initialize"),
     use_case: Optional[str] = typer.Option(
-        None, "--use-case", "-u",
+        None,
+        "--use-case",
+        "-u",
         help="What you're building: rag, chatbot, agent, general",
     ),
     ci: bool = typer.Option(False, "--ci", help="Also generate GitHub Actions workflow"),
@@ -773,7 +870,9 @@ def init(
         console.print(f"[green]Detected judge backend:[/] {backend} ({model})")
     else:
         backend, model = "openai", "gpt-4o"
-        console.print("[yellow]No API key or Ollama detected. Generating deterministic-only tests.[/]")
+        console.print(
+            "[yellow]No API key or Ollama detected. Generating deterministic-only tests.[/]"
+        )
         console.print("[dim]Set OPENAI_API_KEY or start Ollama to enable LLM-as-judge checks.[/]")
 
     # If no use_case provided, default to "general" (non-interactive for CLI testing)
@@ -799,12 +898,12 @@ def init(
     # Write pyproject.toml config
     pyproject = target / "pyproject.toml"
     checkllm_config = (
-        f'\n[tool.checkllm]\n'
+        f"\n[tool.checkllm]\n"
         f'judge_backend = "{backend}"\n'
         f'judge_model = "{model}"\n'
-        f'default_threshold = 0.8\n'
-        f'cache_enabled = true\n'
-        f'max_concurrency = 10\n'
+        f"default_threshold = 0.8\n"
+        f"cache_enabled = true\n"
+        f"max_concurrency = 10\n"
     )
     if pyproject.exists():
         content = pyproject.read_text()
@@ -816,11 +915,10 @@ def init(
     else:
         full_pyproject = (
             '[project]\nname = "my-project"\nversion = "0.1.0"\n'
-            'dependencies = []\n\n'
-            '[project.optional-dependencies]\n'
+            "dependencies = []\n\n"
+            "[project.optional-dependencies]\n"
             'dev = [\n    "checkllm",\n    "pytest",\n]\n\n'
-            '[tool.pytest.ini_options]\ntestpaths = ["tests"]\n'
-            + checkllm_config
+            '[tool.pytest.ini_options]\ntestpaths = ["tests"]\n' + checkllm_config
         )
         pyproject.write_text(full_pyproject)
         console.print(f"[green]Created {pyproject}[/]")
@@ -837,10 +935,10 @@ def init(
             # Fallback if templates not found
             sample_test.write_text(
                 '"""checkllm test file."""\n\n\n'
-                'def test_output_quality(check):\n'
+                "def test_output_quality(check):\n"
                 '    output = "Python is a high-level programming language."\n'
                 '    check.contains(output, "Python")\n'
-                '    check.max_tokens(output, limit=200)\n'
+                "    check.max_tokens(output, limit=200)\n"
             )
         console.print(f"[green]Created {sample_test}[/]")
     else:
@@ -851,7 +949,7 @@ def init(
     if not conftest.exists():
         conftest.write_text(
             '"""checkllm configuration.\n\n'
-            'The check fixture is auto-discovered by the checkllm pytest plugin.\n'
+            "The check fixture is auto-discovered by the checkllm pytest plugin.\n"
             '"""\n'
         )
         console.print(f"[green]Created {conftest}[/]")
@@ -862,7 +960,7 @@ def init(
     sample_dataset = fixtures_dir / "cases.yaml"
     if not sample_dataset.exists():
         sample_dataset.write_text(
-            '# Sample dataset for checkllm\n'
+            "# Sample dataset for checkllm\n"
             '- input: "What is Python?"\n'
             '  expected: "Python is a programming language"\n'
             '  query: "Explain Python"\n'
@@ -887,14 +985,14 @@ def init(
             ci_file.write_text(ci_template.read_text())
         else:
             ci_file.write_text(
-                'name: checkllm\non:\n  pull_request:\n    branches: [main]\n'
-                'jobs:\n  eval:\n    runs-on: ubuntu-latest\n    steps:\n'
-                '      - uses: actions/checkout@v4\n'
-                '      - uses: actions/setup-python@v5\n'
+                "name: checkllm\non:\n  pull_request:\n    branches: [main]\n"
+                "jobs:\n  eval:\n    runs-on: ubuntu-latest\n    steps:\n"
+                "      - uses: actions/checkout@v4\n"
+                "      - uses: actions/setup-python@v5\n"
                 '        with:\n          python-version: "3.12"\n'
-                '      - run: pip install checkllm[all] pytest\n'
-                '      - run: checkllm run tests/ --budget 5.0\n'
-                '        env:\n          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}\n'
+                "      - run: pip install checkllm[all] pytest\n"
+                "      - run: checkllm run tests/ --budget 5.0\n"
+                "        env:\n          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}\n"
             )
         console.print(f"[green]Created {ci_file}[/]")
 
@@ -910,10 +1008,14 @@ def init(
 @app.command()
 def watch(
     test_path: str = typer.Argument(help="Path to test directory or file"),
-    watch_path: Optional[list[str]] = typer.Option(None, "--watch", "-w", help="Additional paths to watch"),
+    watch_path: Optional[list[str]] = typer.Option(
+        None, "--watch", "-w", help="Additional paths to watch"
+    ),
     interval: float = typer.Option(1.0, "--interval", "-i", help="Poll interval in seconds"),
     debounce: float = typer.Option(0.5, "--debounce", help="Debounce delay in seconds"),
-    pattern: Optional[list[str]] = typer.Option(None, "--pattern", "-p", help="File patterns to watch"),
+    pattern: Optional[list[str]] = typer.Option(
+        None, "--pattern", "-p", help="File patterns to watch"
+    ),
     budget: Optional[float] = typer.Option(None, "--budget", help="Budget per run"),
     no_cache: bool = typer.Option(False, "--no-cache", help="Disable cache"),
     profile: Optional[str] = typer.Option(None, "--profile", help="Config profile to use"),
@@ -949,7 +1051,9 @@ def watch(
 
 @app.command(name="list-metrics")
 def list_metrics(
-    installed: bool = typer.Option(False, "--installed", help="Show only installed/available metrics"),
+    installed: bool = typer.Option(
+        False, "--installed", help="Show only installed/available metrics"
+    ),
 ):
     """List all available metrics and checks."""
     from rich.table import Table
@@ -1037,6 +1141,7 @@ def list_metrics(
 
     # Plugin metrics
     from checkllm.metrics import _global_registry
+
     _global_registry.load_entry_points()
     plugins = [m for m in _global_registry.list_metrics_detailed() if m["source"] != "local"]
     if plugins:
@@ -1080,7 +1185,9 @@ def yaml_run(
 
     config = load_eval_config(config_path)
     console.print(f"[bold]Running YAML evaluation:[/] {config.description or config_path}")
-    console.print(f"  Providers: {len(config.providers)}, Prompts: {len(config.prompts)}, Tests: {len(config.tests)}")
+    console.print(
+        f"  Providers: {len(config.providers)}, Prompts: {len(config.prompts)}, Tests: {len(config.tests)}"
+    )
 
     runner = YamlEvalRunner(config)
     results = asyncio.run(runner.run())
@@ -1095,11 +1202,18 @@ def yaml_run(
 
     for result in results:
         for check in result.get("results", []):
-            status = Text("PASS", style="bold green") if check.get("passed") else Text("FAIL", style="bold red")
+            status = (
+                Text("PASS", style="bold green")
+                if check.get("passed")
+                else Text("FAIL", style="bold red")
+            )
             table.add_row(
-                result.get("provider", ""), result.get("prompt", ""),
-                result.get("test", "")[:30], check.get("metric_name", ""),
-                status, f"{check.get('score', 0):.2f}",
+                result.get("provider", ""),
+                result.get("prompt", ""),
+                result.get("test", "")[:30],
+                check.get("metric_name", ""),
+                status,
+                f"{check.get('score', 0):.2f}",
             )
     console.print(table)
 
@@ -1132,6 +1246,7 @@ def redteam(
 
     async def target(prompt: str) -> str:
         from openai import AsyncOpenAI
+
         client = AsyncOpenAI()
         resp = await client.chat.completions.create(
             model="gpt-4o-mini",
@@ -1144,10 +1259,14 @@ def redteam(
         return resp.choices[0].message.content or ""
 
     red = RedTeamer()
-    report = asyncio.run(red.scan(
-        target=target, vulnerability_types=vuln_types,
-        attacks_per_type=attacks_per_type, system_prompt=target_prompt,
-    ))
+    report = asyncio.run(
+        red.scan(
+            target=target,
+            vulnerability_types=vuln_types,
+            attacks_per_type=attacks_per_type,
+            system_prompt=target_prompt,
+        )
+    )
     console.print(report.summary())
 
     if output:
@@ -1213,9 +1332,13 @@ def experiments(
 
     for r in runs:
         table.add_row(
-            r.run_id[:8], r.experiment_name, r.model,
-            r.prompt_version, f"{r.avg_score:.3f}",
-            f"{r.pass_rate:.0%}", f"${r.total_cost:.4f}",
+            r.run_id[:8],
+            r.experiment_name,
+            r.model,
+            r.prompt_version,
+            f"{r.avg_score:.3f}",
+            f"{r.pass_rate:.0%}",
+            f"${r.total_cost:.4f}",
         )
     console.print(table)
 
@@ -1236,7 +1359,9 @@ def ci_gitlab_template(
         None, "--budget", help="Maximum USD spend appended to the command."
     ),
     output: Optional[str] = typer.Option(
-        None, "--output", "-o",
+        None,
+        "--output",
+        "-o",
         help="Write YAML to this path instead of stdout.",
     ),
 ):
@@ -1258,8 +1383,12 @@ def ci_gitlab_template(
 @app.command()
 def ci(
     test_path: str = typer.Argument("tests/", help="Path to test directory or file"),
-    fail_on_regression: bool = typer.Option(False, "--fail-on-regression", help="Exit 1 if regression detected"),
-    compare: Optional[str] = typer.Option(None, "--compare", help="Branch to compare against (snapshot baseline)"),
+    fail_on_regression: bool = typer.Option(
+        False, "--fail-on-regression", help="Exit 1 if regression detected"
+    ),
+    compare: Optional[str] = typer.Option(
+        None, "--compare", help="Branch to compare against (snapshot baseline)"
+    ),
     budget: Optional[float] = typer.Option(None, "--budget", help="Maximum USD to spend"),
     no_comment: bool = typer.Option(False, "--no-comment", help="Skip posting PR comment"),
     profile: Optional[str] = typer.Option(None, "--profile", help="Config profile to use"),
@@ -1308,7 +1437,11 @@ def ci(
     # Build pytest command
     snapshot_path = ".checkllm/ci_snapshot.json"
     cmd = [
-        sys.executable, "-m", "pytest", test_path, "-v",
+        sys.executable,
+        "-m",
+        "pytest",
+        test_path,
+        "-v",
         f"--checkllm-snapshot={snapshot_path}",
     ]
 
@@ -1325,30 +1458,34 @@ def ci(
     # Post PR comment if in GitHub Actions
     if is_github_ci and pr_number and github_repository and not no_comment:
         try:
-            from checkllm.pytest_plugin import get_session_results
+            from checkllm.pytest_plugin import get_session_results  # noqa: F401
             from checkllm.reporting.github import generate_pr_comment, post_pr_comment
 
             # Load results from snapshot
             snapshot_file = Path(snapshot_path)
             if snapshot_file.exists():
                 from checkllm.regression.snapshot import load_snapshot
+
                 snap = load_snapshot(snapshot_file)
 
                 # Convert snapshot to CheckResult-like format for comment generation
                 from checkllm.models import CheckResult
+
                 results: dict[str, list[CheckResult]] = {}
                 for test_name, runs in snap.tests.items():
                     checks = []
                     for run in runs:
                         for metric_name, metric in run.metrics.items():
-                            checks.append(CheckResult(
-                                passed=metric.passed,
-                                score=metric.score,
-                                reasoning="",
-                                cost=0.0,
-                                latency_ms=0,
-                                metric_name=metric_name,
-                            ))
+                            checks.append(
+                                CheckResult(
+                                    passed=metric.passed,
+                                    score=metric.score,
+                                    reasoning="",
+                                    cost=0.0,
+                                    latency_ms=0,
+                                    metric_name=metric_name,
+                                )
+                            )
                     results[test_name] = checks
 
                 comment = generate_pr_comment(results)
@@ -1368,12 +1505,7 @@ def ci(
             console.print(f"[yellow]Failed to post PR comment: {exc}[/]")
 
     # Post MR comment if in GitLab CI
-    if (
-        is_gitlab_ci
-        and gitlab_context is not None
-        and gitlab_context.mr_iid
-        and not no_comment
-    ):
+    if is_gitlab_ci and gitlab_context is not None and gitlab_context.mr_iid and not no_comment:
         try:
             snapshot_file = Path(snapshot_path)
             if snapshot_file.exists():
@@ -1387,21 +1519,21 @@ def ci(
                     mr_checks: list[CheckResult] = []
                     for run in runs:
                         for metric_name, metric in run.metrics.items():
-                            mr_checks.append(CheckResult(
-                                passed=metric.passed,
-                                score=metric.score,
-                                reasoning="",
-                                cost=0.0,
-                                latency_ms=0,
-                                metric_name=metric_name,
-                            ))
+                            mr_checks.append(
+                                CheckResult(
+                                    passed=metric.passed,
+                                    score=metric.score,
+                                    reasoning="",
+                                    cost=0.0,
+                                    latency_ms=0,
+                                    metric_name=metric_name,
+                                )
+                            )
                     mr_results[test_name] = mr_checks
 
                 body = gitlab_ci.format_mr_comment(mr_results)
                 if gitlab_ci.post_mr_comment(body, ctx=gitlab_context):
-                    console.print(
-                        f"[green]Posted results to MR !{gitlab_context.mr_iid}[/]"
-                    )
+                    console.print(f"[green]Posted results to MR !{gitlab_context.mr_iid}[/]")
                 else:
                     if gitlab_context.token_is_job_token:
                         console.print(
@@ -1409,13 +1541,9 @@ def ci(
                             "set GITLAB_TOKEN or CHECKLLM_GITLAB_TOKEN[/]"
                         )
                     else:
-                        console.print(
-                            "[yellow]Failed to post MR comment (check token/scopes)[/]"
-                        )
+                        console.print("[yellow]Failed to post MR comment (check token/scopes)[/]")
             else:
-                console.print(
-                    "[yellow]No snapshot generated — skipping MR comment[/]"
-                )
+                console.print("[yellow]No snapshot generated — skipping MR comment[/]")
         except Exception as exc:
             console.print(f"[yellow]Failed to post MR comment: {exc}[/]")
 
@@ -1454,9 +1582,7 @@ def _write_cases(cases, output: Path) -> None:
         with open(output, "w", encoding="utf-8") as f:
             _json.dump(records, f, indent=2, default=str)
     else:
-        raise typer.BadParameter(
-            f"Unsupported output format: {output.suffix}. Use .yaml or .json."
-        )
+        raise typer.BadParameter(f"Unsupported output format: {output.suffix}. Use .yaml or .json.")
 
 
 @dataset_app.command("load")
@@ -1466,11 +1592,13 @@ def dataset_load(
     config: Optional[str] = typer.Option(None, "--config", help="Dataset config/subset"),
     limit: Optional[int] = typer.Option(None, "--limit", help="Maximum number of rows"),
     streaming: bool = typer.Option(False, "--streaming", help="Use streaming mode"),
-    output: str = typer.Option("dataset.yaml", "--output", "-o", help="Output file (.yaml or .json)"),
+    output: str = typer.Option(
+        "dataset.yaml", "--output", "-o", help="Output file (.yaml or .json)"
+    ),
     field_map: Optional[str] = typer.Option(
         None,
         "--field-map",
-        help="JSON mapping HF columns to Case fields, e.g. '{\"question\": \"input\"}'",
+        help='JSON mapping HF columns to Case fields, e.g. \'{"question": "input"}\'',
     ),
     dataset_id: Optional[str] = typer.Option(
         None, "--dataset-id", help="Register the load under this lineage id"
@@ -1522,7 +1650,9 @@ def dataset_load(
 @dataset_app.command("split")
 def dataset_split(
     input: str = typer.Argument(help="Path to dataset file (YAML, JSON, CSV)"),
-    test_size: float = typer.Option(0.2, "--test-size", help="Fraction of cases for the test split"),
+    test_size: float = typer.Option(
+        0.2, "--test-size", help="Fraction of cases for the test split"
+    ),
     seed: int = typer.Option(42, "--seed", help="Random seed for reproducibility"),
     stratify_by: Optional[str] = typer.Option(None, "--stratify-by", help="Field to stratify on"),
     train: str = typer.Option("train.yaml", "--train", help="Train split output path"),
@@ -1533,9 +1663,7 @@ def dataset_split(
     from checkllm.datasets.splits import train_test_split as _split
 
     cases = load_dataset(Path(input))
-    train_cases, test_cases = _split(
-        cases, test_size=test_size, seed=seed, stratify_by=stratify_by
-    )
+    train_cases, test_cases = _split(cases, test_size=test_size, seed=seed, stratify_by=stratify_by)
     _write_cases(train_cases, Path(train))
     _write_cases(test_cases, Path(test))
     console.print(

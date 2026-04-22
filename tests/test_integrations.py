@@ -4,6 +4,7 @@ Covers LangChain, LlamaIndex, CrewAI, PydanticAI, OpenAI Agents SDK,
 and Claude Agent SDK handlers.  These tests don't require the target
 frameworks installed -- they test the checkllm wrapper logic directly.
 """
+
 import logging
 from types import SimpleNamespace
 
@@ -42,6 +43,7 @@ def test_langchain_handler_fails_on_missing():
 def test_langchain_handler_raise_mode():
     handler = LangChainHandler(checks=["contains:goodbye"], on_failure="raise")
     from checkllm.guardrails import GuardrailError
+
     with pytest.raises(GuardrailError):
         handler.validate("hello world")
 
@@ -49,6 +51,7 @@ def test_langchain_handler_raise_mode():
 def test_langchain_handler_log_mode(caplog):
     handler = LangChainHandler(checks=["contains:goodbye"], on_failure="log")
     import logging
+
     with caplog.at_level(logging.WARNING, logger="checkllm.integrations.langchain"):
         result = handler.validate("hello world")
     assert not result.valid
@@ -93,6 +96,7 @@ def test_langchain_on_llm_end_with_generations():
 def test_langchain_handler_inherits_base_callback_handler():
     try:
         from langchain_core.callbacks import BaseCallbackHandler
+
         assert issubclass(LangChainHandler, BaseCallbackHandler), (
             "CheckllmCallbackHandler must inherit from BaseCallbackHandler "
             "so LangChain's callback system registers it correctly"
@@ -120,6 +124,7 @@ def test_llamaindex_handler_fails():
 def test_llamaindex_handler_raise_mode():
     handler = LlamaIndexHandler(checks=["contains:goodbye"], on_failure="raise")
     from checkllm.guardrails import GuardrailError
+
     with pytest.raises(GuardrailError):
         handler.validate("hello world")
 
@@ -495,5 +500,6 @@ class TestLazyImports:
 
     def test_invalid_attr_raises(self):
         import checkllm.integrations as mod
+
         with pytest.raises(AttributeError, match="has no attribute"):
             _ = mod.NonExistentHandler

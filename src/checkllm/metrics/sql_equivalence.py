@@ -47,9 +47,7 @@ class SQLEquivalenceMetric:
         self.threshold = threshold
         self.system_prompt: str = SQL_EQUIVALENCE_SYSTEM_PROMPT
 
-    async def evaluate(
-        self, output: str, reference: str, schema: str | None = None
-    ) -> CheckResult:
+    async def evaluate(self, output: str, reference: str, schema: str | None = None) -> CheckResult:
         """Evaluate semantic equivalence of two SQL queries.
 
         Args:
@@ -72,9 +70,7 @@ class SQLEquivalenceMetric:
         prompt = "\n".join(parts)
 
         start = time.perf_counter_ns()
-        response = await self.judge.evaluate(
-            prompt=prompt, system_prompt=self.system_prompt
-        )
+        response = await self.judge.evaluate(prompt=prompt, system_prompt=self.system_prompt)
         elapsed_ms = (time.perf_counter_ns() - start) // 1_000_000
 
         return CheckResult(

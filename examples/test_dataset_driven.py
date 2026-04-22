@@ -3,10 +3,12 @@
 Run with: pytest examples/test_dataset_driven.py -v
 No API key needed.
 """
+
 from checkllm import Case, dataset
 
 
 # --- YAML dataset ---
+
 
 @dataset("examples/qa_dataset.yaml")
 def test_qa_from_yaml(check, case):
@@ -24,6 +26,7 @@ def test_qa_from_yaml(check, case):
 
 
 # --- Python generator dataset ---
+
 
 def regression_cases():
     """Generate test cases programmatically."""
@@ -54,6 +57,7 @@ def test_qa_from_generator(check, case):
 
 
 # --- Helper ---
+
 
 def _fake_qa_agent(question: str) -> str:
     """Simulate an LLM agent for demonstration purposes."""

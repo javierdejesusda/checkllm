@@ -1,4 +1,5 @@
 """Tests for the consensus judging system."""
+
 from __future__ import annotations
 
 import asyncio
@@ -25,7 +26,13 @@ from checkllm.models import CheckResult, JudgeResponse
 class _SimpleJudge:
     """Minimal JudgeBackend that returns a fixed score."""
 
-    def __init__(self, score: float, reasoning: str = "ok", cost: float = 0.01, delay: float = 0.0) -> None:
+    def __init__(
+        self,
+        score: float,
+        reasoning: str = "ok",
+        cost: float = 0.01,
+        delay: float = 0.0,
+    ) -> None:
         self.score = score
         self.reasoning = reasoning
         self.cost = cost
@@ -89,7 +96,14 @@ class TestJudgeVote:
 
     def test_score_range(self):
         with pytest.raises(Exception):
-            JudgeVote(judge_name="x", score=1.5, passed=True, reasoning="", cost=0.0, latency_ms=0)
+            JudgeVote(
+                judge_name="x",
+                score=1.5,
+                passed=True,
+                reasoning="",
+                cost=0.0,
+                latency_ms=0,
+            )
 
 
 # ===========================================================================
@@ -108,8 +122,22 @@ class TestConsensusResult:
             metric_name="hallucination",
             strategy="mean",
             votes=[
-                JudgeVote(judge_name="a", score=0.9, passed=True, reasoning="r1", cost=0.01, latency_ms=100),
-                JudgeVote(judge_name="b", score=0.8, passed=True, reasoning="r2", cost=0.02, latency_ms=200),
+                JudgeVote(
+                    judge_name="a",
+                    score=0.9,
+                    passed=True,
+                    reasoning="r1",
+                    cost=0.01,
+                    latency_ms=100,
+                ),
+                JudgeVote(
+                    judge_name="b",
+                    score=0.8,
+                    passed=True,
+                    reasoning="r2",
+                    cost=0.02,
+                    latency_ms=200,
+                ),
             ],
             agreement_ratio=1.0,
         )

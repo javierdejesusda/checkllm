@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 from typing import Any
 
 import pytest
@@ -12,7 +11,6 @@ from checkllm.optimize import (
     MIPROv2Optimizer,
     OptimizationResult,
     PromptOptimizer,
-    PromptVariant,
     SIMBAOptimizer,
     create_optimizer,
 )
@@ -134,9 +132,7 @@ class TestCOPROOptimizer:
             ({"input": "What is X?", "expected": "Y"}, 0.3),
             ({"input": "Explain Z", "expected": "W"}, 0.2),
         ]
-        patterns = await optimizer._identify_failure_patterns(
-            "Test prompt", failures
-        )
+        patterns = await optimizer._identify_failure_patterns("Test prompt", failures)
         assert isinstance(patterns, str)
         assert len(patterns) > 0
 
@@ -205,9 +201,7 @@ class TestSIMBAOptimizer:
             "Translate this text to Spanish",
             "Evaluate the factual accuracy of the response",
         ]
-        result = SIMBAOptimizer._find_most_similar(
-            "Summarize the document", pool
-        )
+        result = SIMBAOptimizer._find_most_similar("Summarize the document", pool)
         assert result == "Summarize the document briefly"
 
     def test_find_most_similar_exact_match(self):

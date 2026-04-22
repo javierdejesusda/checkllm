@@ -21,6 +21,7 @@ _CHECKLLM_KEY = pytest.StashKey[CheckCollector]()
 # Session-level result store
 # ---------------------------------------------------------------------------
 
+
 class _SessionStore:
     """Collects per-test CheckResults across the entire pytest session."""
 
@@ -43,6 +44,7 @@ def get_session_results() -> dict[str, list[CheckResult]]:
 # ---------------------------------------------------------------------------
 # pytest command-line options
 # ---------------------------------------------------------------------------
+
 
 def pytest_addoption(parser: pytest.Parser) -> None:
     group = parser.getgroup("checkllm", "checkllm LLM testing options")
@@ -87,6 +89,7 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture
 def check(request):
     """Provides a CheckCollector that collects results and raises on teardown."""
@@ -99,6 +102,7 @@ def check(request):
 # ---------------------------------------------------------------------------
 # Hooks
 # ---------------------------------------------------------------------------
+
 
 @pytest.hookimpl(hookwrapper=True)
 def pytest_runtest_makereport(item, call):
@@ -132,7 +136,9 @@ def pytest_runtest_makereport(item, call):
                 if failed:
                     report.outcome = "failed"
                     report.longrepr = _format_check_failures(
-                        item.nodeid, failed, collector.results,
+                        item.nodeid,
+                        failed,
+                        collector.results,
                     )
 
 
@@ -205,36 +211,85 @@ _CHECKLLM_MARKERS: dict[str, str] = {
 
 # Metric names that hit an LLM judge. Best-effort list — the auto
 # detector is intentionally permissive.
-_LLM_METRICS: frozenset[str] = frozenset({
-    "hallucination", "relevance", "toxicity", "rubric", "fluency",
-    "coherence", "sentiment", "correctness", "faithfulness",
-    "context_relevance", "answer_completeness", "instruction_following",
-    "summarization", "bias", "consistency", "groundedness", "g_eval",
-    "contextual_precision", "contextual_recall", "task_completion",
-    "role_adherence", "tool_accuracy", "knowledge_retention",
-    "conversation_completeness", "plan_quality", "goal_accuracy",
-    "step_efficiency", "argument_correctness", "plan_adherence",
-    "pii_detection", "misuse_detection", "role_violation", "non_advice",
-    "image_coherence", "image_helpfulness", "image_relevance",
-    "multimodal_faithfulness", "text_to_image", "mcp_task_completion",
-    "mcp_use",
-})
+_LLM_METRICS: frozenset[str] = frozenset(
+    {
+        "hallucination",
+        "relevance",
+        "toxicity",
+        "rubric",
+        "fluency",
+        "coherence",
+        "sentiment",
+        "correctness",
+        "faithfulness",
+        "context_relevance",
+        "answer_completeness",
+        "instruction_following",
+        "summarization",
+        "bias",
+        "consistency",
+        "groundedness",
+        "g_eval",
+        "contextual_precision",
+        "contextual_recall",
+        "task_completion",
+        "role_adherence",
+        "tool_accuracy",
+        "knowledge_retention",
+        "conversation_completeness",
+        "plan_quality",
+        "goal_accuracy",
+        "step_efficiency",
+        "argument_correctness",
+        "plan_adherence",
+        "pii_detection",
+        "misuse_detection",
+        "role_violation",
+        "non_advice",
+        "image_coherence",
+        "image_helpfulness",
+        "image_relevance",
+        "multimodal_faithfulness",
+        "text_to_image",
+        "mcp_task_completion",
+        "mcp_use",
+    }
+)
 
-_RAG_METRICS: frozenset[str] = frozenset({
-    "hallucination", "faithfulness", "context_relevance",
-    "answer_completeness", "groundedness", "contextual_precision",
-    "contextual_recall",
-})
+_RAG_METRICS: frozenset[str] = frozenset(
+    {
+        "hallucination",
+        "faithfulness",
+        "context_relevance",
+        "answer_completeness",
+        "groundedness",
+        "contextual_precision",
+        "contextual_recall",
+    }
+)
 
-_REDTEAM_METRICS: frozenset[str] = frozenset({
-    "toxicity", "bias", "pii_detection", "misuse_detection",
-    "role_violation", "non_advice", "no_pii", "is_refusal",
-})
+_REDTEAM_METRICS: frozenset[str] = frozenset(
+    {
+        "toxicity",
+        "bias",
+        "pii_detection",
+        "misuse_detection",
+        "role_violation",
+        "non_advice",
+        "no_pii",
+        "is_refusal",
+    }
+)
 
-_MULTIMODAL_METRICS: frozenset[str] = frozenset({
-    "image_coherence", "image_helpfulness", "image_relevance",
-    "multimodal_faithfulness", "text_to_image",
-})
+_MULTIMODAL_METRICS: frozenset[str] = frozenset(
+    {
+        "image_coherence",
+        "image_helpfulness",
+        "image_relevance",
+        "multimodal_faithfulness",
+        "text_to_image",
+    }
+)
 
 _CHECK_CALL_RE = re.compile(r"\bcheck(?:\.expect|\.that\([^)]*\))?\s*\.\s*(a?\w+)\s*\(")
 
@@ -325,9 +380,7 @@ def apply_checkllm_markers(item: pytest.Item) -> Iterable[str]:
     return tuple(added)
 
 
-def pytest_collection_modifyitems(
-    config: pytest.Config, items: list[pytest.Item]
-) -> None:
+def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item]) -> None:
     """Auto-apply checkllm markers to every collected test item.
 
     Failures are swallowed so test collection can never be broken by
@@ -356,6 +409,7 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
             _save_snapshot(results, Path(snapshot_path))
         except Exception as exc:
             import sys
+
             print(f"checkllm: failed to save snapshot: {exc}", file=sys.stderr)
 
     report_path = config.getoption("--checkllm-report", default=None)
@@ -364,6 +418,7 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
             _save_html_report(results, Path(report_path))
         except Exception as exc:
             import sys
+
             print(f"checkllm: failed to save HTML report: {exc}", file=sys.stderr)
 
     junit_path = config.getoption("--checkllm-junit", default=None)
@@ -372,36 +427,43 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
             _save_junit_report(results, Path(junit_path))
         except Exception as exc:
             import sys
+
             print(f"checkllm: failed to save JUnit report: {exc}", file=sys.stderr)
 
     markdown_path = config.getoption("--checkllm-markdown", default=None)
     if markdown_path:
         try:
             from checkllm.reporting.markdown import generate_markdown_report
+
             generate_markdown_report(results, Path(markdown_path))
         except Exception as exc:
             import sys
+
             print(f"checkllm: failed to save Markdown report: {exc}", file=sys.stderr)
 
     jsonl_path = config.getoption("--checkllm-jsonl", default=None)
     if jsonl_path:
         try:
             from checkllm.reporting.jsonl import export_jsonl
+
             export_jsonl(results, Path(jsonl_path))
         except Exception as exc:
             import sys
+
             print(f"checkllm: failed to save JSONL export: {exc}", file=sys.stderr)
 
     # Record in history
     try:
         import os
         from checkllm.history import RunHistory
+
         label = os.environ.get("CHECKLLM_RUN_LABEL", "pytest")
         history = RunHistory()
         history.record_run(results, label=label)
         history.close()
     except Exception as exc:
         import sys
+
         print(f"checkllm: failed to record history: {exc}", file=sys.stderr)
 
 
@@ -450,6 +512,7 @@ def _save_junit_report(results: dict[str, list[CheckResult]], path: Path) -> Non
 # Dataset decorator
 # ---------------------------------------------------------------------------
 
+
 def dataset(source: str | Path | Callable) -> Callable:
     """Decorator that parametrizes a test function over a dataset.
 
@@ -463,10 +526,7 @@ def dataset(source: str | Path | Callable) -> Callable:
 
     def decorator(func: Callable) -> Callable:
         cases = load_dataset(source)
-        ids = [
-            f"case-{i}-{c.query or c.input[:30]}"
-            for i, c in enumerate(cases)
-        ]
+        ids = [f"case-{i}-{c.query or c.input[:30]}" for i, c in enumerate(cases)]
 
         @pytest.mark.parametrize("case", cases, ids=ids)
         @functools.wraps(func)

@@ -6,6 +6,7 @@ strategies, knowledge-graph test synthesis, and agent trajectory metrics.
 
 This is a capability demonstration, not a ranking.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -78,7 +79,10 @@ async def run_compliance_showcase(
         A ShowcaseReport with section ``"compliance"``.
     """
     try:
-        from checkllm.compliance_frameworks import ComplianceFramework, ComplianceScanner
+        from checkllm.compliance_frameworks import (
+            ComplianceFramework,
+            ComplianceScanner,
+        )
 
         scanner = ComplianceScanner(judge=judge)
         enum_frameworks = [ComplianceFramework[name] for name in frameworks]
@@ -150,9 +154,7 @@ async def run_redteam_showcase(
             f"Ran {len(strategies)} strategies against "
             f"{len(vulnerability_types)} vulnerability types"
         )
-        samples = [
-            {"vuln": v, "strategies": strategies} for v in vulnerability_types
-        ]
+        samples = [{"vuln": v, "strategies": strategies} for v in vulnerability_types]
     except Exception as exc:
         total = 0
         pass_count = 0
@@ -197,9 +199,7 @@ async def run_kg_synthesis_showcase(
         total = len(samples)
         pass_count = total
         summary = f"Generated {total} test cases from {len(documents)} documents"
-        sample_previews = [
-            {"query": getattr(s, "query", str(s))[:120]} for s in samples[:5]
-        ]
+        sample_previews = [{"query": getattr(s, "query", str(s))[:120]} for s in samples[:5]]
     except Exception as exc:
         total = 0
         pass_count = 0
@@ -248,9 +248,7 @@ async def run_trajectory_showcase(
             results.append(r)
         total = len(results)
         pass_count = sum(1 for r in results if getattr(r, "passed", False))
-        summary = (
-            f"Scored {len(trajectories)} trajectories against expected tool sequences"
-        )
+        summary = f"Scored {len(trajectories)} trajectories against expected tool sequences"
         samples = [
             {
                 "score": getattr(r, "score", None),

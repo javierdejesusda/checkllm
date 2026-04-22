@@ -73,9 +73,7 @@ class TestConversationalTestCase:
         assert multi_turn_conversation.first_user_message == "What is Python?"
 
     def test_first_user_message_none_when_no_user(self):
-        conv = ConversationalTestCase(
-            turns=[Turn(role="system", content="System message")]
-        )
+        conv = ConversationalTestCase(turns=[Turn(role="system", content="System message")])
         assert conv.first_user_message is None
 
     def test_system_turns(self, multi_turn_conversation):

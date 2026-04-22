@@ -3,6 +3,7 @@
 Evaluate LLM outputs as they stream in token by token, running checks at
 configurable intervals and supporting early-stop conditions.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -79,9 +80,7 @@ class StreamingEvaluator:
         """
         self._sync_checks.append((name, check_fn))
 
-    def add_async_check(
-        self, name: str, check_fn: Callable[[str], Awaitable[CheckResult]]
-    ) -> None:
+    def add_async_check(self, name: str, check_fn: Callable[[str], Awaitable[CheckResult]]) -> None:
         """Register an asynchronous check function.
 
         Parameters
@@ -142,9 +141,7 @@ class StreamingEvaluator:
                     result = await task
                     results.append(result)
                 except Exception as exc:
-                    logger.warning(
-                        "Async check '%s' raised an exception: %s", name, exc
-                    )
+                    logger.warning("Async check '%s' raised an exception: %s", name, exc)
                     results.append(
                         CheckResult(
                             passed=False,
@@ -225,16 +222,12 @@ class StreamingEvaluator:
 
             # Check early-stop conditions
             if self._check_early_stop(accumulated):
-                logger.info(
-                    "Early stop triggered at %d tokens", token_count
-                )
+                logger.info("Early stop triggered at %d tokens", token_count)
                 stopped_early = True
                 # Run checks one last time before stopping
                 elapsed_ms = int((time.monotonic() - start_time) * 1000)
                 last_results = await self._run_checks(accumulated)
-                yield self._build_checkpoint(
-                    token_count, accumulated, last_results, elapsed_ms
-                )
+                yield self._build_checkpoint(token_count, accumulated, last_results, elapsed_ms)
                 return
 
             # Run checks at interval
@@ -261,9 +254,7 @@ class StreamingEvaluator:
             if token_count % self._check_interval != 0 or token_count == 0:
                 last_results = await self._run_checks(accumulated)
 
-            yield self._build_checkpoint(
-                token_count, accumulated, last_results, elapsed_ms
-            )
+            yield self._build_checkpoint(token_count, accumulated, last_results, elapsed_ms)
 
     async def evaluate_string_chunks(self, chunks: list[str]) -> StreamingCheckpoint:
         """Convenience method for testing with pre-split chunks.

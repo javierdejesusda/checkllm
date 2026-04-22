@@ -7,7 +7,6 @@ import pytest
 from checkllm.compliance_frameworks import (
     ComplianceFramework,
     FrameworkMapping,
-    FrameworkRequirement,
     get_framework_mapping,
 )
 
@@ -121,10 +120,15 @@ class TestFrameworkMappingStructure:
                 assert req.id, f"{framework.value}: requirement missing id"
                 assert req.name, f"{framework.value}: requirement missing name"
                 assert req.description, f"{framework.value}: requirement missing description"
-                assert req.severity in ("critical", "high", "medium", "low"), (
-                    f"{framework.value}: requirement {req.id} has invalid severity '{req.severity}'"
-                )
-                assert req.remediation, f"{framework.value}: requirement {req.id} missing remediation"
+                assert req.severity in (
+                    "critical",
+                    "high",
+                    "medium",
+                    "low",
+                ), f"{framework.value}: requirement {req.id} has invalid severity '{req.severity}'"
+                assert (
+                    req.remediation
+                ), f"{framework.value}: requirement {req.id} missing remediation"
 
     def test_owasp_llm_top10_has_10_requirements(self):
         mapping = get_framework_mapping(ComplianceFramework.OWASP_LLM_TOP10)

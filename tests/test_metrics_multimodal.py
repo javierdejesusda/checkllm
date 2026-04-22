@@ -1,4 +1,5 @@
 """Tests for the new multimodal evaluation metrics."""
+
 from __future__ import annotations
 
 import io
@@ -47,9 +48,7 @@ class TestImageTextAlignment:
             score=0.95, reasoning="matches", raw_output=""
         )
         metric = ImageTextAlignmentMetric(judge=vision_judge, threshold=0.8)
-        result = await metric.evaluate(
-            image=tiny_png_bytes, text="A small green square"
-        )
+        result = await metric.evaluate(image=tiny_png_bytes, text="A small green square")
         assert result.passed is True
         assert result.metric_name == "image_text_alignment"
         vision_judge.evaluate_with_images.assert_awaited_once()
@@ -98,9 +97,7 @@ class TestOCRAccuracy:
             score=0.9, reasoning="transcript matches", raw_output=""
         )
         metric = OCRAccuracyMetric(judge=vision_judge, threshold=0.85)
-        result = await metric.evaluate(
-            image=tiny_png_bytes, extracted_text="HELLO WORLD"
-        )
+        result = await metric.evaluate(image=tiny_png_bytes, extracted_text="HELLO WORLD")
         assert result.passed is True
 
     @pytest.mark.asyncio
@@ -154,9 +151,7 @@ class TestVisualHallucination:
             score=0.95, reasoning="grounded", raw_output=""
         )
         metric = VisualHallucinationMetric(judge=vision_judge, threshold=0.8)
-        result = await metric.evaluate(
-            image=tiny_png_bytes, response="A green square."
-        )
+        result = await metric.evaluate(image=tiny_png_bytes, response="A green square.")
         assert result.passed is True
 
     @pytest.mark.asyncio
@@ -165,18 +160,14 @@ class TestVisualHallucination:
             score=0.1, reasoning="hallucinated cat", raw_output=""
         )
         metric = VisualHallucinationMetric(judge=vision_judge, threshold=0.8)
-        result = await metric.evaluate(
-            image=tiny_png_bytes, response="A cat playing the piano."
-        )
+        result = await metric.evaluate(image=tiny_png_bytes, response="A cat playing the piano.")
         assert result.passed is False
 
 
 class TestChartValueExtraction:
     @pytest.mark.asyncio
     async def test_deterministic_within_tolerance(self, vision_judge):
-        metric = ChartValueExtractionMetric(
-            judge=vision_judge, threshold=0.7, tolerance=0.05
-        )
+        metric = ChartValueExtractionMetric(judge=vision_judge, threshold=0.7, tolerance=0.05)
         result = await metric.evaluate(
             expected_values={"Q1": 100.0, "Q2": 200.0, "Q3": 150.0},
             extracted_values={"Q1": 101.0, "Q2": 204.0, "Q3": 149.0},
@@ -186,9 +177,7 @@ class TestChartValueExtraction:
 
     @pytest.mark.asyncio
     async def test_deterministic_out_of_tolerance(self, vision_judge):
-        metric = ChartValueExtractionMetric(
-            judge=vision_judge, threshold=0.7, tolerance=0.05
-        )
+        metric = ChartValueExtractionMetric(judge=vision_judge, threshold=0.7, tolerance=0.05)
         result = await metric.evaluate(
             expected_values={"A": 100.0, "B": 200.0},
             extracted_values={"A": 120.0, "B": 150.0},
@@ -212,9 +201,7 @@ class TestChartValueExtraction:
             raw_output='{"values": {"A": 10.0, "B": 20.0}, "reasoning": "read values"}',
             cost=0.001,
         )
-        metric = ChartValueExtractionMetric(
-            judge=vision_judge, threshold=0.5, tolerance=0.1
-        )
+        metric = ChartValueExtractionMetric(judge=vision_judge, threshold=0.5, tolerance=0.1)
         result = await metric.evaluate(
             expected_values={"A": 10.0, "B": 20.0},
             image=tiny_png_bytes,
@@ -245,9 +232,7 @@ class TestImageSafety:
             score=0.0, reasoning="violates weapons category", raw_output=""
         )
         metric = ImageSafetyMetric(judge=vision_judge, threshold=0.8)
-        result = await metric.evaluate(
-            image=tiny_png_bytes, categories=["weapons", "violence"]
-        )
+        result = await metric.evaluate(image=tiny_png_bytes, categories=["weapons", "violence"])
         assert result.passed is False
         prompt = vision_judge.evaluate_with_images.await_args.kwargs["prompt"]
         assert "weapons" in prompt
@@ -319,6 +304,7 @@ class TestMetricExports:
             VisualHallucinationMetric,
             VisualReasoningMetric,
         )
+
         for cls in [
             ChartValueExtractionMetric,
             DiagramComprehensionMetric,

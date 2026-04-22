@@ -122,9 +122,11 @@ class TestToolNotUsed:
 
 class TestToolArgsMatch:
     def test_partial_match_pass(self):
-        case = _make_case([
-            _make_step("search", params={"query": "weather", "limit": 10}),
-        ])
+        case = _make_case(
+            [
+                _make_step("search", params={"query": "weather", "limit": 10}),
+            ]
+        )
         v = TrajectoryValidator(case)
         r = v.tool_args_match("search", {"query": "weather"})
         assert r.passed is True
@@ -132,41 +134,45 @@ class TestToolArgsMatch:
         assert r.metric_name == "tool_args_match"
 
     def test_partial_match_fail(self):
-        case = _make_case([
-            _make_step("search", params={"query": "sports"}),
-        ])
+        case = _make_case(
+            [
+                _make_step("search", params={"query": "sports"}),
+            ]
+        )
         v = TrajectoryValidator(case)
         r = v.tool_args_match("search", {"query": "weather"})
         assert r.passed is False
         assert r.score == 0.0
 
     def test_strict_match_pass(self):
-        case = _make_case([
-            _make_step("search", params={"query": "weather", "limit": 10}),
-        ])
-        v = TrajectoryValidator(case)
-        r = v.tool_args_match(
-            "search", {"query": "weather", "limit": 10}, strict=True
+        case = _make_case(
+            [
+                _make_step("search", params={"query": "weather", "limit": 10}),
+            ]
         )
+        v = TrajectoryValidator(case)
+        r = v.tool_args_match("search", {"query": "weather", "limit": 10}, strict=True)
         assert r.passed is True
         assert r.score == 1.0
 
     def test_strict_match_extra_keys_fail(self):
-        case = _make_case([
-            _make_step("search", params={"query": "weather", "limit": 10}),
-        ])
+        case = _make_case(
+            [
+                _make_step("search", params={"query": "weather", "limit": 10}),
+            ]
+        )
         v = TrajectoryValidator(case)
         r = v.tool_args_match("search", {"query": "weather"}, strict=True)
         assert r.passed is False
 
     def test_strict_match_missing_keys_fail(self):
-        case = _make_case([
-            _make_step("search", params={"query": "weather"}),
-        ])
-        v = TrajectoryValidator(case)
-        r = v.tool_args_match(
-            "search", {"query": "weather", "limit": 10}, strict=True
+        case = _make_case(
+            [
+                _make_step("search", params={"query": "weather"}),
+            ]
         )
+        v = TrajectoryValidator(case)
+        r = v.tool_args_match("search", {"query": "weather", "limit": 10}, strict=True)
         assert r.passed is False
 
     def test_tool_not_found(self):
@@ -177,10 +183,12 @@ class TestToolArgsMatch:
         assert r.score == 0.0
 
     def test_multiple_calls_best_match(self):
-        case = _make_case([
-            _make_step("search", params={"query": "wrong"}),
-            _make_step("search", params={"query": "weather", "limit": 5}),
-        ])
+        case = _make_case(
+            [
+                _make_step("search", params={"query": "wrong"}),
+                _make_step("search", params={"query": "weather", "limit": 5}),
+            ]
+        )
         v = TrajectoryValidator(case)
         r = v.tool_args_match("search", {"query": "weather"})
         assert r.passed is True
@@ -189,11 +197,13 @@ class TestToolArgsMatch:
 
 class TestToolSequence:
     def test_exact_match(self):
-        case = _make_case([
-            _make_step("search"),
-            _make_step("parse"),
-            _make_step("format"),
-        ])
+        case = _make_case(
+            [
+                _make_step("search"),
+                _make_step("parse"),
+                _make_step("format"),
+            ]
+        )
         v = TrajectoryValidator(case)
         r = v.tool_sequence(["search", "parse", "format"])
         assert r.passed is True
@@ -201,21 +211,25 @@ class TestToolSequence:
         assert r.metric_name == "tool_sequence"
 
     def test_subsequence_with_gaps(self):
-        case = _make_case([
-            _make_step("search"),
-            _make_step("log"),
-            _make_step("format"),
-        ])
+        case = _make_case(
+            [
+                _make_step("search"),
+                _make_step("log"),
+                _make_step("format"),
+            ]
+        )
         v = TrajectoryValidator(case)
         r = v.tool_sequence(["search", "format"])
         assert r.passed is True
         assert r.score == 1.0
 
     def test_wrong_order(self):
-        case = _make_case([
-            _make_step("format"),
-            _make_step("search"),
-        ])
+        case = _make_case(
+            [
+                _make_step("format"),
+                _make_step("search"),
+            ]
+        )
         v = TrajectoryValidator(case)
         r = v.tool_sequence(["search", "format"])
         # Only one of two can be matched as a subsequence
@@ -249,10 +263,12 @@ class TestToolSequence:
 
 class TestToolSequenceStrict:
     def test_exact_match(self):
-        case = _make_case([
-            _make_step("search"),
-            _make_step("format"),
-        ])
+        case = _make_case(
+            [
+                _make_step("search"),
+                _make_step("format"),
+            ]
+        )
         v = TrajectoryValidator(case)
         r = v.tool_sequence_strict(["search", "format"])
         assert r.passed is True
@@ -260,20 +276,24 @@ class TestToolSequenceStrict:
         assert r.metric_name == "tool_sequence_strict"
 
     def test_extras_fail(self):
-        case = _make_case([
-            _make_step("search"),
-            _make_step("log"),
-            _make_step("format"),
-        ])
+        case = _make_case(
+            [
+                _make_step("search"),
+                _make_step("log"),
+                _make_step("format"),
+            ]
+        )
         v = TrajectoryValidator(case)
         r = v.tool_sequence_strict(["search", "format"])
         assert r.passed is False
 
     def test_wrong_order(self):
-        case = _make_case([
-            _make_step("format"),
-            _make_step("search"),
-        ])
+        case = _make_case(
+            [
+                _make_step("format"),
+                _make_step("search"),
+            ]
+        )
         v = TrajectoryValidator(case)
         r = v.tool_sequence_strict(["search", "format"])
         assert r.passed is False
@@ -339,12 +359,14 @@ class TestNoRepeatedTools:
         assert r.metric_name == "no_repeated_tools"
 
     def test_consecutive_repeats(self):
-        case = _make_case([
-            _make_step("a"),
-            _make_step("a"),
-            _make_step("a"),
-            _make_step("b"),
-        ])
+        case = _make_case(
+            [
+                _make_step("a"),
+                _make_step("a"),
+                _make_step("a"),
+                _make_step("b"),
+            ]
+        )
         v = TrajectoryValidator(case)
         r = v.no_repeated_tools(max_consecutive=1)
         assert r.passed is False
@@ -363,11 +385,13 @@ class TestNoRepeatedTools:
         assert r.passed is True
 
     def test_non_consecutive_ok(self):
-        case = _make_case([
-            _make_step("a"),
-            _make_step("b"),
-            _make_step("a"),
-        ])
+        case = _make_case(
+            [
+                _make_step("a"),
+                _make_step("b"),
+                _make_step("a"),
+            ]
+        )
         v = TrajectoryValidator(case)
         r = v.no_repeated_tools(max_consecutive=1)
         assert r.passed is True
@@ -375,27 +399,33 @@ class TestNoRepeatedTools:
 
 class TestThoughtContains:
     def test_pattern_found(self):
-        case = _make_case([
-            _make_step(thought="I need to search for weather data"),
-            _make_step(thought="Now I should format the response"),
-        ])
+        case = _make_case(
+            [
+                _make_step(thought="I need to search for weather data"),
+                _make_step(thought="Now I should format the response"),
+            ]
+        )
         v = TrajectoryValidator(case)
         r = v.thought_contains(r"weather")
         assert r.passed is True
         assert r.metric_name == "thought_contains"
 
     def test_pattern_not_found(self):
-        case = _make_case([
-            _make_step(thought="I need to search for data"),
-        ])
+        case = _make_case(
+            [
+                _make_step(thought="I need to search for data"),
+            ]
+        )
         v = TrajectoryValidator(case)
         r = v.thought_contains(r"weather")
         assert r.passed is False
 
     def test_regex_pattern(self):
-        case = _make_case([
-            _make_step(thought="The temperature is 72F today"),
-        ])
+        case = _make_case(
+            [
+                _make_step(thought="The temperature is 72F today"),
+            ]
+        )
         v = TrajectoryValidator(case)
         r = v.thought_contains(r"\d+F")
         assert r.passed is True
@@ -424,10 +454,12 @@ class TestNoHallucinatedTools:
         assert r.metric_name == "no_hallucinated_tools"
 
     def test_hallucinated_tool(self):
-        case = _make_case([
-            _make_step("search"),
-            _make_step("made_up_tool"),
-        ])
+        case = _make_case(
+            [
+                _make_step("search"),
+                _make_step("made_up_tool"),
+            ]
+        )
         v = TrajectoryValidator(case)
         r = v.no_hallucinated_tools(["search", "format"])
         assert r.passed is False
@@ -450,10 +482,12 @@ class TestNoHallucinatedTools:
 
 class TestToolResultUsed:
     def test_result_referenced_in_thought(self):
-        case = _make_case([
-            _make_step("search", result="sunny and warm"),
-            _make_step(thought="The search said sunny and warm"),
-        ])
+        case = _make_case(
+            [
+                _make_step("search", result="sunny and warm"),
+                _make_step(thought="The search said sunny and warm"),
+            ]
+        )
         v = TrajectoryValidator(case)
         r = v.tool_result_used("search")
         assert r.passed is True
@@ -470,10 +504,12 @@ class TestToolResultUsed:
         assert r.passed is True
 
     def test_result_not_referenced(self):
-        case = _make_case([
-            _make_step("search", result="sunny and warm"),
-            _make_step(thought="I will now respond with something generic"),
-        ])
+        case = _make_case(
+            [
+                _make_step("search", result="sunny and warm"),
+                _make_step(thought="I will now respond with something generic"),
+            ]
+        )
         v = TrajectoryValidator(case)
         r = v.tool_result_used("search")
         assert r.passed is False
@@ -492,10 +528,12 @@ class TestToolResultUsed:
         assert r.passed is True  # Nothing to check
 
     def test_result_in_observation(self):
-        case = _make_case([
-            _make_step("search", result="data123"),
-            _make_step(observation="Received data123 from search"),
-        ])
+        case = _make_case(
+            [
+                _make_step("search", result="data123"),
+                _make_step(observation="Received data123 from search"),
+            ]
+        )
         v = TrajectoryValidator(case)
         r = v.tool_result_used("search")
         assert r.passed is True
@@ -620,9 +658,7 @@ class TestTraceSpan:
         assert span.duration_ms == 200
 
     def test_defaults(self):
-        span = TraceSpan(
-            name="test", span_type="custom", start_ms=0, end_ms=10
-        )
+        span = TraceSpan(name="test", span_type="custom", start_ms=0, end_ms=10)
         assert span.status == "ok"
         assert span.attributes == {}
         assert span.children == []
@@ -670,7 +706,10 @@ class TestTraceValidatorSpanCount:
     def test_includes_children(self):
         child = TraceSpan(name="child", span_type="tool", start_ms=5, end_ms=8)
         parent = TraceSpan(
-            name="parent", span_type="agent", start_ms=0, end_ms=10,
+            name="parent",
+            span_type="agent",
+            start_ms=0,
+            end_ms=10,
             children=[child],
         )
         v = TraceValidator([parent])
@@ -748,11 +787,17 @@ class TestTraceValidatorNoErrorSpans:
 
     def test_nested_error(self):
         child = TraceSpan(
-            name="bad_child", span_type="tool", start_ms=5, end_ms=8,
+            name="bad_child",
+            span_type="tool",
+            start_ms=5,
+            end_ms=8,
             status="error",
         )
         parent = TraceSpan(
-            name="parent", span_type="agent", start_ms=0, end_ms=10,
+            name="parent",
+            span_type="agent",
+            start_ms=0,
+            end_ms=10,
             children=[child],
         )
         v = TraceValidator([parent])

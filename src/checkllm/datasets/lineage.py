@@ -167,9 +167,7 @@ class LineageStore:
             version is returned without duplicating storage.
         """
         content_hash = compute_content_hash(cases)
-        ds_entry = self._data["datasets"].setdefault(
-            dataset_id, {"versions": {}, "order": []}
-        )
+        ds_entry = self._data["datasets"].setdefault(dataset_id, {"versions": {}, "order": []})
 
         order: list[str] = ds_entry.setdefault("order", [])
         versions: dict[str, Any] = ds_entry.setdefault("versions", {})
@@ -281,9 +279,7 @@ class LineageStore:
 
         added = len(inputs_v2 - inputs_v1)
         removed = len(inputs_v1 - inputs_v2)
-        modified = sum(
-            1 for key in inputs_v1 & inputs_v2 if idx1[key] != idx2[key]
-        )
+        modified = sum(1 for key in inputs_v1 & inputs_v2 if idx1[key] != idx2[key])
 
         meta_v1 = self.get(ds_v1, ver_v1)
         meta_v2 = self.get(ds_v2, ver_v2)
@@ -297,9 +293,7 @@ class LineageStore:
             v2_hash=meta_v2.content_hash if meta_v2 else "",
         )
 
-    def _split_version_ref(
-        self, ref: str, fallback_dataset: str | None
-    ) -> tuple[str, str]:
+    def _split_version_ref(self, ref: str, fallback_dataset: str | None) -> tuple[str, str]:
         if ":" in ref:
             ds_id, version = ref.split(":", 1)
             return ds_id, version

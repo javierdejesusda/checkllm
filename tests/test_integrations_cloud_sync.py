@@ -1,4 +1,5 @@
 """Tests for the dashboard cloud-sync helper."""
+
 from __future__ import annotations
 
 import json
@@ -51,9 +52,7 @@ def test_push_sends_runs(monkeypatch, history):
         return 200, "{}"
 
     monkeypatch.setattr(cloud_sync, "_post_json", fake_post)
-    result = cloud_sync.push_to_remote(
-        history, url="http://collector.test/runs", token="t"
-    )
+    result = cloud_sync.push_to_remote(history, url="http://collector.test/runs", token="t")
     assert result.ok is True
     assert result.status_code == 200
     assert result.runs_pushed == 1
@@ -113,9 +112,7 @@ def test_extra_metadata_is_merged(monkeypatch, history):
         return 200, ""
 
     monkeypatch.setattr(cloud_sync, "_post_json", fake_post)
-    cloud_sync.push_to_remote(
-        history, url="http://x/y", extra={"source": "ci-worker-3"}
-    )
+    cloud_sync.push_to_remote(history, url="http://x/y", extra={"source": "ci-worker-3"})
     assert seen["payload"]["source"] == "ci-worker-3"
     assert "runs" in seen["payload"]
 
@@ -204,9 +201,7 @@ def test_post_json_surfaces_http_error(monkeypatch):
         )
 
     monkeypatch.setattr(cloud_sync.urllib.request, "urlopen", fake_urlopen)
-    status, body = cloud_sync._post_json(
-        "http://x", {"a": 1}, token=None, timeout=2.0
-    )
+    status, body = cloud_sync._post_json("http://x", {"a": 1}, token=None, timeout=2.0)
     assert status == 503
     assert body == "overloaded"
 

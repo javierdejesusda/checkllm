@@ -1,4 +1,5 @@
 """Tests for fluent assertion chaining."""
+
 from checkllm.check import CheckCollector
 from checkllm.config import CheckllmConfig
 from checkllm.testing import MockJudge
@@ -10,6 +11,7 @@ def test_that_returns_chain():
     collector = CheckCollector(config=config, judge=judge)
     chain = collector.that("Hello world")
     from checkllm.chain import AssertionChain
+
     assert isinstance(chain, AssertionChain)
 
 
@@ -18,6 +20,7 @@ def test_chain_contains():
     collector = CheckCollector(config=config)
     result = collector.that("Python is great").contains("Python")
     from checkllm.chain import AssertionChain
+
     assert isinstance(result, AssertionChain)
     assert len(collector.results) == 1
     assert collector.results[0].passed is True

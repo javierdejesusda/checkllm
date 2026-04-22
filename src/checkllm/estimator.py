@@ -1,4 +1,5 @@
 """Pre-run cost estimation for checkllm checks."""
+
 from __future__ import annotations
 
 import re
@@ -9,14 +10,45 @@ from checkllm.judge import _OPENAI_PRICES, _ANTHROPIC_PRICES, _DEFAULT_PRICE
 
 # Deterministic checks — zero cost
 _DETERMINISTIC_CHECKS = {
-    "contains", "not_contains", "exact_match", "starts_with", "ends_with",
-    "regex", "similarity", "max_tokens", "min_tokens", "word_count",
-    "char_count", "sentence_count", "is_json", "is_valid_python",
-    "json_schema", "json_field", "is_valid_sql", "is_valid_markdown",
-    "readability", "language", "bleu", "rouge_l", "all_of", "any_of",
-    "none_of", "no_pii", "greater_than", "less_than", "between",
-    "latency", "cost", "meteor", "gleu", "chrf", "perplexity_check",
-    "latency_check", "cost_check", "string_distance", "exact_match_strict",
+    "contains",
+    "not_contains",
+    "exact_match",
+    "starts_with",
+    "ends_with",
+    "regex",
+    "similarity",
+    "max_tokens",
+    "min_tokens",
+    "word_count",
+    "char_count",
+    "sentence_count",
+    "is_json",
+    "is_valid_python",
+    "json_schema",
+    "json_field",
+    "is_valid_sql",
+    "is_valid_markdown",
+    "readability",
+    "language",
+    "bleu",
+    "rouge_l",
+    "all_of",
+    "any_of",
+    "none_of",
+    "no_pii",
+    "greater_than",
+    "less_than",
+    "between",
+    "latency",
+    "cost",
+    "meteor",
+    "gleu",
+    "chrf",
+    "perplexity_check",
+    "latency_check",
+    "cost_check",
+    "string_distance",
+    "exact_match_strict",
 }
 
 # Average tokens per judge call (prompt + completion estimate)
@@ -27,6 +59,7 @@ _AVG_COMPLETION_TOKENS = 150
 @dataclass
 class CostEstimate:
     """Result of a cost estimation."""
+
     deterministic_count: int = 0
     judge_count: int = 0
     total_cost: float = 0.0
@@ -42,6 +75,7 @@ class CostEstimate:
 @dataclass
 class SingleCheckEstimate:
     """Cost estimate for a single check type."""
+
     cost: float
     is_deterministic: bool
 

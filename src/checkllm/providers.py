@@ -39,9 +39,7 @@ _GEMINI_PRICES: dict[str, tuple[float, float]] = {
 _DEFAULT_PRICE = (5.00 / 1_000_000, 15.00 / 1_000_000)
 
 
-def _gemini_estimate_cost(
-    model: str, prompt_tokens: int, completion_tokens: int
-) -> float:
+def _gemini_estimate_cost(model: str, prompt_tokens: int, completion_tokens: int) -> float:
     input_price, output_price = _GEMINI_PRICES.get(model, _DEFAULT_PRICE)
     return prompt_tokens * input_price + completion_tokens * output_price
 
@@ -62,6 +60,7 @@ _transient_retry = retry(
 # Shared JSON parsing
 # ---------------------------------------------------------------------------
 
+
 def _parse_judge_json(raw_output: str) -> tuple[float, str]:
     """Parse score and reasoning from a JSON string.
 
@@ -80,6 +79,7 @@ def _parse_judge_json(raw_output: str) -> tuple[float, str]:
 # ---------------------------------------------------------------------------
 # GeminiJudge
 # ---------------------------------------------------------------------------
+
 
 class GeminiJudge:
     """Google Gemini-based LLM judge for evaluating outputs."""
@@ -114,9 +114,7 @@ class GeminiJudge:
         self._gmodel = genai.GenerativeModel(model)
 
     @_transient_retry
-    async def evaluate(
-        self, prompt: str, system_prompt: str | None = None
-    ) -> JudgeResponse:
+    async def evaluate(self, prompt: str, system_prompt: str | None = None) -> JudgeResponse:
         full_prompt = ""
         if system_prompt:
             full_prompt += f"{system_prompt}\n\n"
@@ -212,6 +210,7 @@ class GeminiJudge:
 # AzureOpenAIJudge
 # ---------------------------------------------------------------------------
 
+
 class AzureOpenAIJudge:
     """Azure-hosted OpenAI judge for evaluating outputs."""
 
@@ -241,9 +240,7 @@ class AzureOpenAIJudge:
                 "pass endpoint= to AzureOpenAIJudge()."
             )
 
-        resolved_deployment = deployment or os.environ.get(
-            "AZURE_OPENAI_DEPLOYMENT"
-        )
+        resolved_deployment = deployment or os.environ.get("AZURE_OPENAI_DEPLOYMENT")
         if not resolved_deployment:
             raise JudgeConfigError(
                 "Azure OpenAI deployment not found. Set AZURE_OPENAI_DEPLOYMENT "
@@ -256,8 +253,7 @@ class AzureOpenAIJudge:
             from openai import AsyncAzureOpenAI  # type: ignore[import-untyped]
         except ImportError:
             raise JudgeConfigError(
-                "openai package not installed. Install it with:\n"
-                "  pip install checkllm[openai]"
+                "openai package not installed. Install it with:\n  pip install checkllm[openai]"
             )
 
         self._client = AsyncAzureOpenAI(
@@ -267,9 +263,7 @@ class AzureOpenAIJudge:
         )
 
     @_transient_retry
-    async def evaluate(
-        self, prompt: str, system_prompt: str | None = None
-    ) -> JudgeResponse:
+    async def evaluate(self, prompt: str, system_prompt: str | None = None) -> JudgeResponse:
         messages: list[dict[str, str]] = []
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
@@ -315,6 +309,7 @@ class AzureOpenAIJudge:
 # OllamaJudge
 # ---------------------------------------------------------------------------
 
+
 class OllamaJudge:
     """Judge backed by a local Ollama instance (pure HTTP, no extra packages)."""
 
@@ -328,31 +323,24 @@ class OllamaJudge:
         self.total_cost: float = 0.0
         self.last_cost: float = 0.0
         self._timeout = timeout
-        self._host = (
-            host or os.environ.get("OLLAMA_HOST") or "http://localhost:11434"
-        )
+        self._host = host or os.environ.get("OLLAMA_HOST") or "http://localhost:11434"
 
     @_transient_retry
-    async def evaluate(
-        self, prompt: str, system_prompt: str | None = None
-    ) -> JudgeResponse:
+    async def evaluate(self, prompt: str, system_prompt: str | None = None) -> JudgeResponse:
         try:
-            import httpx  # type: ignore[import-untyped]
+            import httpx  # type: ignore[import-untyped]  # noqa: F401
         except ImportError:
             try:
-                import aiohttp  # type: ignore[import-untyped]
+                import aiohttp  # type: ignore[import-untyped]  # noqa: F401
             except ImportError:
                 raise JudgeConfigError(
-                    "Neither httpx nor aiohttp installed. Install one with:\n"
-                    "  pip install httpx"
+                    "Neither httpx nor aiohttp installed. Install one with:\n  pip install httpx"
                 )
             return await self._evaluate_aiohttp(prompt, system_prompt)
 
         return await self._evaluate_httpx(prompt, system_prompt)
 
-    async def _evaluate_httpx(
-        self, prompt: str, system_prompt: str | None
-    ) -> JudgeResponse:
+    async def _evaluate_httpx(self, prompt: str, system_prompt: str | None) -> JudgeResponse:
         import httpx
 
         full_prompt = ""
@@ -390,9 +378,7 @@ class OllamaJudge:
             cost=cost,
         )
 
-    async def _evaluate_aiohttp(
-        self, prompt: str, system_prompt: str | None
-    ) -> JudgeResponse:
+    async def _evaluate_aiohttp(self, prompt: str, system_prompt: str | None) -> JudgeResponse:
         import aiohttp
 
         full_prompt = ""
@@ -432,14 +418,13 @@ class OllamaJudge:
         )
 
     def __repr__(self) -> str:
-        return (
-            f"OllamaJudge(model={self.model!r}, host={self._host!r})"
-        )
+        return f"OllamaJudge(model={self.model!r}, host={self._host!r})"
 
 
 # ---------------------------------------------------------------------------
 # LiteLLMJudge
 # ---------------------------------------------------------------------------
+
 
 class LiteLLMJudge:
     """Judge that delegates to LiteLLM for 100+ model providers."""
@@ -462,14 +447,11 @@ class LiteLLMJudge:
             import litellm  # type: ignore[import-untyped] # noqa: F401
         except ImportError:
             raise JudgeConfigError(
-                "litellm package not installed. Install it with:\n"
-                "  pip install checkllm[litellm]"
+                "litellm package not installed. Install it with:\n  pip install checkllm[litellm]"
             )
 
     @_transient_retry
-    async def evaluate(
-        self, prompt: str, system_prompt: str | None = None
-    ) -> JudgeResponse:
+    async def evaluate(self, prompt: str, system_prompt: str | None = None) -> JudgeResponse:
         import litellm  # type: ignore[import-untyped]
 
         messages: list[dict[str, str]] = []
@@ -558,15 +540,12 @@ class CustomHTTPJudge:
         self._timeout = timeout
         self._max_retries = max_retries
 
-    async def evaluate(
-        self, prompt: str, system_prompt: str | None = None
-    ) -> JudgeResponse:
+    async def evaluate(self, prompt: str, system_prompt: str | None = None) -> JudgeResponse:
         try:
             import httpx  # type: ignore[import-untyped]
         except ImportError:
             raise JudgeConfigError(
-                "httpx package not installed. Install it with:\n"
-                "  pip install httpx"
+                "httpx package not installed. Install it with:\n  pip install httpx"
             )
 
         payload = {"prompt": prompt, "system_prompt": system_prompt}
@@ -640,23 +619,23 @@ class OpenAICompatibleJudge:
         self._extra_headers = extra_headers or {}
 
     @_transient_retry
-    async def evaluate(
-        self, prompt: str, system_prompt: str | None = None
-    ) -> JudgeResponse:
+    async def evaluate(self, prompt: str, system_prompt: str | None = None) -> JudgeResponse:
         """Send a chat-completion request and parse the judge response."""
         import httpx
 
         messages: list[dict[str, str]] = []
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
-        messages.append({
-            "role": "user",
-            "content": (
-                f"{prompt}\n\n"
-                'Respond with JSON only: '
-                '{"score": <float 0-1>, "reasoning": "<explanation>"}'
-            ),
-        })
+        messages.append(
+            {
+                "role": "user",
+                "content": (
+                    f"{prompt}\n\n"
+                    "Respond with JSON only: "
+                    '{"score": <float 0-1>, "reasoning": "<explanation>"}'
+                ),
+            }
+        )
 
         headers: dict[str, str] = {
             "Content-Type": "application/json",
@@ -725,8 +704,7 @@ class GroqJudge(OpenAICompatibleJudge):
         resolved_key = api_key or os.environ.get("GROQ_API_KEY")
         if not resolved_key:
             raise JudgeConfigError(
-                "Groq API key not found. Set GROQ_API_KEY or "
-                "pass api_key= to GroqJudge()."
+                "Groq API key not found. Set GROQ_API_KEY or pass api_key= to GroqJudge()."
             )
         super().__init__(
             model=model,
@@ -815,11 +793,7 @@ class VLLMJudge(OpenAICompatibleJudge):
         base_url: str | None = None,
         **kwargs: Any,
     ) -> None:
-        resolved_url = (
-            base_url
-            or os.environ.get("VLLM_BASE_URL")
-            or "http://localhost:8000/v1"
-        )
+        resolved_url = base_url or os.environ.get("VLLM_BASE_URL") or "http://localhost:8000/v1"
         super().__init__(
             model=model,
             api_key=api_key,
@@ -863,8 +837,7 @@ class XAIJudge(OpenAICompatibleJudge):
         resolved_key = api_key or os.environ.get("XAI_API_KEY")
         if not resolved_key:
             raise JudgeConfigError(
-                "X.AI API key not found. Set XAI_API_KEY or "
-                "pass api_key= to XAIJudge()."
+                "X.AI API key not found. Set XAI_API_KEY or pass api_key= to XAIJudge()."
             )
         super().__init__(
             model=model,
@@ -889,36 +862,34 @@ class CohereJudge:
         resolved_key = api_key or os.environ.get("COHERE_API_KEY")
         if not resolved_key:
             raise JudgeConfigError(
-                "Cohere API key not found. Set COHERE_API_KEY or "
-                "pass api_key= to CohereJudge()."
+                "Cohere API key not found. Set COHERE_API_KEY or pass api_key= to CohereJudge()."
             )
 
         try:
             import cohere  # type: ignore[import-untyped]
         except ImportError:
             raise JudgeConfigError(
-                "cohere package not installed. Install it with:\n"
-                "  pip install cohere"
+                "cohere package not installed. Install it with:\n  pip install cohere"
             )
 
         self._client = cohere.AsyncClientV2(api_key=resolved_key)
 
     @_transient_retry
-    async def evaluate(
-        self, prompt: str, system_prompt: str | None = None
-    ) -> JudgeResponse:
+    async def evaluate(self, prompt: str, system_prompt: str | None = None) -> JudgeResponse:
         """Evaluate using the Cohere chat endpoint."""
         messages: list[dict[str, str]] = []
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
-        messages.append({
-            "role": "user",
-            "content": (
-                f"{prompt}\n\n"
-                'Respond with JSON only: '
-                '{"score": <float 0-1>, "reasoning": "<explanation>"}'
-            ),
-        })
+        messages.append(
+            {
+                "role": "user",
+                "content": (
+                    f"{prompt}\n\n"
+                    "Respond with JSON only: "
+                    '{"score": <float 0-1>, "reasoning": "<explanation>"}'
+                ),
+            }
+        )
 
         response = await self._client.chat(
             model=self.model,
@@ -951,10 +922,7 @@ class CohereJudge:
         )
 
     def __repr__(self) -> str:
-        return (
-            f"CohereJudge(model={self.model!r}, "
-            f"total_cost=${self.total_cost:.4f})"
-        )
+        return f"CohereJudge(model={self.model!r}, total_cost=${self.total_cost:.4f})"
 
 
 class MistralJudge:
@@ -972,36 +940,34 @@ class MistralJudge:
         resolved_key = api_key or os.environ.get("MISTRAL_API_KEY")
         if not resolved_key:
             raise JudgeConfigError(
-                "Mistral API key not found. Set MISTRAL_API_KEY or "
-                "pass api_key= to MistralJudge()."
+                "Mistral API key not found. Set MISTRAL_API_KEY or pass api_key= to MistralJudge()."
             )
 
         try:
             from mistralai import Mistral  # type: ignore[import-untyped]
         except ImportError:
             raise JudgeConfigError(
-                "mistralai package not installed. Install it with:\n"
-                "  pip install mistralai"
+                "mistralai package not installed. Install it with:\n  pip install mistralai"
             )
 
         self._client = Mistral(api_key=resolved_key)
 
     @_transient_retry
-    async def evaluate(
-        self, prompt: str, system_prompt: str | None = None
-    ) -> JudgeResponse:
+    async def evaluate(self, prompt: str, system_prompt: str | None = None) -> JudgeResponse:
         """Evaluate using the Mistral chat completions endpoint."""
         messages: list[dict[str, str]] = []
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
-        messages.append({
-            "role": "user",
-            "content": (
-                f"{prompt}\n\n"
-                'Respond with JSON only: '
-                '{"score": <float 0-1>, "reasoning": "<explanation>"}'
-            ),
-        })
+        messages.append(
+            {
+                "role": "user",
+                "content": (
+                    f"{prompt}\n\n"
+                    "Respond with JSON only: "
+                    '{"score": <float 0-1>, "reasoning": "<explanation>"}'
+                ),
+            }
+        )
 
         response = await self._client.chat.complete_async(
             model=self.model,
@@ -1033,10 +999,7 @@ class MistralJudge:
         )
 
     def __repr__(self) -> str:
-        return (
-            f"MistralJudge(model={self.model!r}, "
-            f"total_cost=${self.total_cost:.4f})"
-        )
+        return f"MistralJudge(model={self.model!r}, total_cost=${self.total_cost:.4f})"
 
 
 class BedrockJudge:
@@ -1055,19 +1018,14 @@ class BedrockJudge:
             import boto3  # type: ignore[import-untyped]
         except ImportError:
             raise JudgeConfigError(
-                "boto3 package not installed. Install it with:\n"
-                "  pip install boto3"
+                "boto3 package not installed. Install it with:\n  pip install boto3"
             )
 
         resolved_region = region or os.environ.get("AWS_REGION", "us-east-1")
-        self._client = boto3.client(
-            "bedrock-runtime", region_name=resolved_region
-        )
+        self._client = boto3.client("bedrock-runtime", region_name=resolved_region)
 
     @_transient_retry
-    async def evaluate(
-        self, prompt: str, system_prompt: str | None = None
-    ) -> JudgeResponse:
+    async def evaluate(self, prompt: str, system_prompt: str | None = None) -> JudgeResponse:
         """Evaluate using AWS Bedrock's invoke-model API.
 
         Note: boto3 is synchronous, so we run the call in the current thread
@@ -1076,26 +1034,24 @@ class BedrockJudge:
         import asyncio
 
         loop = asyncio.get_event_loop()
-        return await loop.run_in_executor(
-            None, self._invoke, prompt, system_prompt
-        )
+        return await loop.run_in_executor(None, self._invoke, prompt, system_prompt)
 
-    def _invoke(
-        self, prompt: str, system_prompt: str | None
-    ) -> JudgeResponse:
+    def _invoke(self, prompt: str, system_prompt: str | None) -> JudgeResponse:
         """Synchronous Bedrock invocation."""
         messages = []
         if system_prompt:
             messages.append({"role": "user", "content": system_prompt})
             messages.append({"role": "assistant", "content": "Understood."})
-        messages.append({
-            "role": "user",
-            "content": (
-                f"{prompt}\n\n"
-                'Respond with JSON only: '
-                '{"score": <float 0-1>, "reasoning": "<explanation>"}'
-            ),
-        })
+        messages.append(
+            {
+                "role": "user",
+                "content": (
+                    f"{prompt}\n\n"
+                    "Respond with JSON only: "
+                    '{"score": <float 0-1>, "reasoning": "<explanation>"}'
+                ),
+            }
+        )
 
         body: dict[str, Any] = {
             "anthropic_version": "bedrock-2023-05-31",
@@ -1137,14 +1093,12 @@ class BedrockJudge:
         )
 
     def __repr__(self) -> str:
-        return (
-            f"BedrockJudge(model={self.model!r}, "
-            f"total_cost=${self.total_cost:.4f})"
-        )
+        return f"BedrockJudge(model={self.model!r}, total_cost=${self.total_cost:.4f})"
 
 
 # Factory
 # ---------------------------------------------------------------------------
+
 
 def create_judge(backend: str, **kwargs: Any) -> JudgeBackend:
     """Create a judge backend by name.
@@ -1199,8 +1153,6 @@ def create_judge(backend: str, **kwargs: Any) -> JudgeBackend:
     cls = _backends.get(backend)
     if cls is None:
         supported = ", ".join(sorted(_backends))
-        raise ValueError(
-            f"Unknown backend {backend!r}. Supported: {supported}"
-        )
+        raise ValueError(f"Unknown backend {backend!r}. Supported: {supported}")
 
     return cls(**kwargs)  # type: ignore[return-value]

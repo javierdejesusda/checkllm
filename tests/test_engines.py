@@ -22,6 +22,7 @@ from checkllm.engines import (
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 async def _delay(seconds: float, value: int = 0) -> int:
     """Trivial async task that sleeps then returns *value*."""
     await asyncio.sleep(seconds)
@@ -41,6 +42,7 @@ def _cpu_raise(x: int) -> int:
 # ---------------------------------------------------------------------------
 # EngineStats
 # ---------------------------------------------------------------------------
+
 
 class TestEngineStats:
     def test_defaults(self):
@@ -63,6 +65,7 @@ class TestEngineStats:
 # EngineType enum
 # ---------------------------------------------------------------------------
 
+
 class TestEngineType:
     def test_values(self):
         assert EngineType.ASYNC == "async"
@@ -79,6 +82,7 @@ class TestEngineType:
 # ---------------------------------------------------------------------------
 # AsyncEngine
 # ---------------------------------------------------------------------------
+
 
 class TestAsyncEngine:
     @pytest.mark.asyncio
@@ -202,6 +206,7 @@ class TestAsyncEngine:
 # ThreadPoolEngine
 # ---------------------------------------------------------------------------
 
+
 class TestThreadPoolEngine:
     @pytest.mark.asyncio
     async def test_submit_and_gather(self):
@@ -267,6 +272,7 @@ class TestThreadPoolEngine:
 # ProcessPoolEngine
 # ---------------------------------------------------------------------------
 
+
 class TestProcessPoolEngine:
     @pytest.mark.asyncio
     async def test_submit_coroutine(self):
@@ -312,6 +318,7 @@ class TestProcessPoolEngine:
 # ---------------------------------------------------------------------------
 # HybridEngine
 # ---------------------------------------------------------------------------
+
 
 class TestHybridEngine:
     @pytest.mark.asyncio
@@ -408,6 +415,7 @@ class TestHybridEngine:
 # Graceful shutdown
 # ---------------------------------------------------------------------------
 
+
 class TestGracefulShutdown:
     @pytest.mark.asyncio
     async def test_async_engine_waits_for_pending(self):
@@ -442,6 +450,7 @@ class TestGracefulShutdown:
 # ---------------------------------------------------------------------------
 # create_engine factory
 # ---------------------------------------------------------------------------
+
 
 class TestCreateEngine:
     def test_create_async(self):
@@ -485,6 +494,7 @@ class TestCreateEngine:
 # Edge cases
 # ---------------------------------------------------------------------------
 
+
 class TestEdgeCases:
     @pytest.mark.asyncio
     async def test_gather_empty_list(self):
@@ -502,6 +512,7 @@ class TestEdgeCases:
     @pytest.mark.asyncio
     async def test_stats_after_exception(self):
         """Even if a task raises, stats should still be updated."""
+
         async def _fail() -> None:
             raise RuntimeError("test error")
 
@@ -520,6 +531,7 @@ class TestEdgeCases:
     @pytest.mark.asyncio
     async def test_mixed_success_and_failure(self):
         """gather with return_exceptions-like behavior via individual awaits."""
+
         async def _maybe_fail(i: int) -> int:
             if i == 2:
                 raise ValueError("bad")

@@ -45,12 +45,8 @@ class GEvalMetric:
     ) -> CheckResult:
         steps_section = ""
         if steps:
-            formatted_steps = "\n".join(
-                f"  Step {i}: {step}" for i, step in enumerate(steps, 1)
-            )
-            steps_section = (
-                f"\nEvaluation Steps (follow these in order):\n{formatted_steps}\n"
-            )
+            formatted_steps = "\n".join(f"  Step {i}: {step}" for i, step in enumerate(steps, 1))
+            steps_section = f"\nEvaluation Steps (follow these in order):\n{formatted_steps}\n"
         else:
             steps_section = (
                 "\nNo evaluation steps were provided. Generate your own "
@@ -66,9 +62,7 @@ class GEvalMetric:
         )
 
         start = time.perf_counter_ns()
-        response = await self.judge.evaluate(
-            prompt=prompt, system_prompt=self.system_prompt
-        )
+        response = await self.judge.evaluate(prompt=prompt, system_prompt=self.system_prompt)
         elapsed_ms = (time.perf_counter_ns() - start) // 1_000_000
 
         return CheckResult(

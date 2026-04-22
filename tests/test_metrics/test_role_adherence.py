@@ -48,9 +48,7 @@ class TestRoleAdherenceMetric:
 
     @pytest.mark.asyncio
     async def test_query_included_when_provided(self, mock_judge):
-        mock_judge.evaluate.return_value = JudgeResponse(
-            score=0.9, reasoning="ok", raw_output=""
-        )
+        mock_judge.evaluate.return_value = JudgeResponse(score=0.9, reasoning="ok", raw_output="")
         metric = RoleAdherenceMetric(judge=mock_judge, threshold=0.8)
         await metric.evaluate(
             output="test output",

@@ -17,6 +17,7 @@ class FakeDeepEvalModel:
 
     def generate(self, prompt: str, schema=None):
         import json
+
         return json.dumps({"score": self.score_to_return, "reason": "fake"})
 
     async def a_generate(self, prompt: str, schema=None):

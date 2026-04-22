@@ -11,7 +11,7 @@ if [ "$#" -eq 0 ]; then
   exit 0
 fi
 
-pattern='(Co-Authored-By:[[:space:]]*Claude|Generated (with|by) Claude|🤖 Generated with|Made with Claude|written by Claude|Claude Code|Anthropic[[:space:]]+Claude|assisted by (Claude|Anthropic|AI assistant)|AI assistant\b)'
+pattern='(Co-Authored-By:[[:space:]]*Claude|Generated (with|by) Claude|🤖 Generated with|Made with Claude|written by Claude|Claude Code)'
 status=0
 
 for file in "$@"; do

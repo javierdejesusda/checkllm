@@ -69,9 +69,7 @@ class DualJudge:
         self.agreement_threshold = agreement_threshold
         self.primary_weight = primary_weight
 
-    async def evaluate(
-        self, prompt: str, system_prompt: str | None = None
-    ) -> DualJudgeResult:
+    async def evaluate(self, prompt: str, system_prompt: str | None = None) -> DualJudgeResult:
         """Evaluate a prompt using both judges concurrently and aggregate results.
 
         Args:
@@ -89,9 +87,7 @@ class DualJudge:
         score_diff = abs(primary_resp.score - secondary_resp.score)
         agreement = score_diff <= self.agreement_threshold
 
-        score = self._aggregate(
-            primary_resp.score, secondary_resp.score, agreement
-        )
+        score = self._aggregate(primary_resp.score, secondary_resp.score, agreement)
 
         combined_reasoning = (
             f"[Primary judge]: {primary_resp.reasoning}\n"
@@ -118,9 +114,7 @@ class DualJudge:
             score_difference=score_diff,
         )
 
-    def _aggregate(
-        self, primary: float, secondary: float, agreement: bool
-    ) -> float:
+    def _aggregate(self, primary: float, secondary: float, agreement: bool) -> float:
         """Compute the aggregated score from both judges.
 
         Args:
@@ -206,13 +200,10 @@ class DualJudgeMetric:
         score_diff = abs(primary_result.score - secondary_result.score)
         agreement = score_diff <= self.agreement_threshold
 
-        score = self._aggregate(
-            primary_result.score, secondary_result.score, agreement
-        )
+        score = self._aggregate(primary_result.score, secondary_result.score, agreement)
 
         combined_reasoning = (
-            f"[Primary]: {primary_result.reasoning}\n"
-            f"[Secondary]: {secondary_result.reasoning}"
+            f"[Primary]: {primary_result.reasoning}\n[Secondary]: {secondary_result.reasoning}"
         )
         if not agreement:
             combined_reasoning += (
@@ -233,9 +224,7 @@ class DualJudgeMetric:
             threshold=threshold,
         )
 
-    def _aggregate(
-        self, primary: float, secondary: float, agreement: bool
-    ) -> float:
+    def _aggregate(self, primary: float, secondary: float, agreement: bool) -> float:
         """Compute the aggregated score from both metric results.
 
         Args:

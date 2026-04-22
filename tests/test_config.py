@@ -34,10 +34,10 @@ class TestLoadConfig:
     def test_load_from_pyproject_toml(self, tmp_path: Path):
         pyproject = tmp_path / "pyproject.toml"
         pyproject.write_text(
-            '[tool.checkllm]\n'
+            "[tool.checkllm]\n"
             'judge_model = "gpt-4o-mini"\n'
-            'default_threshold = 0.9\n'
-            'runs_per_test = 5\n'
+            "default_threshold = 0.9\n"
+            "runs_per_test = 5\n"
             'snapshot_dir = "my_snapshots"\n'
         )
         config = load_config(tmp_path)

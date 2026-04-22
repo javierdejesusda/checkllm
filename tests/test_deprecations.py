@@ -1,4 +1,5 @@
 """Verify deprecation warning infrastructure."""
+
 import warnings
 
 

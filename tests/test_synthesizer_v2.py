@@ -22,6 +22,7 @@ from checkllm.synthesizer import (
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _make_json_response(cases: list[dict]) -> JudgeResponse:
     """Build a JudgeResponse whose raw_output is a JSON array of cases."""
     return JudgeResponse(
@@ -229,9 +230,7 @@ class TestSynthesizer:
     # -- distribution helper -----------------------------------------------
 
     def test_distribute_even(self):
-        plan = Synthesizer._distribute(
-            6, [EvolutionStrategy.SIMPLE, EvolutionStrategy.REASONING]
-        )
+        plan = Synthesizer._distribute(6, [EvolutionStrategy.SIMPLE, EvolutionStrategy.REASONING])
         assert len(plan) == 2
         assert sum(c for _, c in plan) == 6
 

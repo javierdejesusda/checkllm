@@ -1,4 +1,5 @@
 """Tests for JSONL export."""
+
 import json
 
 
@@ -9,11 +10,32 @@ from checkllm.reporting.jsonl import export_jsonl
 def _sample_results():
     return {
         "test_foo": [
-            CheckResult(passed=True, score=0.9, reasoning="Good", cost=0.001, latency_ms=100, metric_name="hallucination"),
+            CheckResult(
+                passed=True,
+                score=0.9,
+                reasoning="Good",
+                cost=0.001,
+                latency_ms=100,
+                metric_name="hallucination",
+            ),
         ],
         "test_bar": [
-            CheckResult(passed=False, score=0.3, reasoning="Bad", cost=0.002, latency_ms=200, metric_name="relevance"),
-            CheckResult(passed=True, score=1.0, reasoning="OK", cost=0.0, latency_ms=0, metric_name="contains"),
+            CheckResult(
+                passed=False,
+                score=0.3,
+                reasoning="Bad",
+                cost=0.002,
+                latency_ms=200,
+                metric_name="relevance",
+            ),
+            CheckResult(
+                passed=True,
+                score=1.0,
+                reasoning="OK",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="contains",
+            ),
         ],
     }
 

@@ -180,27 +180,19 @@ class TrajectoryValidator:
         for call in calls:
             params = call.parameters
             if strict:
-                matched_keys = sum(
-                    1 for k, v in expected_args.items()
-                    if params.get(k) == v
-                )
+                matched_keys = sum(1 for k, v in expected_args.items() if params.get(k) == v)
                 total_keys = max(len(expected_args), len(params))
                 extra_keys = set(params.keys()) - set(expected_args.keys())
                 missing_keys = set(expected_args.keys()) - set(params.keys())
                 s = matched_keys / total_keys if total_keys > 0 else 1.0
                 p = (s == 1.0) and not extra_keys and not missing_keys
-                reasoning = (
-                    f"Strict match: {matched_keys}/{total_keys} keys matched."
-                )
+                reasoning = f"Strict match: {matched_keys}/{total_keys} keys matched."
                 if extra_keys:
                     reasoning += f" Extra keys: {sorted(extra_keys)}."
                 if missing_keys:
                     reasoning += f" Missing keys: {sorted(missing_keys)}."
             else:
-                matched_keys = sum(
-                    1 for k, v in expected_args.items()
-                    if params.get(k) == v
-                )
+                matched_keys = sum(1 for k, v in expected_args.items() if params.get(k) == v)
                 total_keys = len(expected_args)
                 s = matched_keys / total_keys if total_keys > 0 else 1.0
                 p = matched_keys == total_keys
@@ -277,9 +269,7 @@ class TrajectoryValidator:
         elif not expected_sequence:
             score = 0.0
         else:
-            matching = sum(
-                1 for a, e in zip(actual_names, expected_sequence) if a == e
-            )
+            matching = sum(1 for a, e in zip(actual_names, expected_sequence) if a == e)
             score = matching / max(len(actual_names), len(expected_sequence))
 
         return CheckResult(
@@ -401,9 +391,7 @@ class TrajectoryValidator:
             A ``CheckResult`` that passes when the pattern is found in at
             least one step's thought.
         """
-        thoughts = [
-            s.thought for s in self.test_case.steps if s.thought is not None
-        ]
+        thoughts = [s.thought for s in self.test_case.steps if s.thought is not None]
         if not thoughts:
             return CheckResult(
                 passed=False,
@@ -422,9 +410,7 @@ class TrajectoryValidator:
         return CheckResult(
             passed=passed,
             score=score,
-            reasoning=(
-                f"Pattern '{pattern}' matched {len(matches)}/{len(thoughts)} thought(s)."
-            ),
+            reasoning=(f"Pattern '{pattern}' matched {len(matches)}/{len(thoughts)} thought(s)."),
             cost=0.0,
             latency_ms=0,
             metric_name="thought_contains",
@@ -505,7 +491,7 @@ class TrajectoryValidator:
                 continue
 
             found = False
-            for later_step in steps[idx + 1:]:
+            for later_step in steps[idx + 1 :]:
                 for text in (later_step.thought, later_step.observation):
                     if text and result_text in text:
                         found = True
@@ -521,7 +507,8 @@ class TrajectoryValidator:
                 used_count += 1
 
         calls_with_results = sum(
-            1 for i in tool_indices
+            1
+            for i in tool_indices
             if steps[i].tool_call and steps[i].tool_call.result  # type: ignore[union-attr]
         )
 
@@ -626,17 +613,14 @@ class TrajectoryValidator:
             passed=passed,
             score=1.0 if passed else 0.0,
             reasoning=(
-                f"Pattern '{pattern}' {'matched' if passed else 'did not match'} "
-                f"final output."
+                f"Pattern '{pattern}' {'matched' if passed else 'did not match'} final output."
             ),
             cost=0.0,
             latency_ms=0,
             metric_name="final_output_matches",
         )
 
-    def trajectory_efficiency(
-        self, max_steps_per_tool: float = 2.0
-    ) -> CheckResult:
+    def trajectory_efficiency(self, max_steps_per_tool: float = 2.0) -> CheckResult:
         """Score based on the ratio of useful steps to total steps.
 
         A *useful* step is one that contains a tool call.  The check passes
@@ -831,10 +815,7 @@ class TraceValidator:
             score=max(0.0, score),
             reasoning=(
                 f"{len(errors)} error span(s) out of {len(all_spans)} total."
-                + (
-                    f" Errors: {[s.name for s in errors]}."
-                    if errors else ""
-                )
+                + (f" Errors: {[s.name for s in errors]}." if errors else "")
             ),
             cost=0.0,
             latency_ms=0,

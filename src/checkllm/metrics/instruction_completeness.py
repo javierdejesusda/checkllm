@@ -48,9 +48,7 @@ class InstructionCompletenessMetric:
         self.threshold = threshold
         self.system_prompt: str = INSTRUCTION_COMPLETENESS_SYSTEM_PROMPT
 
-    async def evaluate(
-        self, output: str, instructions: list[str]
-    ) -> CheckResult:
+    async def evaluate(self, output: str, instructions: list[str]) -> CheckResult:
         """Evaluate whether the output follows all listed instructions.
 
         Args:
@@ -60,9 +58,7 @@ class InstructionCompletenessMetric:
         Returns:
             CheckResult with instruction completeness score.
         """
-        instructions_str = "\n".join(
-            f"{i + 1}. {inst}" for i, inst in enumerate(instructions)
-        )
+        instructions_str = "\n".join(f"{i + 1}. {inst}" for i, inst in enumerate(instructions))
         prompt = (
             f"Instructions to follow:\n{instructions_str}\n\n"
             f"Response to evaluate:\n{output}\n\n"
@@ -70,9 +66,7 @@ class InstructionCompletenessMetric:
             "partially followed, or ignored? Score the overall completeness."
         )
         start = time.perf_counter_ns()
-        response = await self.judge.evaluate(
-            prompt=prompt, system_prompt=self.system_prompt
-        )
+        response = await self.judge.evaluate(prompt=prompt, system_prompt=self.system_prompt)
         elapsed_ms = (time.perf_counter_ns() - start) // 1_000_000
 
         return CheckResult(

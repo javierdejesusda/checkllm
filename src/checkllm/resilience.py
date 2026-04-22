@@ -8,6 +8,7 @@ Provides resilience wrappers that can be composed around any ``JudgeBackend``:
 * **ResilientJudge** -- combines rate limiting + circuit breaker + fallback.
 * **RetryPolicy** / **with_retry** -- configurable retry with exponential backoff.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -25,6 +26,7 @@ T = TypeVar("T")
 # ---------------------------------------------------------------------------
 # Rate Limiting
 # ---------------------------------------------------------------------------
+
 
 class TokenBucketRateLimiter:
     """Async-safe token-bucket rate limiter.
@@ -66,9 +68,7 @@ class TokenBucketRateLimiter:
         if tokens <= 0:
             raise ValueError("tokens must be positive")
         if tokens > self.burst:
-            raise ValueError(
-                f"requested {tokens} tokens exceeds burst size {self.burst}"
-            )
+            raise ValueError(f"requested {tokens} tokens exceeds burst size {self.burst}")
 
         while True:
             async with self._lock:
@@ -150,6 +150,7 @@ class PerProviderRateLimiter:
 # Circuit Breaker
 # ---------------------------------------------------------------------------
 
+
 class CircuitState(Enum):
     """States of a circuit breaker."""
 
@@ -169,9 +170,7 @@ class CircuitOpenError(Exception):
 
     def __init__(self, time_until_retry: float) -> None:
         self.time_until_retry = max(0.0, time_until_retry)
-        super().__init__(
-            f"Circuit is OPEN. Retry after {self.time_until_retry:.1f}s"
-        )
+        super().__init__(f"Circuit is OPEN. Retry after {self.time_until_retry:.1f}s")
 
 
 class CircuitBreaker:
@@ -242,9 +241,7 @@ class CircuitBreaker:
 
             if current is CircuitState.OPEN:
                 assert self.last_failure_time is not None
-                remaining = self.recovery_timeout - (
-                    time.monotonic() - self.last_failure_time
-                )
+                remaining = self.recovery_timeout - (time.monotonic() - self.last_failure_time)
                 raise CircuitOpenError(remaining)
 
             if current is CircuitState.HALF_OPEN:
@@ -284,6 +281,7 @@ class CircuitBreaker:
 # ---------------------------------------------------------------------------
 # Resilient Judge
 # ---------------------------------------------------------------------------
+
 
 class ResilientJudge:
     """Wraps a :class:`JudgeBackend` with rate limiting, circuit breaking,
@@ -325,9 +323,7 @@ class ResilientJudge:
         self.fallback_calls: int = 0
         self.circuit_opens: int = 0
 
-    async def evaluate(
-        self, prompt: str, system_prompt: str | None = None
-    ) -> JudgeResponse:
+    async def evaluate(self, prompt: str, system_prompt: str | None = None) -> JudgeResponse:
         """Evaluate with resilience: rate-limit -> circuit-break -> timeout -> fallback."""
 
         # Rate limiting
@@ -356,9 +352,7 @@ class ResilientJudge:
                 return await self._call_fallback(prompt, system_prompt)
             raise
 
-    async def _call_primary(
-        self, prompt: str, system_prompt: str | None
-    ) -> JudgeResponse:
+    async def _call_primary(self, prompt: str, system_prompt: str | None) -> JudgeResponse:
         """Call the primary judge with optional circuit breaker and timeout."""
         coro = self._judge.evaluate(prompt, system_prompt)
 
@@ -370,9 +364,7 @@ class ResilientJudge:
 
         return await coro
 
-    async def _call_fallback(
-        self, prompt: str, system_prompt: str | None
-    ) -> JudgeResponse:
+    async def _call_fallback(self, prompt: str, system_prompt: str | None) -> JudgeResponse:
         """Call the fallback judge."""
         self.fallback_calls += 1
         return await self._fallback.evaluate(prompt, system_prompt)
@@ -381,6 +373,7 @@ class ResilientJudge:
 # ---------------------------------------------------------------------------
 # Retry
 # ---------------------------------------------------------------------------
+
 
 @dataclass
 class RetryPolicy:
@@ -416,7 +409,7 @@ class RetryPolicy:
         jitter applied -- jitter is added at call time so that
         ``delay_for`` remains deterministic for testing.
         """
-        delay = self.base_delay * (self.exponential_base ** attempt)
+        delay = self.base_delay * (self.exponential_base**attempt)
         return min(delay, self.max_delay)
 
 

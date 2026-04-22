@@ -8,7 +8,9 @@ class TestAllOf:
         self.checks = DeterministicChecks()
 
     def test_all_present(self):
-        result = self.checks.all_of("Python is a programming language", ["Python", "programming", "language"])
+        result = self.checks.all_of(
+            "Python is a programming language", ["Python", "programming", "language"]
+        )
         assert result.passed is True
         assert result.score == 1.0
 
@@ -77,7 +79,7 @@ class TestIsJson:
         assert result.passed is True
 
     def test_valid_json_array(self):
-        result = self.checks.is_json('[1, 2, 3]')
+        result = self.checks.is_json("[1, 2, 3]")
         assert result.passed is True
 
     def test_valid_json_string(self):

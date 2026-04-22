@@ -1,4 +1,5 @@
 """Tests for CSV and JSON dataset loading."""
+
 import json
 
 import pytest
@@ -43,7 +44,9 @@ class TestJsonDataset:
 
 class TestCsvDataset:
     def test_load_csv(self, tmp_path):
-        csv_content = "input,expected,query\nWhat is Python?,A language,explain\nWhat is 2+2?,4,math\n"
+        csv_content = (
+            "input,expected,query\nWhat is Python?,A language,explain\nWhat is 2+2?,4,math\n"
+        )
         path = tmp_path / "cases.csv"
         path.write_text(csv_content)
 

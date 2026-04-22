@@ -53,9 +53,7 @@ class TestRoleViolationMetric:
 
     @pytest.mark.asyncio
     async def test_prompt_contains_output_and_role(self, mock_judge):
-        mock_judge.evaluate.return_value = JudgeResponse(
-            score=1.0, reasoning="ok", raw_output=""
-        )
+        mock_judge.evaluate.return_value = JudgeResponse(score=1.0, reasoning="ok", raw_output="")
         metric = RoleViolationMetric(judge=mock_judge)
         await metric.evaluate(output="my output text", role_description="my role text")
         call_args = mock_judge.evaluate.call_args

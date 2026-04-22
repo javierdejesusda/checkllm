@@ -4,6 +4,7 @@ Tests whether a vision LLM correctly answered a question about a diagram or
 chart. The judge compares the answer against an expected answer grounded in
 the image.
 """
+
 from __future__ import annotations
 
 import time

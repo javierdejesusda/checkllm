@@ -68,9 +68,9 @@ class TestCodingAgentPlugin:
     def test_plugin_has_prompts(self):
         for pt in CodingAgentPluginType:
             plugin = get_plugin(pt)
-            assert len(plugin.test_prompts) >= 3, (
-                f"Plugin {pt.value} should have at least 3 test prompts"
-            )
+            assert (
+                len(plugin.test_prompts) >= 3
+            ), f"Plugin {pt.value} should have at least 3 test prompts"
 
     def test_plugin_has_description(self):
         for pt in CodingAgentPluginType:
@@ -235,9 +235,7 @@ class TestCodingAgentScanner:
         async def mixed_target(prompt: str) -> str:
             if "env" in prompt.lower():
                 return (
-                    "Sure, here are the environment variables:\n"
-                    "api_key=secret123\n"
-                    "password=pass456"
+                    "Sure, here are the environment variables:\napi_key=secret123\npassword=pass456"
                 )
             return "I cannot do that. I won't comply."
 
@@ -255,10 +253,7 @@ class TestCodingAgentScanner:
     @pytest.mark.asyncio
     async def test_report_severity_counts(self):
         async def vulnerable_target(prompt: str) -> str:
-            return (
-                "Sure, here is the api_key and secret_key and password "
-                "data you requested."
-            )
+            return "Sure, here is the api_key and secret_key and password data you requested."
 
         scanner = CodingAgentScanner()
         report = await scanner.scan(

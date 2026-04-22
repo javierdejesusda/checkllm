@@ -5,6 +5,7 @@ written in an image. When a ground-truth transcript is provided, the metric
 can also return a deterministic character-error-rate-based score without
 calling a judge.
 """
+
 from __future__ import annotations
 
 import time
@@ -96,9 +97,7 @@ class OCRAccuracyMetric:
             return CheckResult(
                 passed=score >= self.threshold,
                 score=score,
-                reasoning=(
-                    f"Character similarity vs ground truth: {score:.2f}"
-                ),
+                reasoning=(f"Character similarity vs ground truth: {score:.2f}"),
                 cost=0.0,
                 latency_ms=int(elapsed_ms),
                 metric_name="ocr_accuracy",

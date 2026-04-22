@@ -4,7 +4,7 @@ import asyncio
 import logging
 import statistics
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from checkllm.cache import JudgeCache, _cache_key
 from checkllm.check_deterministic import DeterministicChecksMixin
@@ -14,6 +14,9 @@ from checkllm.deterministic import DeterministicChecks
 from checkllm.judge import JudgeBackend, JudgeConfigError
 from checkllm.logging_config import setup_logging
 from checkllm.models import CheckFailedError, CheckResult
+
+if TYPE_CHECKING:
+    from checkllm.expect import SoftCheckProxy
 
 logger = logging.getLogger("checkllm.check")
 
@@ -64,6 +67,7 @@ class CheckCollector(DeterministicChecksMixin, JudgeChecksMixin):
         """
         if self._expect is None:
             from checkllm.expect import SoftCheckProxy
+
             self._expect = SoftCheckProxy(self)
         return self._expect
 
@@ -75,6 +79,7 @@ class CheckCollector(DeterministicChecksMixin, JudgeChecksMixin):
             check.that(output).contains("Python").has_no_pii().max_tokens(200)
         """
         from checkllm.chain import AssertionChain
+
         return AssertionChain(self, output)
 
     def _get_judge(self) -> JudgeBackend:
@@ -83,7 +88,11 @@ class CheckCollector(DeterministicChecksMixin, JudgeChecksMixin):
             model = self.config.judge_model
 
             if backend == "auto":
-                from checkllm.discovery import detect_judge_backend, format_no_judge_error
+                from checkllm.discovery import (
+                    detect_judge_backend,
+                    format_no_judge_error,
+                )
+
                 detected = detect_judge_backend()
                 if detected is None:
                     raise JudgeConfigError(format_no_judge_error())
@@ -95,21 +104,27 @@ class CheckCollector(DeterministicChecksMixin, JudgeChecksMixin):
 
             if backend == "anthropic":
                 from checkllm.judge import AnthropicJudge
+
                 self._judge = AnthropicJudge(model=model)
             elif backend == "gemini":
                 from checkllm.providers import GeminiJudge
+
                 self._judge = GeminiJudge(model=model)
             elif backend == "ollama":
                 from checkllm.providers import OllamaJudge
+
                 self._judge = OllamaJudge(model=model)
             elif backend == "litellm":
                 from checkllm.providers import LiteLLMJudge
+
                 self._judge = LiteLLMJudge(model=model)
             elif backend == "azure":
                 from checkllm.providers import AzureOpenAIJudge
+
                 self._judge = AzureOpenAIJudge(deployment=model)
             else:
                 from checkllm.judge import OpenAIJudge
+
                 self._judge = OpenAIJudge(model=model)
         return self._judge
 
@@ -145,6 +160,7 @@ class CheckCollector(DeterministicChecksMixin, JudgeChecksMixin):
             loop = None
         if loop and loop.is_running():
             import concurrent.futures
+
             with concurrent.futures.ThreadPoolExecutor() as pool:
                 return pool.submit(asyncio.run, coro).result()
         return asyncio.run(coro)
@@ -232,9 +248,11 @@ class CheckCollector(DeterministicChecksMixin, JudgeChecksMixin):
     def _fire_before_hook(self, metric_name: str, kwargs: dict) -> dict:
         """Fire the before_check hook, returning potentially modified kwargs."""
         from checkllm.hookspecs import plugin_manager
+
         pm = plugin_manager()
         results = pm.hook.checkllm_before_check(
-            metric_name=metric_name, kwargs=kwargs,
+            metric_name=metric_name,
+            kwargs=kwargs,
         )
         for r in results:
             if r is not None:
@@ -244,13 +262,16 @@ class CheckCollector(DeterministicChecksMixin, JudgeChecksMixin):
     def _fire_after_hook(self, result) -> None:
         """Fire after_check and on_failure hooks."""
         from checkllm.hookspecs import plugin_manager
+
         pm = plugin_manager()
         pm.hook.checkllm_after_check(
-            result=result, metric_name=result.metric_name,
+            result=result,
+            metric_name=result.metric_name,
         )
         if not result.passed:
             pm.hook.checkllm_on_failure(
-                result=result, metric_name=result.metric_name,
+                result=result,
+                metric_name=result.metric_name,
             )
 
     async def _run_judge_async(self, coro) -> CheckResult:

@@ -109,9 +109,7 @@ class Arena:
                     asyncio.run,
                     self.acompare(candidate_a, candidate_b, test_inputs, confidence_level),
                 ).result()
-        return asyncio.run(
-            self.acompare(candidate_a, candidate_b, test_inputs, confidence_level)
-        )
+        return asyncio.run(self.acompare(candidate_a, candidate_b, test_inputs, confidence_level))
 
     async def acompare(
         self,

@@ -1,4 +1,5 @@
 """Tests for the coherence metric."""
+
 from unittest.mock import AsyncMock
 
 import pytest

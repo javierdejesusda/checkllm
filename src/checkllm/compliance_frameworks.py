@@ -140,7 +140,7 @@ class MultiFrameworkReport(BaseModel):
             summaries.
         """
         lines = [
-            f"Multi-Framework Compliance Report",
+            "Multi-Framework Compliance Report",
             f"Timestamp: {self.timestamp}",
             f"Overall Score: {self.overall_score:.1%}",
             f"Frameworks scanned: {len(self.reports)}",
@@ -693,8 +693,7 @@ def _build_owasp_api_top10() -> FrameworkMapping:
         framework=ComplianceFramework.OWASP_API_TOP10,
         version="2023",
         description=(
-            "OWASP API Security Top 10 identifies the most critical security "
-            "risks facing APIs."
+            "OWASP API Security Top 10 identifies the most critical security risks facing APIs."
         ),
         url="https://owasp.org/API-Security/editions/2023/en/0x11-t10/",
         requirements=[
@@ -706,7 +705,11 @@ def _build_owasp_api_top10() -> FrameworkMapping:
                     "without verifying the user has access to the requested resource."
                 ),
                 severity="critical",
-                test_categories=["bola_attack", "privilege_escalation", "data_extraction"],
+                test_categories=[
+                    "bola_attack",
+                    "privilege_escalation",
+                    "data_extraction",
+                ],
                 remediation=(
                     "Implement per-object authorization checks. Validate that "
                     "the authenticated user owns the requested resource."
@@ -720,7 +723,11 @@ def _build_owasp_api_top10() -> FrameworkMapping:
                     "attackers to assume other users' identities."
                 ),
                 severity="critical",
-                test_categories=["session_leak", "cross_session_leak", "prompt_extraction"],
+                test_categories=[
+                    "session_leak",
+                    "cross_session_leak",
+                    "prompt_extraction",
+                ],
                 remediation=(
                     "Use standard authentication frameworks. Implement "
                     "multi-factor authentication. Rotate tokens regularly."
@@ -748,7 +755,11 @@ def _build_owasp_api_top10() -> FrameworkMapping:
                     "requested, enabling denial of service or cost exhaustion."
                 ),
                 severity="high",
-                test_categories=["encoding_attack", "unicode_exploit", "token_smuggling"],
+                test_categories=[
+                    "encoding_attack",
+                    "unicode_exploit",
+                    "token_smuggling",
+                ],
                 remediation=(
                     "Implement rate limiting, pagination, and resource quotas. "
                     "Set maximum response sizes."
@@ -809,7 +820,11 @@ def _build_owasp_api_top10() -> FrameworkMapping:
                     "storage, verbose error messages, or unnecessary features enabled."
                 ),
                 severity="medium",
-                test_categories=["prompt_extraction", "data_extraction", "debug_access"],
+                test_categories=[
+                    "prompt_extraction",
+                    "data_extraction",
+                    "debug_access",
+                ],
                 remediation=(
                     "Harden all environment configurations. Disable verbose "
                     "error output. Review default settings."
@@ -2088,8 +2103,7 @@ def _build_soc2() -> FrameworkMapping:
                 id="SOC2-AVAIL",
                 name="Availability",
                 description=(
-                    "The system is available for operation and use as "
-                    "committed or agreed."
+                    "The system is available for operation and use as committed or agreed."
                 ),
                 severity="high",
                 test_categories=[
@@ -2106,8 +2120,7 @@ def _build_soc2() -> FrameworkMapping:
                 id="SOC2-CONFID",
                 name="Confidentiality",
                 description=(
-                    "Information designated as confidential is protected "
-                    "as committed or agreed."
+                    "Information designated as confidential is protected as committed or agreed."
                 ),
                 severity="critical",
                 test_categories=[
@@ -2265,9 +2278,7 @@ def _build_nist_ai_rmf() -> FrameworkMapping:
             FrameworkRequirement(
                 id="NIST-MAP",
                 name="Risk Identification and Mapping",
-                description=(
-                    "Identify, categorize, and prioritize AI risks in context."
-                ),
+                description=("Identify, categorize, and prioritize AI risks in context."),
                 severity="high",
                 test_categories=[
                     "prompt_injection",
@@ -2284,8 +2295,7 @@ def _build_nist_ai_rmf() -> FrameworkMapping:
                 id="NIST-MEASURE",
                 name="Evaluation Coverage",
                 description=(
-                    "Measure AI risks quantitatively across a broad set "
-                    "of adversarial scenarios."
+                    "Measure AI risks quantitatively across a broad set of adversarial scenarios."
                 ),
                 severity="high",
                 test_categories=[
@@ -2304,8 +2314,7 @@ def _build_nist_ai_rmf() -> FrameworkMapping:
                 id="NIST-MANAGE",
                 name="Harm Mitigation",
                 description=(
-                    "Manage and mitigate identified risks, including content "
-                    "harms and bias."
+                    "Manage and mitigate identified risks, including content harms and bias."
                 ),
                 severity="high",
                 test_categories=[
@@ -2324,8 +2333,7 @@ def _build_nist_ai_rmf() -> FrameworkMapping:
                 id="NIST-TRUST",
                 name="Reliability and Privacy",
                 description=(
-                    "Ensure trustworthy handling of user data and consistent "
-                    "model behavior."
+                    "Ensure trustworthy handling of user data and consistent model behavior."
                 ),
                 severity="high",
                 test_categories=[
@@ -2344,8 +2352,7 @@ def _build_nist_ai_rmf() -> FrameworkMapping:
                 id="NIST-SAFETY",
                 name="Safety and Security",
                 description=(
-                    "Prevent generation of content that enables physical, "
-                    "cyber, or societal harm."
+                    "Prevent generation of content that enables physical, cyber, or societal harm."
                 ),
                 severity="critical",
                 test_categories=[
@@ -2597,9 +2604,7 @@ def get_framework_mapping(framework: ComplianceFramework) -> FrameworkMapping:
         try:
             framework = ComplianceFramework(framework)
         except ValueError:
-            raise ValueError(
-                f"No mapping available for framework: {framework}"
-            )
+            raise ValueError(f"No mapping available for framework: {framework}")
     builder = _FRAMEWORK_BUILDERS.get(framework)
     if builder is None:
         raise ValueError(f"No mapping available for framework: {framework.value}")
@@ -2778,9 +2783,7 @@ class ComplianceScanner:
             )
 
         valid_types = _get_valid_vuln_type_values()
-        mapped_types = [
-            t for t in requirement.test_categories if t in valid_types
-        ]
+        mapped_types = [t for t in requirement.test_categories if t in valid_types]
 
         if not mapped_types:
             return RequirementResult(

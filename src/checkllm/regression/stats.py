@@ -25,9 +25,7 @@ class ComparisonResult:
     current_std: float
 
 
-def confidence_interval(
-    scores: list[float], confidence: float = 0.95
-) -> ConfidenceIntervalResult:
+def confidence_interval(scores: list[float], confidence: float = 0.95) -> ConfidenceIntervalResult:
     """Calculate mean and confidence interval for a set of scores."""
     if not scores:
         raise ValueError("Cannot compute confidence interval for empty list")
@@ -36,7 +34,7 @@ def confidence_interval(
     if n == 1:
         return ConfidenceIntervalResult(mean=mean, lower=mean, upper=mean, std_dev=0.0)
     std_dev = statistics.stdev(scores)
-    se = std_dev / (n ** 0.5)
+    se = std_dev / (n**0.5)
     t_val = scipy_stats.t.ppf((1 + confidence) / 2, df=n - 1)
     margin = t_val * se
     return ConfidenceIntervalResult(
@@ -81,9 +79,7 @@ def compare_scores(
             current_std=current_std,
         )
 
-    t_stat, two_tailed_p = scipy_stats.ttest_ind(
-        baseline, current, equal_var=False
-    )
+    t_stat, two_tailed_p = scipy_stats.ttest_ind(baseline, current, equal_var=False)
     one_tailed_p = two_tailed_p / 2 if t_stat > 0 else 1.0 - two_tailed_p / 2
 
     return ComparisonResult(

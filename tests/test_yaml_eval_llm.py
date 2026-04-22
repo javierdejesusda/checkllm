@@ -13,7 +13,6 @@ from checkllm.yaml_eval import (
     AssertionConfig,
     EvalSettings,
     EvalTestConfig,
-    JudgeConfig,
     YAMLEvalConfig,
     YAMLEvalResult,
     YAMLEvaluator,
@@ -61,7 +60,12 @@ class TestResolveAssertionNoJudge:
         config = _config_with_assertion(AssertionConfig(type="relevance"))
         evaluator = YAMLEvaluator()
         with (
-            patch.object(evaluator, "_generate_output", new_callable=AsyncMock, return_value="out"),
+            patch.object(
+                evaluator,
+                "_generate_output",
+                new_callable=AsyncMock,
+                return_value="out",
+            ),
             patch.object(evaluator, "_create_judge", return_value=None),
         ):
             result = _run(evaluator.run_from_config(config))
@@ -72,7 +76,12 @@ class TestResolveAssertionNoJudge:
         config = _config_with_assertion(AssertionConfig(type="hallucination"))
         evaluator = YAMLEvaluator()
         with (
-            patch.object(evaluator, "_generate_output", new_callable=AsyncMock, return_value="out"),
+            patch.object(
+                evaluator,
+                "_generate_output",
+                new_callable=AsyncMock,
+                return_value="out",
+            ),
             patch.object(evaluator, "_create_judge", return_value=None),
         ):
             result = _run(evaluator.run_from_config(config))
@@ -82,7 +91,12 @@ class TestResolveAssertionNoJudge:
         config = _config_with_assertion(AssertionConfig(type="toxicity"))
         evaluator = YAMLEvaluator()
         with (
-            patch.object(evaluator, "_generate_output", new_callable=AsyncMock, return_value="out"),
+            patch.object(
+                evaluator,
+                "_generate_output",
+                new_callable=AsyncMock,
+                return_value="out",
+            ),
             patch.object(evaluator, "_create_judge", return_value=None),
         ):
             result = _run(evaluator.run_from_config(config))
@@ -92,7 +106,12 @@ class TestResolveAssertionNoJudge:
         config = _config_with_assertion(AssertionConfig(type="rubric", value="Be helpful."))
         evaluator = YAMLEvaluator()
         with (
-            patch.object(evaluator, "_generate_output", new_callable=AsyncMock, return_value="out"),
+            patch.object(
+                evaluator,
+                "_generate_output",
+                new_callable=AsyncMock,
+                return_value="out",
+            ),
             patch.object(evaluator, "_create_judge", return_value=None),
         ):
             result = _run(evaluator.run_from_config(config))
@@ -102,7 +121,12 @@ class TestResolveAssertionNoJudge:
         config = _config_with_assertion(AssertionConfig(type="fancy_new_metric"))
         evaluator = YAMLEvaluator()
         with (
-            patch.object(evaluator, "_generate_output", new_callable=AsyncMock, return_value="out"),
+            patch.object(
+                evaluator,
+                "_generate_output",
+                new_callable=AsyncMock,
+                return_value="out",
+            ),
             patch.object(evaluator, "_create_judge", return_value=None),
         ):
             result = _run(evaluator.run_from_config(config))
@@ -124,7 +148,12 @@ class TestResolveAssertionLLMBranches:
         config = _config_with_assertion(assertion, **(vars_ or {"query": "test query"}))
         evaluator = YAMLEvaluator()
         with (
-            patch.object(evaluator, "_generate_output", new_callable=AsyncMock, return_value="test output"),
+            patch.object(
+                evaluator,
+                "_generate_output",
+                new_callable=AsyncMock,
+                return_value="test output",
+            ),
             patch.object(evaluator, "_create_judge", return_value=_make_judge()),
             patch(metric_path, new_callable=AsyncMock, return_value=mock_result),
         ):
@@ -166,7 +195,12 @@ class TestResolveAssertionLLMBranches:
             return _make_check_result()
 
         with (
-            patch.object(evaluator, "_generate_output", new_callable=AsyncMock, return_value="output"),
+            patch.object(
+                evaluator,
+                "_generate_output",
+                new_callable=AsyncMock,
+                return_value="output",
+            ),
             patch.object(evaluator, "_create_judge", return_value=_make_judge()),
             patch(
                 "checkllm.metrics.relevance.RelevanceMetric.evaluate",
@@ -205,7 +239,12 @@ class TestResolveAssertionLLMBranches:
             return _make_check_result()
 
         with (
-            patch.object(evaluator, "_generate_output", new_callable=AsyncMock, return_value="output"),
+            patch.object(
+                evaluator,
+                "_generate_output",
+                new_callable=AsyncMock,
+                return_value="output",
+            ),
             patch.object(evaluator, "_create_judge", return_value=_make_judge()),
             patch(
                 "checkllm.metrics.hallucination.HallucinationMetric.evaluate",
@@ -332,7 +371,12 @@ class TestResolveAssertionLLMBranches:
             return _make_check_result()
 
         with (
-            patch.object(evaluator, "_generate_output", new_callable=AsyncMock, return_value="answer"),
+            patch.object(
+                evaluator,
+                "_generate_output",
+                new_callable=AsyncMock,
+                return_value="answer",
+            ),
             patch.object(evaluator, "_create_judge", return_value=_make_judge()),
             patch(
                 "checkllm.metrics.faithfulness.FaithfulnessMetric.evaluate",
@@ -361,7 +405,12 @@ class TestResolveAssertionLLMBranches:
             return _make_check_result()
 
         with (
-            patch.object(evaluator, "_generate_output", new_callable=AsyncMock, return_value="short"),
+            patch.object(
+                evaluator,
+                "_generate_output",
+                new_callable=AsyncMock,
+                return_value="short",
+            ),
             patch.object(evaluator, "_create_judge", return_value=_make_judge()),
             patch(
                 "checkllm.metrics.rubric.RubricMetric.evaluate",
@@ -390,7 +439,12 @@ class TestResolveAssertionLLMBranches:
             return _make_check_result()
 
         with (
-            patch.object(evaluator, "_generate_output", new_callable=AsyncMock, return_value="answer"),
+            patch.object(
+                evaluator,
+                "_generate_output",
+                new_callable=AsyncMock,
+                return_value="answer",
+            ),
             patch.object(evaluator, "_create_judge", return_value=_make_judge()),
             patch(
                 "checkllm.metrics.rubric.RubricMetric.evaluate",
@@ -436,7 +490,12 @@ class TestResolveAssertionLLMBranches:
             return _make_check_result()
 
         with (
-            patch.object(evaluator, "_generate_output", new_callable=AsyncMock, return_value="output"),
+            patch.object(
+                evaluator,
+                "_generate_output",
+                new_callable=AsyncMock,
+                return_value="output",
+            ),
             patch.object(evaluator, "_create_judge", return_value=_make_judge()),
             patch(
                 "checkllm.metrics.groundedness.GroundednessMetric.evaluate",
@@ -452,7 +511,12 @@ class TestResolveAssertionLLMBranches:
         config = _config_with_assertion(AssertionConfig(type="totally_unknown_type"))
         evaluator = YAMLEvaluator()
         with (
-            patch.object(evaluator, "_generate_output", new_callable=AsyncMock, return_value="out"),
+            patch.object(
+                evaluator,
+                "_generate_output",
+                new_callable=AsyncMock,
+                return_value="out",
+            ),
             patch.object(evaluator, "_create_judge", return_value=_make_judge()),
         ):
             result = _run(evaluator.run_from_config(config))
@@ -484,7 +548,12 @@ class TestResolveAssertionLLMBranches:
             self.system_prompt = ""
 
         with (
-            patch.object(evaluator, "_generate_output", new_callable=AsyncMock, return_value="output"),
+            patch.object(
+                evaluator,
+                "_generate_output",
+                new_callable=AsyncMock,
+                return_value="output",
+            ),
             patch.object(evaluator, "_create_judge", return_value=_make_judge()),
             patch("checkllm.metrics.relevance.RelevanceMetric.__init__", mock_init),
             patch(
@@ -519,7 +588,12 @@ class TestResolveAssertionLLMBranches:
             self.system_prompt = ""
 
         with (
-            patch.object(evaluator, "_generate_output", new_callable=AsyncMock, return_value="output"),
+            patch.object(
+                evaluator,
+                "_generate_output",
+                new_callable=AsyncMock,
+                return_value="output",
+            ),
             patch.object(evaluator, "_create_judge", return_value=_make_judge()),
             patch("checkllm.metrics.fluency.FluencyMetric.__init__", mock_init),
             patch(
@@ -555,7 +629,12 @@ class TestResolveAssertionLLMBranches:
         )
         evaluator = YAMLEvaluator()
         with (
-            patch.object(evaluator, "_generate_output", new_callable=AsyncMock, return_value="output"),
+            patch.object(
+                evaluator,
+                "_generate_output",
+                new_callable=AsyncMock,
+                return_value="output",
+            ),
             patch.object(evaluator, "_create_judge", return_value=_make_judge()),
             patch(
                 "checkllm.metrics.relevance.RelevanceMetric.evaluate",
@@ -650,7 +729,12 @@ class TestRunFromConfig:
         )
         evaluator = YAMLEvaluator()
         with (
-            patch.object(evaluator, "_generate_output", new_callable=AsyncMock, return_value="output"),
+            patch.object(
+                evaluator,
+                "_generate_output",
+                new_callable=AsyncMock,
+                return_value="output",
+            ),
             patch.object(evaluator, "_create_judge", return_value=_make_judge()),
             patch(
                 "checkllm.metrics.relevance.RelevanceMetric.evaluate",
@@ -685,7 +769,12 @@ class TestRunFromConfig:
             ],
         )
         evaluator = YAMLEvaluator()
-        with patch.object(evaluator, "_generate_output", new_callable=AsyncMock, return_value="hello world"):
+        with patch.object(
+            evaluator,
+            "_generate_output",
+            new_callable=AsyncMock,
+            return_value="hello world",
+        ):
             result = _run(evaluator.run_from_config(config))
 
         tr = result.results[0]
@@ -728,7 +817,12 @@ class TestRunFileLoading:
         yaml_file.write_text(yaml.dump(config_data), encoding="utf-8")
 
         evaluator = YAMLEvaluator()
-        with patch.object(evaluator, "_generate_output", new_callable=AsyncMock, return_value="The answer is 4."):
+        with patch.object(
+            evaluator,
+            "_generate_output",
+            new_callable=AsyncMock,
+            return_value="The answer is 4.",
+        ):
             result = _run(evaluator.run(str(yaml_file)))
 
         assert isinstance(result, YAMLEvalResult)
@@ -759,7 +853,12 @@ class TestRunFileLoading:
         yaml_file.write_text(yaml.dump(config_data), encoding="utf-8")
 
         evaluator = YAMLEvaluator()
-        with patch.object(evaluator, "_generate_output", new_callable=AsyncMock, return_value="hello world"):
+        with patch.object(
+            evaluator,
+            "_generate_output",
+            new_callable=AsyncMock,
+            return_value="hello world",
+        ):
             result = _run(evaluator.run(str(yaml_file)))
 
         assert result.total_tests == 3
@@ -780,7 +879,12 @@ class TestRunFileLoading:
 
         evaluator = YAMLEvaluator()
         with (
-            patch.object(evaluator, "_generate_output", new_callable=AsyncMock, return_value="yes it is"),
+            patch.object(
+                evaluator,
+                "_generate_output",
+                new_callable=AsyncMock,
+                return_value="yes it is",
+            ),
             patch.object(evaluator, "_create_judge", return_value=_make_judge()),
             patch(
                 "checkllm.metrics.relevance.RelevanceMetric.evaluate",

@@ -17,9 +17,15 @@ class TestConversationCompletenessMetric:
         return ConversationalTestCase(
             turns=[
                 Turn(role="user", content="Tell me about Python and Java"),
-                Turn(role="assistant", content="Python is a high-level language. Java is a statically typed language."),
+                Turn(
+                    role="assistant",
+                    content="Python is a high-level language. Java is a statically typed language.",
+                ),
                 Turn(role="user", content="Which one is faster?"),
-                Turn(role="assistant", content="Java is generally faster due to JIT compilation."),
+                Turn(
+                    role="assistant",
+                    content="Java is generally faster due to JIT compilation.",
+                ),
             ]
         )
 

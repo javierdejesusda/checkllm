@@ -84,6 +84,7 @@ class Trace(BaseModel):
     @property
     def total_cost(self) -> float:
         """Sum of costs across all spans (recursive)."""
+
         def _sum_cost(span: Span) -> float:
             return span.cost + sum(_sum_cost(c) for c in span.children)
 
@@ -102,7 +103,8 @@ _current_trace: contextvars.ContextVar[Trace | None] = contextvars.ContextVar(
     "_current_trace", default=None
 )
 _span_stack: contextvars.ContextVar[list[Span]] = contextvars.ContextVar(
-    "_span_stack", default=None  # type: ignore[arg-type]
+    "_span_stack",
+    default=None,  # type: ignore[arg-type]
 )
 _last_trace: contextvars.ContextVar[Trace | None] = contextvars.ContextVar(
     "_last_trace", default=None

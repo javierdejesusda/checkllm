@@ -40,13 +40,9 @@ class TestRubricMetric:
 
     @pytest.mark.asyncio
     async def test_prompt_contains_criteria(self, mock_judge):
-        mock_judge.evaluate.return_value = JudgeResponse(
-            score=0.9, reasoning="ok", raw_output=""
-        )
+        mock_judge.evaluate.return_value = JudgeResponse(score=0.9, reasoning="ok", raw_output="")
         metric = RubricMetric(judge=mock_judge)
-        await metric.evaluate(
-            output="test", criteria="must mention Python", threshold=0.8
-        )
+        await metric.evaluate(output="test", criteria="must mention Python", threshold=0.8)
         call_args = mock_judge.evaluate.call_args
         prompt = call_args.kwargs["prompt"]
         assert "must mention Python" in prompt
@@ -57,11 +53,7 @@ class TestRubricMetric:
             score=0.6, reasoning="partial", raw_output=""
         )
         metric = RubricMetric(judge=mock_judge)
-        result_low = await metric.evaluate(
-            output="test", criteria="test", threshold=0.5
-        )
-        result_high = await metric.evaluate(
-            output="test", criteria="test", threshold=0.9
-        )
+        result_low = await metric.evaluate(output="test", criteria="test", threshold=0.5)
+        result_high = await metric.evaluate(output="test", criteria="test", threshold=0.9)
         assert result_low.passed is True
         assert result_high.passed is False

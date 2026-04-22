@@ -42,9 +42,7 @@ class TestGEvalMetric:
 
     @pytest.mark.asyncio
     async def test_custom_steps_included_in_prompt(self, mock_judge):
-        mock_judge.evaluate.return_value = JudgeResponse(
-            score=0.85, reasoning="ok", raw_output=""
-        )
+        mock_judge.evaluate.return_value = JudgeResponse(score=0.85, reasoning="ok", raw_output="")
         steps = ["Check grammar", "Check tone", "Check accuracy"]
         metric = GEvalMetric(judge=mock_judge, threshold=0.8)
         await metric.evaluate(
@@ -87,8 +85,6 @@ class TestGEvalMetric:
             score=0.6, reasoning="partially meets criteria", raw_output=""
         )
         metric = GEvalMetric(judge=mock_judge, threshold=0.5)
-        result = await metric.evaluate(
-            output="test", criteria="test criteria"
-        )
+        result = await metric.evaluate(output="test", criteria="test criteria")
         assert result.passed is True
         assert result.score == 0.6

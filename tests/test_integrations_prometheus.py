@@ -4,10 +4,10 @@ The tests skip automatically when ``prometheus_client`` is not available
 in the environment, since installation of the package is required for
 the exporter to do anything meaningful.
 """
+
 from __future__ import annotations
 
 import sys
-import types
 from unittest.mock import MagicMock
 
 import pytest
@@ -115,9 +115,7 @@ def test_duration_histogram_observes_in_seconds():
     registry = CollectorRegistry()
     exporter = PrometheusExporter(registry=registry)
 
-    exporter.record_check(
-        _make_check(latency_ms=2_500), judge="gpt-4o"
-    )
+    exporter.record_check(_make_check(latency_ms=2_500), judge="gpt-4o")
 
     count = registry.get_sample_value(
         "checkllm_evaluation_duration_seconds_count",

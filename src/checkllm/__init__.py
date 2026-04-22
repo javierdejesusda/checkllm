@@ -85,8 +85,16 @@ try:
         ThreadPoolEngine,
         create_engine,
     )
-    from checkllm.estimator import CostEstimate, estimate_check_cost, estimate_from_test_file
-    from checkllm.experiments import ExperimentComparison, ExperimentRun, ExperimentTracker
+    from checkllm.estimator import (
+        CostEstimate,
+        estimate_check_cost,
+        estimate_from_test_file,
+    )
+    from checkllm.experiments import (
+        ExperimentComparison,
+        ExperimentRun,
+        ExperimentTracker,
+    )
     from checkllm.history import RunHistory
     from checkllm.dedup import InFlightDeduplicator, make_dedup_key
     from checkllm.judge import (
@@ -100,7 +108,6 @@ try:
         BedrockJudge,
         CohereJudge,
         CustomHTTPJudge,
-        DeepSeekJudge,
         FireworksJudge,
         GeminiJudge,
         GroqJudge,
@@ -242,10 +249,17 @@ try:
         TranslatedPrompt,
         detect_language,
     )
-    from checkllm.testing import MockJudge, assert_all_passed, assert_score_above, make_collector
+    from checkllm.testing import (
+        MockJudge,
+        assert_all_passed,
+        assert_score_above,
+        make_collector,
+    )
     from checkllm.yaml_config import EvalConfig, YamlEvalRunner, load_eval_config
+
     # New: Metric alignment
     from checkllm.alignment import AlignmentResult, HumanLabel, MetricAligner
+
     # New: Dual-judge metrics
     from checkllm.dual_judge import (
         AggregationMethod,
@@ -253,6 +267,7 @@ try:
         DualJudgeMetric,
         DualJudgeResult,
     )
+
     # New: Advanced red team strategies
     from checkllm.strategies import (
         ConversationTurn,
@@ -263,12 +278,14 @@ try:
         MultiTurnMischief,
         MultiTurnStrategy,
     )
+
     # New: Poisoned RAG document generation
     from checkllm.rag_poison import (
         PoisonedDocGenerator,
         PoisonedDocument,
         PoisonType,
     )
+
     # New: Industry compliance
     from checkllm.industry_compliance import (
         Industry,
@@ -276,12 +293,14 @@ try:
         IndustryComplianceRunner,
         IndustryPlugin,
     )
+
     # New: Adaptive guardrails
     from checkllm.adaptive_guardrails import (
         AdaptiveGuardrail,
         AdaptiveValidationResult,
         GuardrailRule,
     )
+
     # New: DPO export
     from checkllm.dpo import (
         DPODataset,
@@ -290,16 +309,19 @@ try:
         DPOStats,
         ExportFormat,
     )
+
     # New: Model security audit
     from checkllm.model_audit import (
         AuditResult,
         ModelAuditor,
         SecurityFinding,
-        SeverityLevel,
+        SeverityLevel,  # noqa: F811 — intentional re-export shadow of redteam.SeverityLevel
     )
+
     # New: CI/CD integration
     from checkllm.cicd.github_action import GitHubActionGenerator
     from checkllm.cicd.gitlab_ci import GitLabCIGenerator
+
     # Phase 6: Comprehensive compliance frameworks
     from checkllm.compliance_frameworks import (
         ComplianceFramework as ComplianceFrameworkV3,
@@ -312,6 +334,7 @@ try:
         get_framework_mapping,
         list_all_frameworks,
     )
+
     # Phase 6: YAML-based evaluation
     from checkllm.yaml_eval import (
         AssertionConfig as YAMLAssertionConfig,

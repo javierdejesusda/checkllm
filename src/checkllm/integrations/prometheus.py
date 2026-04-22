@@ -23,6 +23,7 @@ Usage::
 
 Install with ``pip install checkllm[prometheus]``.
 """
+
 from __future__ import annotations
 
 import logging
@@ -134,12 +135,8 @@ class PrometheusExporter:
         """
         effective_port = port if port is not None else self.port
         if hasattr(self._prom, "start_http_server"):
-            self._http_server = self._prom.start_http_server(
-                effective_port, registry=self.registry
-            )
-            logger.info(
-                "Prometheus exporter listening on :%d", effective_port
-            )
+            self._http_server = self._prom.start_http_server(effective_port, registry=self.registry)
+            logger.info("Prometheus exporter listening on :%d", effective_port)
         else:  # pragma: no cover - defensive branch
             raise RuntimeError("prometheus_client has no start_http_server")
 
@@ -164,16 +161,14 @@ class PrometheusExporter:
             completion_tokens: Optional completion token count to credit.
         """
         status = "passed" if result.passed else "failed"
-        self.evaluations_total.labels(
-            metric=result.metric_name, status=status
-        ).inc()
-        self.evaluation_duration_seconds.labels(
-            metric=result.metric_name
-        ).observe(result.latency_ms / 1000.0)
+        self.evaluations_total.labels(metric=result.metric_name, status=status).inc()
+        self.evaluation_duration_seconds.labels(metric=result.metric_name).observe(
+            result.latency_ms / 1000.0
+        )
         if result.cost:
-            self.judge_cost_usd_total.labels(
-                metric=result.metric_name, judge=judge
-            ).inc(result.cost)
+            self.judge_cost_usd_total.labels(metric=result.metric_name, judge=judge).inc(
+                result.cost
+            )
         if prompt_tokens:
             self.judge_tokens_total.labels(
                 metric=result.metric_name, judge=judge, kind="prompt"

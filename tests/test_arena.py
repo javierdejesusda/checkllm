@@ -139,9 +139,7 @@ class TestArena:
         assert mock_judge.evaluate.call_count == 4  # 2 inputs * 2 candidates
 
     def test_candidate_names_preserved(self, mock_judge):
-        mock_judge.evaluate.return_value = JudgeResponse(
-            score=0.7, reasoning="ok", raw_output=None
-        )
+        mock_judge.evaluate.return_value = JudgeResponse(score=0.7, reasoning="ok", raw_output=None)
         arena = self._make_arena(mock_judge)
         result = arena.compare(
             candidate_a=("alpha", "prompt alpha"),
@@ -208,9 +206,7 @@ class TestArena:
         assert result.winner == "high"
 
     def test_avg_score_computed(self, mock_judge):
-        mock_judge.evaluate.return_value = JudgeResponse(
-            score=0.6, reasoning="ok", raw_output=None
-        )
+        mock_judge.evaluate.return_value = JudgeResponse(score=0.6, reasoning="ok", raw_output=None)
         arena = self._make_arena(mock_judge)
         result = arena.compare(
             candidate_a=("a", "p"),

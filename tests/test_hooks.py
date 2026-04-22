@@ -1,4 +1,5 @@
 """Verify the checkllm hook system works with pluggy."""
+
 import pluggy
 
 from checkllm.hookspecs import CheckllmHookSpec, hookimpl
@@ -15,6 +16,7 @@ class TestHookSystem:
 
     def test_plugin_manager_creation(self):
         from checkllm.hookspecs import get_plugin_manager
+
         pm = get_plugin_manager()
         assert isinstance(pm, pluggy.PluginManager)
 
@@ -22,6 +24,7 @@ class TestHookSystem:
         @hookimpl
         def checkllm_after_check(result, metric_name):
             pass
+
         assert hasattr(checkllm_after_check, "checkllm_impl")
 
     def test_plugin_registration_and_call(self):
@@ -38,8 +41,12 @@ class TestHookSystem:
         pm.register(MyPlugin())
 
         result = CheckResult(
-            passed=True, score=1.0, reasoning="OK",
-            cost=0.0, latency_ms=0, metric_name="contains",
+            passed=True,
+            score=1.0,
+            reasoning="OK",
+            cost=0.0,
+            latency_ms=0,
+            metric_name="contains",
         )
         pm.hook.checkllm_after_check(result=result, metric_name="contains")
         assert call_log == ["contains"]

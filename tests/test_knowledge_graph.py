@@ -2,14 +2,12 @@
 
 from __future__ import annotations
 
-import asyncio
 import json
 from unittest.mock import AsyncMock
 
 import pytest
 
 from checkllm.knowledge_graph import (
-    BaseTransform,
     EntityExtractor,
     HeadlineSplitter,
     KGEdge,
@@ -253,40 +251,42 @@ class TestEntityExtractor:
     @pytest.mark.asyncio
     async def test_deduplicates_entities(self):
         kg = KnowledgeGraph()
-        kg.add_node(KGNode(
-            id="c1",
-            content="John Smith went to the store. John Smith bought apples.",
-            node_type="chunk",
-        ))
+        kg.add_node(
+            KGNode(
+                id="c1",
+                content="John Smith went to the store. John Smith bought apples.",
+                node_type="chunk",
+            )
+        )
 
         extractor = EntityExtractor()
         kg = await extractor.apply(kg)
 
-        john_nodes = [
-            n for n in kg.get_nodes_by_type("entity") if n.content == "John Smith"
-        ]
+        john_nodes = [n for n in kg.get_nodes_by_type("entity") if n.content == "John Smith"]
         assert len(john_nodes) == 1
 
     @pytest.mark.asyncio
     async def test_entities_shared_across_chunks(self):
         kg = KnowledgeGraph()
-        kg.add_node(KGNode(
-            id="c1",
-            content="John Smith is a programmer.",
-            node_type="chunk",
-        ))
-        kg.add_node(KGNode(
-            id="c2",
-            content="John Smith likes coffee.",
-            node_type="chunk",
-        ))
+        kg.add_node(
+            KGNode(
+                id="c1",
+                content="John Smith is a programmer.",
+                node_type="chunk",
+            )
+        )
+        kg.add_node(
+            KGNode(
+                id="c2",
+                content="John Smith likes coffee.",
+                node_type="chunk",
+            )
+        )
 
         extractor = EntityExtractor()
         kg = await extractor.apply(kg)
 
-        john_nodes = [
-            n for n in kg.get_nodes_by_type("entity") if n.content == "John Smith"
-        ]
+        john_nodes = [n for n in kg.get_nodes_by_type("entity") if n.content == "John Smith"]
         assert len(john_nodes) == 1
 
         john_id = john_nodes[0].id
@@ -300,31 +300,33 @@ class TestSimilarityBuilder:
     @pytest.mark.asyncio
     async def test_creates_edges_between_similar_chunks(self):
         kg = KnowledgeGraph()
-        kg.add_node(KGNode(
-            id="c1",
-            content="machine learning algorithms process data patterns",
-            node_type="chunk",
-        ))
-        kg.add_node(KGNode(
-            id="c2",
-            content="machine learning models learn from data patterns",
-            node_type="chunk",
-        ))
-        kg.add_node(KGNode(
-            id="c3",
-            content="cooking recipes require flour sugar eggs butter",
-            node_type="chunk",
-        ))
+        kg.add_node(
+            KGNode(
+                id="c1",
+                content="machine learning algorithms process data patterns",
+                node_type="chunk",
+            )
+        )
+        kg.add_node(
+            KGNode(
+                id="c2",
+                content="machine learning models learn from data patterns",
+                node_type="chunk",
+            )
+        )
+        kg.add_node(
+            KGNode(
+                id="c3",
+                content="cooking recipes require flour sugar eggs butter",
+                node_type="chunk",
+            )
+        )
 
         builder = SimilarityBuilder(threshold=0.3)
         kg = await builder.apply(kg)
 
-        similar_edges = [
-            e for e in kg.edges if e.relationship == "similar_to"
-        ]
-        similar_pairs = {
-            (e.source_id, e.target_id) for e in similar_edges
-        }
+        similar_edges = [e for e in kg.edges if e.relationship == "similar_to"]
+        similar_pairs = {(e.source_id, e.target_id) for e in similar_edges}
 
         assert ("c1", "c2") in similar_pairs
         assert ("c1", "c3") not in similar_pairs
@@ -333,19 +335,25 @@ class TestSimilarityBuilder:
     @pytest.mark.asyncio
     async def test_no_edges_when_dissimilar(self):
         kg = KnowledgeGraph()
-        kg.add_node(KGNode(
-            id="c1", content="alpha beta gamma", node_type="chunk",
-        ))
-        kg.add_node(KGNode(
-            id="c2", content="delta epsilon zeta", node_type="chunk",
-        ))
+        kg.add_node(
+            KGNode(
+                id="c1",
+                content="alpha beta gamma",
+                node_type="chunk",
+            )
+        )
+        kg.add_node(
+            KGNode(
+                id="c2",
+                content="delta epsilon zeta",
+                node_type="chunk",
+            )
+        )
 
         builder = SimilarityBuilder(threshold=0.3)
         kg = await builder.apply(kg)
 
-        similar_edges = [
-            e for e in kg.edges if e.relationship == "similar_to"
-        ]
+        similar_edges = [e for e in kg.edges if e.relationship == "similar_to"]
         assert len(similar_edges) == 0
 
 
@@ -353,15 +361,17 @@ class TestKeyphraseExtractor:
     @pytest.mark.asyncio
     async def test_extracts_keyphrases(self):
         kg = KnowledgeGraph()
-        kg.add_node(KGNode(
-            id="c1",
-            content=(
-                "Machine learning is a field of computer science. "
-                "Machine learning uses algorithms to learn from data. "
-                "Computer science encompasses many areas."
-            ),
-            node_type="chunk",
-        ))
+        kg.add_node(
+            KGNode(
+                id="c1",
+                content=(
+                    "Machine learning is a field of computer science. "
+                    "Machine learning uses algorithms to learn from data. "
+                    "Computer science encompasses many areas."
+                ),
+                node_type="chunk",
+            )
+        )
 
         extractor = KeyphraseExtractor(max_phrases=5)
         kg = await extractor.apply(kg)
@@ -376,31 +386,35 @@ class TestOverlapBuilder:
     @pytest.mark.asyncio
     async def test_creates_edges_for_shared_keyphrases(self):
         kg = KnowledgeGraph()
-        kg.add_node(KGNode(
-            id="c1",
-            content="placeholder",
-            node_type="chunk",
-            metadata={"keyphrases": ["machine", "learning", "algorithms"]},
-        ))
-        kg.add_node(KGNode(
-            id="c2",
-            content="placeholder",
-            node_type="chunk",
-            metadata={"keyphrases": ["machine", "learning", "data"]},
-        ))
-        kg.add_node(KGNode(
-            id="c3",
-            content="placeholder",
-            node_type="chunk",
-            metadata={"keyphrases": ["cooking", "recipes", "food"]},
-        ))
+        kg.add_node(
+            KGNode(
+                id="c1",
+                content="placeholder",
+                node_type="chunk",
+                metadata={"keyphrases": ["machine", "learning", "algorithms"]},
+            )
+        )
+        kg.add_node(
+            KGNode(
+                id="c2",
+                content="placeholder",
+                node_type="chunk",
+                metadata={"keyphrases": ["machine", "learning", "data"]},
+            )
+        )
+        kg.add_node(
+            KGNode(
+                id="c3",
+                content="placeholder",
+                node_type="chunk",
+                metadata={"keyphrases": ["cooking", "recipes", "food"]},
+            )
+        )
 
         builder = OverlapBuilder(min_shared=2)
         kg = await builder.apply(kg)
 
-        related_edges = [
-            e for e in kg.edges if e.relationship == "related_to"
-        ]
+        related_edges = [e for e in kg.edges if e.relationship == "related_to"]
         assert len(related_edges) == 1
         assert related_edges[0].source_id == "c1"
         assert related_edges[0].target_id == "c2"
@@ -444,16 +458,20 @@ class TestSingleHopSynthesizer:
     async def test_generates_single_hop_questions(self):
         judge = _make_mock_judge()
         kg = KnowledgeGraph()
-        kg.add_node(KGNode(
-            id="c1",
-            content="Python was created by Guido van Rossum in 1991.",
-            node_type="chunk",
-        ))
-        kg.add_node(KGNode(
-            id="c2",
-            content="JavaScript was created by Brendan Eich in 1995.",
-            node_type="chunk",
-        ))
+        kg.add_node(
+            KGNode(
+                id="c1",
+                content="Python was created by Guido van Rossum in 1991.",
+                node_type="chunk",
+            )
+        )
+        kg.add_node(
+            KGNode(
+                id="c2",
+                content="JavaScript was created by Brendan Eich in 1995.",
+                node_type="chunk",
+            )
+        )
 
         synth = SingleHopSynthesizer()
         samples = await synth.synthesize(kg, judge, num_samples=2)
@@ -469,11 +487,13 @@ class TestSingleHopSynthesizer:
     async def test_with_persona(self):
         judge = _make_mock_judge()
         kg = KnowledgeGraph()
-        kg.add_node(KGNode(
-            id="c1",
-            content="Quantum computing uses qubits instead of classical bits.",
-            node_type="chunk",
-        ))
+        kg.add_node(
+            KGNode(
+                id="c1",
+                content="Quantum computing uses qubits instead of classical bits.",
+                node_type="chunk",
+            )
+        )
 
         persona = Persona(
             name="Student",
@@ -482,9 +502,7 @@ class TestSingleHopSynthesizer:
         )
 
         synth = SingleHopSynthesizer()
-        samples = await synth.synthesize(
-            kg, judge, num_samples=1, persona=persona
-        )
+        samples = await synth.synthesize(kg, judge, num_samples=1, persona=persona)
 
         assert len(samples) == 1
         assert samples[0].persona == persona
@@ -506,9 +524,13 @@ class TestMultiHopSynthesizers:
         kg = KnowledgeGraph()
         kg.add_node(KGNode(id="c1", content="Chunk about topic A.", node_type="chunk"))
         kg.add_node(KGNode(id="c2", content="Chunk about topic B.", node_type="chunk"))
-        kg.add_edge(KGEdge(
-            source_id="c1", target_id="c2", relationship="similar_to",
-        ))
+        kg.add_edge(
+            KGEdge(
+                source_id="c1",
+                target_id="c2",
+                relationship="similar_to",
+            )
+        )
 
         synth = MultiHopAbstractSynthesizer()
         samples = await synth.synthesize(kg, judge, num_samples=1)
@@ -523,9 +545,13 @@ class TestMultiHopSynthesizers:
         kg = KnowledgeGraph()
         kg.add_node(KGNode(id="c1", content="Chunk about topic A.", node_type="chunk"))
         kg.add_node(KGNode(id="c2", content="Chunk about topic B.", node_type="chunk"))
-        kg.add_edge(KGEdge(
-            source_id="c1", target_id="c2", relationship="similar_to",
-        ))
+        kg.add_edge(
+            KGEdge(
+                source_id="c1",
+                target_id="c2",
+                relationship="similar_to",
+            )
+        )
 
         synth = MultiHopSpecificSynthesizer()
         samples = await synth.synthesize(kg, judge, num_samples=1)
@@ -555,11 +581,13 @@ class TestThemeExtractor:
         judge = _make_mock_judge(raw_output=raw)
 
         kg = KnowledgeGraph()
-        kg.add_node(KGNode(
-            id="c1",
-            content="AI and machine learning are transforming industries.",
-            node_type="chunk",
-        ))
+        kg.add_node(
+            KGNode(
+                id="c1",
+                content="AI and machine learning are transforming industries.",
+                node_type="chunk",
+            )
+        )
 
         extractor = ThemeExtractor()
         kg = await extractor.apply(kg, judge=judge)
@@ -585,11 +613,13 @@ class TestSummaryExtractor:
         judge = _make_mock_judge(raw_output=raw)
 
         kg = KnowledgeGraph()
-        kg.add_node(KGNode(
-            id="doc-0",
-            content="A long document about artificial intelligence and its applications.",
-            node_type="document",
-        ))
+        kg.add_node(
+            KGNode(
+                id="doc-0",
+                content="A long document about artificial intelligence and its applications.",
+                node_type="document",
+            )
+        )
 
         extractor = SummaryExtractor()
         kg = await extractor.apply(kg, judge=judge)
@@ -671,12 +701,22 @@ class TestKGTestGenerator:
 
     @pytest.mark.asyncio
     async def test_generate_personas(self):
-        raw = json.dumps({
-            "personas": [
-                {"name": "Alice", "description": "A student", "expertise_level": "beginner"},
-                {"name": "Bob", "description": "A researcher", "expertise_level": "expert"},
-            ]
-        })
+        raw = json.dumps(
+            {
+                "personas": [
+                    {
+                        "name": "Alice",
+                        "description": "A student",
+                        "expertise_level": "beginner",
+                    },
+                    {
+                        "name": "Bob",
+                        "description": "A researcher",
+                        "expertise_level": "expert",
+                    },
+                ]
+            }
+        )
         judge = _make_mock_judge(raw_output=raw)
         gen = KGTestGenerator(judge=judge)
 
@@ -790,7 +830,11 @@ class TestKGTestGenerator:
             documents=["Some document content about technology."],
             num_samples=2,
             personas=[
-                Persona(name="Student", description="A CS student", expertise_level="beginner"),
+                Persona(
+                    name="Student",
+                    description="A CS student",
+                    expertise_level="beginner",
+                ),
             ],
             styles=[QueryStyle.CONVERSATIONAL],
             lengths=[QueryLength.SHORT],
@@ -804,6 +848,7 @@ class TestSynthesizerIntegration:
 
     def test_knowledge_graph_v2_strategy_exists(self):
         from checkllm.synthesizer import EvolutionStrategy
+
         assert EvolutionStrategy.KNOWLEDGE_GRAPH_V2 == "knowledge_graph_v2"
 
     @pytest.mark.asyncio
@@ -812,6 +857,7 @@ class TestSynthesizerIntegration:
         judge = _make_mock_judge(raw_output=raw_qa)
 
         from checkllm.synthesizer import Synthesizer
+
         synth = Synthesizer(judge=judge)
         cases = await synth.from_documents_kg(
             documents=["AI is artificial intelligence."],

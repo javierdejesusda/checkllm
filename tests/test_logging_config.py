@@ -1,4 +1,5 @@
 """Tests for structured logging configuration."""
+
 import logging
 
 from checkllm.logging_config import setup_logging

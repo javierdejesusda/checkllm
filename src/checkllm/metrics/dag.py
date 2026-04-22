@@ -125,8 +125,7 @@ class DAGMetric:
         )
 
         reasoning_parts = [
-            f"{r.node_name}: {r.score:.2f} ({'pass' if r.passed else 'fail'})"
-            for r in visited
+            f"{r.node_name}: {r.score:.2f} ({'pass' if r.passed else 'fail'})" for r in visited
         ]
 
         return CheckResult(

@@ -1,4 +1,5 @@
 """Historical run tracking — stores eval runs with metadata in SQLite."""
+
 from __future__ import annotations
 
 import json
@@ -35,6 +36,7 @@ def _get_git_commit() -> str | None:
 @dataclass
 class RunRecord:
     """A single historical run."""
+
     run_id: int
     timestamp: float
     label: str
@@ -49,6 +51,7 @@ class RunRecord:
 @dataclass
 class RunSummary:
     """Lightweight summary for listing runs."""
+
     run_id: int
     timestamp: float
     label: str
@@ -99,8 +102,7 @@ class RunHistory:
         git_commit = _get_git_commit()
 
         serialized = {
-            test_name: [c.model_dump() for c in checks]
-            for test_name, checks in results.items()
+            test_name: [c.model_dump() for c in checks] for test_name, checks in results.items()
         }
 
         cursor = self._conn.execute(
@@ -121,7 +123,14 @@ class RunHistory:
         )
         self._conn.commit()
         run_id = cursor.lastrowid
-        logger.info("Recorded run #%d: %d checks, %d passed, %d failed, $%.4f", run_id, len(all_checks), passed, failed, total_cost)
+        logger.info(
+            "Recorded run #%d: %d checks, %d passed, %d failed, $%.4f",
+            run_id,
+            len(all_checks),
+            passed,
+            failed,
+            total_cost,
+        )
         return run_id
 
     def list_runs(self, limit: int = 20) -> list[RunSummary]:
@@ -166,9 +175,7 @@ class RunHistory:
             results=json.loads(row[8]),
         )
 
-    def get_metric_trend(
-        self, test_name: str, metric_name: str, limit: int = 20
-    ) -> list[dict]:
+    def get_metric_trend(self, test_name: str, metric_name: str, limit: int = 20) -> list[dict]:
         """Get score trend for a specific test+metric across recent runs.
 
         Returns list of dicts with keys: run_id, timestamp, label, git_commit, score, passed.
@@ -185,14 +192,16 @@ class RunHistory:
             if test_name in results:
                 for check_data in results[test_name]:
                     if check_data.get("metric_name") == metric_name:
-                        trend.append({
-                            "run_id": row[0],
-                            "timestamp": row[1],
-                            "label": row[2],
-                            "git_commit": row[3],
-                            "score": check_data["score"],
-                            "passed": check_data["passed"],
-                        })
+                        trend.append(
+                            {
+                                "run_id": row[0],
+                                "timestamp": row[1],
+                                "label": row[2],
+                                "git_commit": row[3],
+                                "score": check_data["score"],
+                                "passed": check_data["passed"],
+                            }
+                        )
                         break
         return trend
 

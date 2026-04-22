@@ -86,8 +86,7 @@ class AuditResult(BaseModel):
     def is_safe(self) -> bool:
         """True when there are no critical or high-severity findings."""
         return all(
-            f.severity not in (SeverityLevel.CRITICAL, SeverityLevel.HIGH)
-            for f in self.findings
+            f.severity not in (SeverityLevel.CRITICAL, SeverityLevel.HIGH) for f in self.findings
         )
 
     @computed_field  # type: ignore[prop-decorator]
@@ -265,9 +264,7 @@ class ModelAuditor:
         file_size = p.stat().st_size
         max_bytes = self.max_file_size_mb * 1024 * 1024
         if file_size > max_bytes:
-            raise ValueError(
-                f"File size {file_size} bytes exceeds limit of {max_bytes} bytes"
-            )
+            raise ValueError(f"File size {file_size} bytes exceeds limit of {max_bytes} bytes")
 
         start = time.monotonic()
         data = p.read_bytes()
@@ -285,9 +282,7 @@ class ModelAuditor:
             findings=findings,
         )
 
-    def scan_directory(
-        self, directory: str, recursive: bool = True
-    ) -> list[AuditResult]:
+    def scan_directory(self, directory: str, recursive: bool = True) -> list[AuditResult]:
         """Scan all supported model files in a directory.
 
         Args:
@@ -352,8 +347,7 @@ class ModelAuditor:
                         severity=SeverityLevel.CRITICAL,
                         title=f"Dangerous function call: {decoded}",
                         description=(
-                            f"Pickle file contains {decoded} call "
-                            f"(arbitrary code execution)"
+                            f"Pickle file contains {decoded} call (arbitrary code execution)"
                         ),
                         file_path=file_path,
                         byte_offset=offset,
@@ -377,9 +371,7 @@ class ModelAuditor:
                         SecurityFinding(
                             severity=SeverityLevel.HIGH,
                             title=f"Dangerous module reference: {decoded}",
-                            description=(
-                                f"Pickle file contains reference to '{decoded}' module"
-                            ),
+                            description=(f"Pickle file contains reference to '{decoded}' module"),
                             file_path=file_path,
                             byte_offset=offset,
                             pattern_matched=decoded,
@@ -499,9 +491,7 @@ class ModelAuditor:
         findings.extend(self._check_size_anomaly(data, file_path, "numpy"))
         return findings
 
-    def _scan_safetensors(
-        self, data: bytes, file_path: str
-    ) -> list[SecurityFinding]:
+    def _scan_safetensors(self, data: bytes, file_path: str) -> list[SecurityFinding]:
         """Scan safetensors files.
 
         Safetensors is designed to be safe. This scanner validates the header
@@ -642,9 +632,7 @@ class ModelAuditor:
                     SecurityFinding(
                         severity=SeverityLevel.HIGH,
                         title=f"Suspicious string: {description}",
-                        description=(
-                            f"Binary file contains suspicious pattern: '{decoded}'"
-                        ),
+                        description=(f"Binary file contains suspicious pattern: '{decoded}'"),
                         file_path=file_path,
                         byte_offset=offset,
                         pattern_matched=decoded,

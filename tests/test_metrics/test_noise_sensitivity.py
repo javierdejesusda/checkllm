@@ -40,15 +40,11 @@ class TestNoiseSensitivityMetric:
     async def test_threshold_boundary(self, judge):
         judge.set_default(score=0.8, reasoning="Exactly at threshold")
         metric = NoiseSensitivityMetric(judge=judge, threshold=0.8)
-        result = await metric.evaluate(
-            output="test", context="clean", noisy_context="noise"
-        )
+        result = await metric.evaluate(output="test", context="clean", noisy_context="noise")
         assert result.passed is True
 
         judge.set_default(score=0.79, reasoning="Just below threshold")
-        result = await metric.evaluate(
-            output="test", context="clean", noisy_context="noise"
-        )
+        result = await metric.evaluate(output="test", context="clean", noisy_context="noise")
         assert result.passed is False
 
     @pytest.mark.asyncio
@@ -69,7 +65,5 @@ class TestNoiseSensitivityMetric:
     async def test_latency_is_recorded(self, judge):
         judge.set_default(score=0.9, reasoning="ok")
         metric = NoiseSensitivityMetric(judge=judge, threshold=0.8)
-        result = await metric.evaluate(
-            output="test", context="clean", noisy_context="noise"
-        )
+        result = await metric.evaluate(output="test", context="clean", noisy_context="noise")
         assert result.latency_ms >= 0

@@ -52,9 +52,7 @@ class TestComparativeQualityMetric:
     async def test_custom_threshold(self, judge):
         judge.set_default(score=0.7, reasoning="A is somewhat better")
         metric = ComparativeQualityMetric(judge=judge, threshold=0.6)
-        result = await metric.evaluate(
-            output_a="a", output_b="b", criteria="quality"
-        )
+        result = await metric.evaluate(output_a="a", output_b="b", criteria="quality")
         assert result.passed is True
 
     @pytest.mark.asyncio
@@ -76,16 +74,12 @@ class TestComparativeQualityMetric:
         judge.set_default(score=0.5, reasoning="Equal")
         metric = ComparativeQualityMetric(judge=judge)
         assert metric.threshold == 0.5
-        result = await metric.evaluate(
-            output_a="a", output_b="b", criteria="quality"
-        )
+        result = await metric.evaluate(output_a="a", output_b="b", criteria="quality")
         assert result.passed is True
 
     @pytest.mark.asyncio
     async def test_latency_is_recorded(self, judge):
         judge.set_default(score=0.5, reasoning="ok")
         metric = ComparativeQualityMetric(judge=judge, threshold=0.5)
-        result = await metric.evaluate(
-            output_a="a", output_b="b", criteria="quality"
-        )
+        result = await metric.evaluate(output_a="a", output_b="b", criteria="quality")
         assert result.latency_ms >= 0

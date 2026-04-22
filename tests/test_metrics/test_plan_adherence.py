@@ -53,13 +53,9 @@ class TestPlanAdherenceMetric:
 
     @pytest.mark.asyncio
     async def test_prompt_contains_plan_and_trace(self, mock_judge):
-        mock_judge.evaluate.return_value = JudgeResponse(
-            score=0.9, reasoning="ok", raw_output=""
-        )
+        mock_judge.evaluate.return_value = JudgeResponse(score=0.9, reasoning="ok", raw_output="")
         metric = PlanAdherenceMetric(judge=mock_judge)
-        await metric.evaluate(
-            plan="my plan content", execution_trace="my execution trace"
-        )
+        await metric.evaluate(plan="my plan content", execution_trace="my execution trace")
         call_args = mock_judge.evaluate.call_args
         prompt = call_args.kwargs["prompt"]
         assert "my plan content" in prompt

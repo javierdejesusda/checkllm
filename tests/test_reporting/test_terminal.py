@@ -1,4 +1,3 @@
-
 from checkllm.models import CheckResult
 from checkllm.regression.compare import RegressionItem
 from checkllm.regression.stats import ComparisonResult
@@ -9,8 +8,12 @@ class TestRenderResults:
     def test_renders_passing_results(self):
         results = [
             CheckResult(
-                passed=True, score=0.95, reasoning="All good",
-                cost=0.002, latency_ms=450, metric_name="hallucination",
+                passed=True,
+                score=0.95,
+                reasoning="All good",
+                cost=0.002,
+                latency_ms=450,
+                metric_name="hallucination",
             ),
         ]
         output = render_results(results, to_string=True)
@@ -21,8 +24,12 @@ class TestRenderResults:
     def test_renders_failing_results(self):
         results = [
             CheckResult(
-                passed=False, score=0.3, reasoning="Hallucinated content",
-                cost=0.002, latency_ms=500, metric_name="hallucination",
+                passed=False,
+                score=0.3,
+                reasoning="Hallucinated content",
+                cost=0.002,
+                latency_ms=500,
+                metric_name="hallucination",
             ),
         ]
         output = render_results(results, to_string=True)
@@ -32,12 +39,20 @@ class TestRenderResults:
     def test_renders_cost_summary(self):
         results = [
             CheckResult(
-                passed=True, score=0.9, reasoning="ok",
-                cost=0.003, latency_ms=100, metric_name="hallucination",
+                passed=True,
+                score=0.9,
+                reasoning="ok",
+                cost=0.003,
+                latency_ms=100,
+                metric_name="hallucination",
             ),
             CheckResult(
-                passed=True, score=0.8, reasoning="ok",
-                cost=0.002, latency_ms=200, metric_name="relevance",
+                passed=True,
+                score=0.8,
+                reasoning="ok",
+                cost=0.002,
+                latency_ms=200,
+                metric_name="relevance",
             ),
         ]
         output = render_results(results, to_string=True)

@@ -38,6 +38,7 @@ T = TypeVar("T")
 # Statistics
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class EngineStats:
     """Mutable counters shared by every engine instance."""
@@ -59,6 +60,7 @@ class EngineStats:
 # Engine type enum
 # ---------------------------------------------------------------------------
 
+
 class EngineType(str, enum.Enum):
     """Supported engine execution strategies."""
 
@@ -72,6 +74,7 @@ class EngineType(str, enum.Enum):
 # ---------------------------------------------------------------------------
 # Abstract base engine
 # ---------------------------------------------------------------------------
+
 
 class BaseEngine(ABC):
     """Abstract base class for all evaluation engines."""
@@ -128,6 +131,7 @@ class BaseEngine(ABC):
 # AsyncEngine
 # ---------------------------------------------------------------------------
 
+
 class AsyncEngine(BaseEngine):
     """Asyncio-based engine with semaphore concurrency and backpressure.
 
@@ -179,9 +183,7 @@ class AsyncEngine(BaseEngine):
             elapsed = time.monotonic() - start
             self._stats.tasks_completed += 1
             self._stats.total_execution_time += elapsed
-            self._stats.current_queue_depth = max(
-                0, self._stats.current_queue_depth - 1
-            )
+            self._stats.current_queue_depth = max(0, self._stats.current_queue_depth - 1)
             # Release a backpressure slot so the next submit() can proceed.
             self._queue_semaphore.release()
 
@@ -243,9 +245,7 @@ class AsyncEngine(BaseEngine):
                 elapsed = time.monotonic() - start
                 self._stats.tasks_completed += 1
                 self._stats.total_execution_time += elapsed
-                self._stats.current_queue_depth = max(
-                    0, self._stats.current_queue_depth - 1
-                )
+                self._stats.current_queue_depth = max(0, self._stats.current_queue_depth - 1)
                 self._queue_semaphore.release()
 
         task: asyncio.Task[T] = asyncio.create_task(_runner())
@@ -271,6 +271,7 @@ class AsyncEngine(BaseEngine):
 # ---------------------------------------------------------------------------
 # ThreadPoolEngine
 # ---------------------------------------------------------------------------
+
 
 def _run_coro_in_new_loop(coro_factory: Callable[[], Coroutine[Any, Any, T]]) -> T:
     """Run an async coroutine in a fresh event loop on the calling thread.
@@ -330,9 +331,7 @@ class ThreadPoolEngine(BaseEngine):
                 elapsed = time.monotonic() - start
                 self._stats.tasks_completed += 1
                 self._stats.total_execution_time += elapsed
-                self._stats.current_queue_depth = max(
-                    0, self._stats.current_queue_depth - 1
-                )
+                self._stats.current_queue_depth = max(0, self._stats.current_queue_depth - 1)
 
         task: asyncio.Task[T] = asyncio.create_task(_tracked())
         self._pending_futures.add(task)
@@ -352,6 +351,7 @@ class ThreadPoolEngine(BaseEngine):
 # ---------------------------------------------------------------------------
 # ProcessPoolEngine
 # ---------------------------------------------------------------------------
+
 
 def _process_worker(func: Callable[..., T], args: tuple[Any, ...], kwargs: dict[str, Any]) -> T:
     """Top-level picklable function executed in a child process."""
@@ -398,9 +398,7 @@ class ProcessPoolEngine(BaseEngine):
                 elapsed = time.monotonic() - start
                 self._stats.tasks_completed += 1
                 self._stats.total_execution_time += elapsed
-                self._stats.current_queue_depth = max(
-                    0, self._stats.current_queue_depth - 1
-                )
+                self._stats.current_queue_depth = max(0, self._stats.current_queue_depth - 1)
 
         task: asyncio.Task[T] = asyncio.create_task(_wrapper())
         self._pending.add(task)
@@ -425,9 +423,7 @@ class ProcessPoolEngine(BaseEngine):
         loop = asyncio.get_running_loop()
         start = time.monotonic()
 
-        future = loop.run_in_executor(
-            self._pool, _process_worker, func, args, kwargs
-        )
+        future = loop.run_in_executor(self._pool, _process_worker, func, args, kwargs)
 
         async def _tracked() -> T:
             try:
@@ -437,9 +433,7 @@ class ProcessPoolEngine(BaseEngine):
                 elapsed = time.monotonic() - start
                 self._stats.tasks_completed += 1
                 self._stats.total_execution_time += elapsed
-                self._stats.current_queue_depth = max(
-                    0, self._stats.current_queue_depth - 1
-                )
+                self._stats.current_queue_depth = max(0, self._stats.current_queue_depth - 1)
 
         task: asyncio.Task[T] = asyncio.create_task(_tracked())
         self._pending.add(task)
@@ -459,6 +453,7 @@ class ProcessPoolEngine(BaseEngine):
 # ---------------------------------------------------------------------------
 # HybridEngine
 # ---------------------------------------------------------------------------
+
 
 class HybridEngine(BaseEngine):
     """Smart engine that routes work to the appropriate sub-engine.
@@ -502,9 +497,7 @@ class HybridEngine(BaseEngine):
 
         def _update_stats(t: asyncio.Task[Any]) -> None:
             self._stats.tasks_completed += 1
-            self._stats.current_queue_depth = max(
-                0, self._stats.current_queue_depth - 1
-            )
+            self._stats.current_queue_depth = max(0, self._stats.current_queue_depth - 1)
 
         task.add_done_callback(_update_stats)
         return task
@@ -521,9 +514,7 @@ class HybridEngine(BaseEngine):
 
         def _update_stats(t: asyncio.Task[Any]) -> None:
             self._stats.tasks_completed += 1
-            self._stats.current_queue_depth = max(
-                0, self._stats.current_queue_depth - 1
-            )
+            self._stats.current_queue_depth = max(0, self._stats.current_queue_depth - 1)
 
         task.add_done_callback(_update_stats)
         return task
@@ -551,9 +542,7 @@ class HybridEngine(BaseEngine):
 
             def _update_stats(t: asyncio.Task[Any]) -> None:
                 self._stats.tasks_completed += 1
-                self._stats.current_queue_depth = max(
-                    0, self._stats.current_queue_depth - 1
-                )
+                self._stats.current_queue_depth = max(0, self._stats.current_queue_depth - 1)
 
             task.add_done_callback(_update_stats)
             tasks.append(task)
@@ -586,6 +575,7 @@ class HybridEngine(BaseEngine):
 # ---------------------------------------------------------------------------
 # Factory
 # ---------------------------------------------------------------------------
+
 
 def _detect_engine_type() -> EngineType:
     """Heuristic auto-detection of the best engine type for the environment."""

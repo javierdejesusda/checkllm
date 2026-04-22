@@ -1,4 +1,3 @@
-
 import pytest
 
 from checkllm.check import CheckCollector

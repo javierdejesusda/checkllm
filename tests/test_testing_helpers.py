@@ -1,7 +1,13 @@
 """Tests for MockJudge and testing helpers."""
+
 import pytest
 
-from checkllm.testing import MockJudge, make_collector, assert_all_passed, assert_score_above
+from checkllm.testing import (
+    MockJudge,
+    make_collector,
+    assert_all_passed,
+    assert_score_above,
+)
 
 
 class TestMockJudge:

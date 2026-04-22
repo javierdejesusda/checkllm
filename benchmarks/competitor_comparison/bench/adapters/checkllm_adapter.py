@@ -82,9 +82,7 @@ class CheckllmAdapter:
             )
             metric_name = "context_relevance"
         elif family is MetricFamily.ANSWER_RELEVANCY:
-            r = await self._relevance.evaluate(
-                output=sample.answer, query=sample.query
-            )
+            r = await self._relevance.evaluate(output=sample.answer, query=sample.query)
             metric_name = "relevance"
         else:
             raise NotImplementedError(

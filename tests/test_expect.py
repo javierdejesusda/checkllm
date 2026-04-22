@@ -1,4 +1,5 @@
 """Tests for soft assertions (check.expect)."""
+
 import pytest
 
 from checkllm.check import CheckCollector

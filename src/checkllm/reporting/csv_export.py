@@ -1,4 +1,5 @@
 """CSV export — flat tabular format for spreadsheets and data pipelines."""
+
 from __future__ import annotations
 
 import csv

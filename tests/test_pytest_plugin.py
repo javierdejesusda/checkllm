@@ -1,6 +1,3 @@
-
-
-
 class TestMakeReportHook:
     def test_judge_config_error_causes_skip(self, pytester):
         """JudgeConfigError raised in a test body should not cause a failure.

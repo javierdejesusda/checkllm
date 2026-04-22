@@ -1,4 +1,5 @@
 """A/B comparison reports — compare two sets of check results side-by-side."""
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -25,6 +26,7 @@ class ComparisonReport:
 # ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
+
 
 def _all_checks(results: dict[str, list[CheckResult]]) -> list[CheckResult]:
     return [c for checks in results.values() for c in checks]
@@ -88,6 +90,7 @@ def _paired_rows(
 # ---------------------------------------------------------------------------
 # HTML
 # ---------------------------------------------------------------------------
+
 
 def generate_comparison_html(
     report: ComparisonReport,
@@ -171,15 +174,15 @@ th {{ background: #f5f5f5; }}
 <div class="summary">
   <div class="summary-card {"winner" if overall == report.label_a else ""}">
     <h3>{report.label_a}</h3>
-    <p>Pass rate: {stats_a['pass_rate']:.0%} ({stats_a['passed']:.0f}/{stats_a['total']:.0f})</p>
-    <p>Avg score: {stats_a['avg_score']:.3f}</p>
-    <p>Total cost: ${stats_a['total_cost']:.4f}</p>
+    <p>Pass rate: {stats_a["pass_rate"]:.0%} ({stats_a["passed"]:.0f}/{stats_a["total"]:.0f})</p>
+    <p>Avg score: {stats_a["avg_score"]:.3f}</p>
+    <p>Total cost: ${stats_a["total_cost"]:.4f}</p>
   </div>
   <div class="summary-card {"winner" if overall == report.label_b else ""}">
     <h3>{report.label_b}</h3>
-    <p>Pass rate: {stats_b['pass_rate']:.0%} ({stats_b['passed']:.0f}/{stats_b['total']:.0f})</p>
-    <p>Avg score: {stats_b['avg_score']:.3f}</p>
-    <p>Total cost: ${stats_b['total_cost']:.4f}</p>
+    <p>Pass rate: {stats_b["pass_rate"]:.0%} ({stats_b["passed"]:.0f}/{stats_b["total"]:.0f})</p>
+    <p>Avg score: {stats_b["avg_score"]:.3f}</p>
+    <p>Total cost: ${stats_b["total_cost"]:.4f}</p>
   </div>
 </div>
 
@@ -207,6 +210,7 @@ th {{ background: #f5f5f5; }}
 # ---------------------------------------------------------------------------
 # Markdown
 # ---------------------------------------------------------------------------
+
 
 def generate_comparison_markdown(
     report: ComparisonReport,
@@ -262,6 +266,7 @@ def generate_comparison_markdown(
 # Terminal (Rich)
 # ---------------------------------------------------------------------------
 
+
 def render_comparison_terminal(
     report: ComparisonReport,
     to_string: bool = False,
@@ -282,8 +287,7 @@ def render_comparison_terminal(
 
     console.print(
         f"\n[bold]Comparison:[/] {report.label_a} vs {report.label_b}  |  "
-        f"[bold]Overall:[/] {overall}"
-        + (" is better" if overall != "Tie" else "")
+        f"[bold]Overall:[/] {overall}" + (" is better" if overall != "Tie" else "")
     )
 
     # Summary table

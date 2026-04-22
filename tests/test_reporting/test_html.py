@@ -9,8 +9,12 @@ class TestHtmlReport:
         results = {
             "test_summarizer": [
                 CheckResult(
-                    passed=True, score=0.95, reasoning="All good",
-                    cost=0.002, latency_ms=450, metric_name="hallucination",
+                    passed=True,
+                    score=0.95,
+                    reasoning="All good",
+                    cost=0.002,
+                    latency_ms=450,
+                    metric_name="hallucination",
                 ),
             ]
         }
@@ -24,12 +28,20 @@ class TestHtmlReport:
         results = {
             "test_foo": [
                 CheckResult(
-                    passed=True, score=0.9, reasoning="ok",
-                    cost=0.001, latency_ms=100, metric_name="hallucination",
+                    passed=True,
+                    score=0.9,
+                    reasoning="ok",
+                    cost=0.001,
+                    latency_ms=100,
+                    metric_name="hallucination",
                 ),
                 CheckResult(
-                    passed=False, score=0.3, reasoning="failed check",
-                    cost=0.002, latency_ms=200, metric_name="relevance",
+                    passed=False,
+                    score=0.3,
+                    reasoning="failed check",
+                    cost=0.002,
+                    latency_ms=200,
+                    metric_name="relevance",
                 ),
             ]
         }
@@ -44,8 +56,22 @@ class TestHtmlReport:
     def test_contains_summary_stats(self, tmp_path: Path):
         results = {
             "test_a": [
-                CheckResult(passed=True, score=0.9, reasoning="ok", cost=0.003, latency_ms=100, metric_name="h"),
-                CheckResult(passed=False, score=0.2, reasoning="bad", cost=0.002, latency_ms=200, metric_name="r"),
+                CheckResult(
+                    passed=True,
+                    score=0.9,
+                    reasoning="ok",
+                    cost=0.003,
+                    latency_ms=100,
+                    metric_name="h",
+                ),
+                CheckResult(
+                    passed=False,
+                    score=0.2,
+                    reasoning="bad",
+                    cost=0.002,
+                    latency_ms=200,
+                    metric_name="r",
+                ),
             ],
         }
         output = tmp_path / "report.html"

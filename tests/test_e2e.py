@@ -51,21 +51,29 @@ def test_dataset_driven():
 def test_snapshot_roundtrip(tmp_path):
     """Verify snapshot save/load works end-to-end."""
     from checkllm.regression.snapshot import (
-        Snapshot, TestRunRecord, MetricRecord, save_snapshot, load_snapshot,
+        Snapshot,
+        TestRunRecord,
+        MetricRecord,
+        save_snapshot,
+        load_snapshot,
     )
 
     snap = Snapshot(
         version=1,
         tests={
             "test_my_agent": [
-                TestRunRecord(metrics={
-                    "hallucination": MetricRecord(score=0.92, passed=True),
-                    "relevance": MetricRecord(score=0.88, passed=True),
-                }),
-                TestRunRecord(metrics={
-                    "hallucination": MetricRecord(score=0.90, passed=True),
-                    "relevance": MetricRecord(score=0.85, passed=True),
-                }),
+                TestRunRecord(
+                    metrics={
+                        "hallucination": MetricRecord(score=0.92, passed=True),
+                        "relevance": MetricRecord(score=0.88, passed=True),
+                    }
+                ),
+                TestRunRecord(
+                    metrics={
+                        "hallucination": MetricRecord(score=0.90, passed=True),
+                        "relevance": MetricRecord(score=0.85, passed=True),
+                    }
+                ),
             ]
         },
     )
@@ -83,18 +91,24 @@ def test_regression_detection():
     from checkllm.regression.snapshot import Snapshot, TestRunRecord, MetricRecord
     from checkllm.regression.compare import compare_snapshot
 
-    baseline = Snapshot(version=1, tests={
-        "test_quality": [
-            TestRunRecord(metrics={"score": MetricRecord(score=s, passed=True)})
-            for s in [0.90, 0.92, 0.88, 0.91, 0.89]
-        ]
-    })
-    current = Snapshot(version=1, tests={
-        "test_quality": [
-            TestRunRecord(metrics={"score": MetricRecord(score=s, passed=False)})
-            for s in [0.50, 0.52, 0.48, 0.51, 0.49]
-        ]
-    })
+    baseline = Snapshot(
+        version=1,
+        tests={
+            "test_quality": [
+                TestRunRecord(metrics={"score": MetricRecord(score=s, passed=True)})
+                for s in [0.90, 0.92, 0.88, 0.91, 0.89]
+            ]
+        },
+    )
+    current = Snapshot(
+        version=1,
+        tests={
+            "test_quality": [
+                TestRunRecord(metrics={"score": MetricRecord(score=s, passed=False)})
+                for s in [0.50, 0.52, 0.48, 0.51, 0.49]
+            ]
+        },
+    )
 
     report = compare_snapshot(baseline, current)
     assert report.has_regressions is True
@@ -108,9 +122,30 @@ def test_html_report_generation(tmp_path):
 
     results = {
         "test_my_agent": [
-            CheckResult(passed=True, score=0.95, reasoning="Grounded", cost=0.003, latency_ms=450, metric_name="hallucination"),
-            CheckResult(passed=True, score=0.88, reasoning="Relevant", cost=0.002, latency_ms=320, metric_name="relevance"),
-            CheckResult(passed=False, score=0.3, reasoning="Too verbose", cost=0.001, latency_ms=200, metric_name="rubric"),
+            CheckResult(
+                passed=True,
+                score=0.95,
+                reasoning="Grounded",
+                cost=0.003,
+                latency_ms=450,
+                metric_name="hallucination",
+            ),
+            CheckResult(
+                passed=True,
+                score=0.88,
+                reasoning="Relevant",
+                cost=0.002,
+                latency_ms=320,
+                metric_name="relevance",
+            ),
+            CheckResult(
+                passed=False,
+                score=0.3,
+                reasoning="Too verbose",
+                cost=0.001,
+                latency_ms=200,
+                metric_name="rubric",
+            ),
         ]
     }
 

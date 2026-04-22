@@ -46,13 +46,13 @@ class TestPlanQualityMetric:
     def test_prompt_content(self, mock_judge):
         metric = PlanQualityMetric(judge=mock_judge)
         assert "score" in metric.system_prompt.lower()
-        assert "evaluate" in metric.system_prompt.lower() or "assess" in metric.system_prompt.lower()
+        assert (
+            "evaluate" in metric.system_prompt.lower() or "assess" in metric.system_prompt.lower()
+        )
 
     @pytest.mark.asyncio
     async def test_prompt_contains_plan_and_task(self, mock_judge):
-        mock_judge.evaluate.return_value = JudgeResponse(
-            score=0.9, reasoning="ok", raw_output=""
-        )
+        mock_judge.evaluate.return_value = JudgeResponse(score=0.9, reasoning="ok", raw_output="")
         metric = PlanQualityMetric(judge=mock_judge)
         await metric.evaluate(plan="my plan here", task="my task here")
         call_args = mock_judge.evaluate.call_args

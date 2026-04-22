@@ -1,4 +1,5 @@
 """Content-addressable cache for LLM judge responses using SQLite."""
+
 from __future__ import annotations
 
 import hashlib

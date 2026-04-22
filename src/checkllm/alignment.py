@@ -87,7 +87,7 @@ _REWRITE_SYSTEM_PROMPT = (
     "You are an expert at writing LLM evaluation prompts. Your task is to "
     "rewrite a system prompt so that the LLM judge's scores more closely "
     "match human judgments.\n\n"
-    "Respond with JSON: {\"prompt\": \"<rewritten system prompt>\"}"
+    'Respond with JSON: {"prompt": "<rewritten system prompt>"}'
 )
 
 
@@ -133,13 +133,11 @@ class MetricAligner:
             raise ValueError("At least 2 labels are required for alignment.")
         valid_strategies = {"few_shot", "instruction_rewrite", "both"}
         if strategy not in valid_strategies:
-            raise ValueError(
-                f"strategy must be one of {valid_strategies}, got {strategy!r}"
-            )
+            raise ValueError(f"strategy must be one of {valid_strategies}, got {strategy!r}")
 
         current_prompt = base_prompt or (
             f"You are an expert {metric_name} evaluator. Score from 0.0 to 1.0.\n"
-            "Respond with JSON: {\"score\": <float>, \"reasoning\": \"<explanation>\"}"
+            'Respond with JSON: {"score": <float>, "reasoning": "<explanation>"}'
         )
         original_prompt = current_prompt
 
@@ -169,9 +167,7 @@ class MetricAligner:
                     candidate_prompt, labels, best_correlation
                 )
 
-            new_correlation = await self._evaluate_correlation(
-                candidate_prompt, labels
-            )
+            new_correlation = await self._evaluate_correlation(candidate_prompt, labels)
 
             if new_correlation > best_correlation:
                 best_correlation = new_correlation
@@ -195,9 +191,7 @@ class MetricAligner:
             iterations_run=iterations,
         )
 
-    async def _evaluate_correlation(
-        self, prompt: str, labels: list[HumanLabel]
-    ) -> float:
+    async def _evaluate_correlation(self, prompt: str, labels: list[HumanLabel]) -> float:
         """Run the judge with the given prompt on all labels and compute Pearson r.
 
         Args:
@@ -225,9 +219,7 @@ class MetricAligner:
 
         return _pearson_correlation(human_scores, judge_scores)
 
-    def _select_few_shot(
-        self, labels: list[HumanLabel], n: int = 3
-    ) -> list[HumanLabel]:
+    def _select_few_shot(self, labels: list[HumanLabel], n: int = 3) -> list[HumanLabel]:
         """Select diverse few-shot examples that maximize score-range coverage.
 
         Picks examples spread across the score range to give the judge a
@@ -256,9 +248,7 @@ class MetricAligner:
             best_candidate = None
             best_min_dist = -1.0
             for candidate in remaining:
-                min_dist = min(
-                    abs(candidate.human_score - s.human_score) for s in selected
-                )
+                min_dist = min(abs(candidate.human_score - s.human_score) for s in selected)
                 if min_dist > best_min_dist:
                     best_min_dist = min_dist
                     best_candidate = candidate
@@ -305,8 +295,7 @@ class MetricAligner:
         """
         mismatch_examples = self._rng.sample(labels, min(5, len(labels)))
         examples_text = "\n".join(
-            f"- Query: {lb.query[:100]}, Human score: {lb.human_score}"
-            for lb in mismatch_examples
+            f"- Query: {lb.query[:100]}, Human score: {lb.human_score}" for lb in mismatch_examples
         )
 
         rewrite_prompt = (
@@ -345,9 +334,7 @@ class MetricAligner:
             AttributeError: If the metric has no system_prompt attribute.
         """
         if not hasattr(metric, "system_prompt"):
-            raise AttributeError(
-                f"{type(metric).__name__} has no 'system_prompt' attribute."
-            )
+            raise AttributeError(f"{type(metric).__name__} has no 'system_prompt' attribute.")
         metric.system_prompt = result.aligned_prompt
 
     def save(self, result: AlignmentResult, path: str | Path) -> None:

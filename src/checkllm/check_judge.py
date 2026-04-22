@@ -1,4 +1,5 @@
 """Mixin providing LLM-as-judge check methods for CheckCollector."""
+
 from __future__ import annotations
 
 import hashlib
@@ -46,6 +47,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.hallucination import HallucinationMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = HallucinationMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -69,6 +71,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.relevance import RelevanceMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = RelevanceMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -91,6 +94,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.toxicity import ToxicityMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = ToxicityMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -114,6 +118,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.rubric import RubricMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = RubricMetric(judge=self._get_judge())
         if system_prompt is not None:
@@ -136,6 +141,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.fluency import FluencyMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = FluencyMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -158,6 +164,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.coherence import CoherenceMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = CoherenceMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -180,6 +187,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.sentiment import SentimentMetric
+
         t = threshold if threshold is not None else 0.5  # neutral default
         metric = SentimentMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -203,6 +211,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.correctness import CorrectnessMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = CorrectnessMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -227,6 +236,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.faithfulness import FaithfulnessMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = FaithfulnessMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -253,6 +263,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.context_relevance import ContextRelevanceMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = ContextRelevanceMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -276,6 +287,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.answer_completeness import AnswerCompletenessMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = AnswerCompletenessMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -299,6 +311,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.instruction_following import InstructionFollowingMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = InstructionFollowingMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -307,7 +320,11 @@ class JudgeChecksMixin:
             metric_name="instruction_following",
             metric_factory=lambda: metric,
             coro_factory=lambda: metric.evaluate(output=output, instructions=instructions),
-            cache_kwargs={"output": output, "instructions": instructions, "threshold": str(t)},
+            cache_kwargs={
+                "output": output,
+                "instructions": instructions,
+                "threshold": str(t),
+            },
             runs=runs,
             threshold=t,
             input_preview=output,
@@ -322,6 +339,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.summarization import SummarizationMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = SummarizationMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -345,6 +363,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.bias import BiasMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = BiasMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -370,6 +389,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.consistency import ConsistencyMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = ConsistencyMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -393,6 +413,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.groundedness import GroundednessMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = GroundednessMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -401,7 +422,11 @@ class JudgeChecksMixin:
             metric_name="groundedness",
             metric_factory=lambda: metric,
             coro_factory=lambda: metric.evaluate(output=output, sources=sources),
-            cache_kwargs={"output": output, "sources": "|".join(sources), "threshold": str(t)},
+            cache_kwargs={
+                "output": output,
+                "sources": "|".join(sources),
+                "threshold": str(t),
+            },
             runs=runs,
             threshold=t,
             input_preview=output,
@@ -417,6 +442,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.g_eval import GEvalMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = GEvalMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -445,6 +471,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.contextual_precision import ContextualPrecisionMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = ContextualPrecisionMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -452,8 +479,16 @@ class JudgeChecksMixin:
         return self._cached_judge_check(
             metric_name="contextual_precision",
             metric_factory=lambda: metric,
-            coro_factory=lambda: metric.evaluate(output=output, context=context, query=query, expected=expected),
-            cache_kwargs={"output": output, "context": "|".join(context), "query": query, "expected": expected, "threshold": str(t)},
+            coro_factory=lambda: metric.evaluate(
+                output=output, context=context, query=query, expected=expected
+            ),
+            cache_kwargs={
+                "output": output,
+                "context": "|".join(context),
+                "query": query,
+                "expected": expected,
+                "threshold": str(t),
+            },
             runs=runs,
             threshold=t,
             input_preview=output,
@@ -469,6 +504,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.contextual_recall import ContextualRecallMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = ContextualRecallMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -477,7 +513,12 @@ class JudgeChecksMixin:
             metric_name="contextual_recall",
             metric_factory=lambda: metric,
             coro_factory=lambda: metric.evaluate(output=output, context=context, expected=expected),
-            cache_kwargs={"output": output, "context": "|".join(context), "expected": expected, "threshold": str(t)},
+            cache_kwargs={
+                "output": output,
+                "context": "|".join(context),
+                "expected": expected,
+                "threshold": str(t),
+            },
             runs=runs,
             threshold=t,
             input_preview=output,
@@ -493,17 +534,26 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.task_completion import TaskCompletionMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = TaskCompletionMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
             metric.system_prompt = system_prompt
-        cache_kw = {"output": output, "task_description": task_description, "threshold": str(t)}
+        cache_kw = {
+            "output": output,
+            "task_description": task_description,
+            "threshold": str(t),
+        }
         if constraints:
             cache_kw["constraints"] = "|".join(constraints)
         return self._cached_judge_check(
             metric_name="task_completion",
             metric_factory=lambda: metric,
-            coro_factory=lambda: metric.evaluate(output=output, task_description=task_description, constraints=constraints),
+            coro_factory=lambda: metric.evaluate(
+                output=output,
+                task_description=task_description,
+                constraints=constraints,
+            ),
             cache_kwargs=cache_kw,
             runs=runs,
             threshold=t,
@@ -520,17 +570,24 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.role_adherence import RoleAdherenceMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = RoleAdherenceMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
             metric.system_prompt = system_prompt
-        cache_kw = {"output": output, "role_description": role_description, "threshold": str(t)}
+        cache_kw = {
+            "output": output,
+            "role_description": role_description,
+            "threshold": str(t),
+        }
         if query:
             cache_kw["query"] = query
         return self._cached_judge_check(
             metric_name="role_adherence",
             metric_factory=lambda: metric,
-            coro_factory=lambda: metric.evaluate(output=output, role_description=role_description, query=query),
+            coro_factory=lambda: metric.evaluate(
+                output=output, role_description=role_description, query=query
+            ),
             cache_kwargs=cache_kw,
             runs=runs,
             threshold=t,
@@ -547,16 +604,25 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.tool_accuracy import ToolAccuracyMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = ToolAccuracyMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
             metric.system_prompt = system_prompt
         import json as _json
+
         return self._cached_judge_check(
             metric_name="tool_accuracy",
             metric_factory=lambda: metric,
-            coro_factory=lambda: metric.evaluate(output=output, expected_tools=expected_tools, query=query),
-            cache_kwargs={"output": output, "expected_tools": _json.dumps(expected_tools, sort_keys=True), "query": query, "threshold": str(t)},
+            coro_factory=lambda: metric.evaluate(
+                output=output, expected_tools=expected_tools, query=query
+            ),
+            cache_kwargs={
+                "output": output,
+                "expected_tools": _json.dumps(expected_tools, sort_keys=True),
+                "query": query,
+                "threshold": str(t),
+            },
             runs=runs,
             threshold=t,
             input_preview=output,
@@ -570,6 +636,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.knowledge_retention import KnowledgeRetentionMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = KnowledgeRetentionMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -592,7 +659,10 @@ class JudgeChecksMixin:
         runs: int | None = None,
         system_prompt: str | None = None,
     ) -> CheckResult:
-        from checkllm.metrics.conversation_completeness import ConversationCompletenessMetric
+        from checkllm.metrics.conversation_completeness import (
+            ConversationCompletenessMetric,
+        )
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = ConversationCompletenessMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -617,6 +687,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.plan_quality import PlanQualityMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = PlanQualityMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -640,6 +711,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.goal_accuracy import GoalAccuracyMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = GoalAccuracyMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -663,6 +735,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.step_efficiency import StepEfficiencyMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = StepEfficiencyMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -686,6 +759,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.argument_correctness import ArgumentCorrectnessMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = ArgumentCorrectnessMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -693,8 +767,14 @@ class JudgeChecksMixin:
         return self._cached_judge_check(
             metric_name="argument_correctness",
             metric_factory=lambda: metric,
-            coro_factory=lambda: metric.evaluate(tool_calls=tool_calls, expected_calls=expected_calls),
-            cache_kwargs={"output": tool_calls, "expected_calls": expected_calls, "threshold": str(t)},
+            coro_factory=lambda: metric.evaluate(
+                tool_calls=tool_calls, expected_calls=expected_calls
+            ),
+            cache_kwargs={
+                "output": tool_calls,
+                "expected_calls": expected_calls,
+                "threshold": str(t),
+            },
             runs=runs,
             threshold=t,
             input_preview=tool_calls,
@@ -709,6 +789,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.plan_adherence import PlanAdherenceMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = PlanAdherenceMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -731,6 +812,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.pii_detection import PIIDetectionMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = PIIDetectionMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -754,6 +836,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.misuse_detection import MisuseDetectionMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = MisuseDetectionMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -762,7 +845,11 @@ class JudgeChecksMixin:
             metric_name="misuse_detection",
             metric_factory=lambda: metric,
             coro_factory=lambda: metric.evaluate(output=output, intended_scope=intended_scope),
-            cache_kwargs={"output": output, "intended_scope": intended_scope, "threshold": str(t)},
+            cache_kwargs={
+                "output": output,
+                "intended_scope": intended_scope,
+                "threshold": str(t),
+            },
             runs=runs,
             threshold=t,
             input_preview=output,
@@ -777,6 +864,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.role_violation import RoleViolationMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = RoleViolationMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -785,7 +873,11 @@ class JudgeChecksMixin:
             metric_name="role_violation",
             metric_factory=lambda: metric,
             coro_factory=lambda: metric.evaluate(output=output, role_description=role_description),
-            cache_kwargs={"output": output, "role_description": role_description, "threshold": str(t)},
+            cache_kwargs={
+                "output": output,
+                "role_description": role_description,
+                "threshold": str(t),
+            },
             runs=runs,
             threshold=t,
             input_preview=output,
@@ -800,6 +892,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.non_advice import NonAdviceMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = NonAdviceMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -810,7 +903,9 @@ class JudgeChecksMixin:
         return self._cached_judge_check(
             metric_name="non_advice",
             metric_factory=lambda: metric,
-            coro_factory=lambda: metric.evaluate(output=output, restricted_domains=restricted_domains),
+            coro_factory=lambda: metric.evaluate(
+                output=output, restricted_domains=restricted_domains
+            ),
             cache_kwargs=cache_kw,
             runs=runs,
             threshold=t,
@@ -826,6 +921,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.image_coherence import ImageCoherenceMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = ImageCoherenceMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -855,6 +951,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.image_helpfulness import ImageHelpfulnessMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = ImageHelpfulnessMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -862,9 +959,7 @@ class JudgeChecksMixin:
         return self._cached_judge_check(
             metric_name="image_helpfulness",
             metric_factory=lambda: metric,
-            coro_factory=lambda: metric.evaluate(
-                image_description=image_description, query=query
-            ),
+            coro_factory=lambda: metric.evaluate(image_description=image_description, query=query),
             cache_kwargs={
                 "output": image_description,
                 "query": query,
@@ -884,6 +979,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.image_relevance import ImageRelevanceMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = ImageRelevanceMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -891,9 +987,7 @@ class JudgeChecksMixin:
         return self._cached_judge_check(
             metric_name="image_relevance",
             metric_factory=lambda: metric,
-            coro_factory=lambda: metric.evaluate(
-                image_description=image_description, query=query
-            ),
+            coro_factory=lambda: metric.evaluate(image_description=image_description, query=query),
             cache_kwargs={
                 "output": image_description,
                 "query": query,
@@ -913,7 +1007,10 @@ class JudgeChecksMixin:
         runs: int | None = None,
         system_prompt: str | None = None,
     ) -> CheckResult:
-        from checkllm.metrics.multimodal_faithfulness import MultimodalFaithfulnessMetric
+        from checkllm.metrics.multimodal_faithfulness import (
+            MultimodalFaithfulnessMetric,
+        )
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = MultimodalFaithfulnessMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -946,6 +1043,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.text_to_image import TextToImageMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = TextToImageMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -976,6 +1074,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.mcp_task_completion import MCPTaskCompletionMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = MCPTaskCompletionMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -983,9 +1082,7 @@ class JudgeChecksMixin:
         return self._cached_judge_check(
             metric_name="mcp_task_completion",
             metric_factory=lambda: metric,
-            coro_factory=lambda: metric.evaluate(
-                output=output, task=task, tools_used=tools_used
-            ),
+            coro_factory=lambda: metric.evaluate(output=output, task=task, tools_used=tools_used),
             cache_kwargs={
                 "output": output,
                 "task": task,
@@ -1008,6 +1105,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.mcp_use import MCPUseMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = MCPUseMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -1043,6 +1141,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.multi_turn_mcp_use import MultiTurnMCPUseMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = MultiTurnMCPUseMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -1075,6 +1174,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.factual_correctness import FactualCorrectnessMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = FactualCorrectnessMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -1083,7 +1183,11 @@ class JudgeChecksMixin:
             metric_name="factual_correctness",
             metric_factory=lambda: metric,
             coro_factory=lambda: metric.evaluate(output=output, reference=reference),
-            cache_kwargs={"output": output, "reference": reference, "threshold": str(t)},
+            cache_kwargs={
+                "output": output,
+                "reference": reference,
+                "threshold": str(t),
+            },
             runs=runs,
             threshold=t,
             input_preview=output,
@@ -1099,6 +1203,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.noise_sensitivity import NoiseSensitivityMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = NoiseSensitivityMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -1106,8 +1211,15 @@ class JudgeChecksMixin:
         return self._cached_judge_check(
             metric_name="noise_sensitivity",
             metric_factory=lambda: metric,
-            coro_factory=lambda: metric.evaluate(output=output, context=context, noisy_context=noisy_context),
-            cache_kwargs={"output": output, "context": context, "noisy_context": noisy_context, "threshold": str(t)},
+            coro_factory=lambda: metric.evaluate(
+                output=output, context=context, noisy_context=noisy_context
+            ),
+            cache_kwargs={
+                "output": output,
+                "context": context,
+                "noisy_context": noisy_context,
+                "threshold": str(t),
+            },
             runs=runs,
             threshold=t,
             input_preview=output,
@@ -1122,6 +1234,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.context_entity_recall import ContextEntityRecallMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = ContextEntityRecallMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -1130,7 +1243,11 @@ class JudgeChecksMixin:
             metric_name="context_entity_recall",
             metric_factory=lambda: metric,
             coro_factory=lambda: metric.evaluate(context=context, reference=reference),
-            cache_kwargs={"output": context, "reference": reference, "threshold": str(t)},
+            cache_kwargs={
+                "output": context,
+                "reference": reference,
+                "threshold": str(t),
+            },
             runs=runs,
             threshold=t,
             input_preview=context,
@@ -1145,6 +1262,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.topic_adherence import TopicAdherenceMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = TopicAdherenceMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -1153,7 +1271,11 @@ class JudgeChecksMixin:
             metric_name="topic_adherence",
             metric_factory=lambda: metric,
             coro_factory=lambda: metric.evaluate(output=output, allowed_topics=allowed_topics),
-            cache_kwargs={"output": output, "allowed_topics": ",".join(allowed_topics), "threshold": str(t)},
+            cache_kwargs={
+                "output": output,
+                "allowed_topics": ",".join(allowed_topics),
+                "threshold": str(t),
+            },
             runs=runs,
             threshold=t,
             input_preview=output,
@@ -1168,6 +1290,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.response_completeness import ResponseCompletenessMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = ResponseCompletenessMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -1192,6 +1315,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.sql_equivalence import SQLEquivalenceMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = SQLEquivalenceMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -1218,6 +1342,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.code_correctness import CodeCorrectnessMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = CodeCorrectnessMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -1226,7 +1351,11 @@ class JudgeChecksMixin:
             metric_name="code_correctness",
             metric_factory=lambda: metric,
             coro_factory=lambda: metric.evaluate(output=output, requirements=requirements),
-            cache_kwargs={"output": output, "requirements": requirements, "threshold": str(t)},
+            cache_kwargs={
+                "output": output,
+                "requirements": requirements,
+                "threshold": str(t),
+            },
             runs=runs,
             threshold=t,
             input_preview=output,
@@ -1241,6 +1370,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.citation_accuracy import CitationAccuracyMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = CitationAccuracyMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -1249,7 +1379,11 @@ class JudgeChecksMixin:
             metric_name="citation_accuracy",
             metric_factory=lambda: metric,
             coro_factory=lambda: metric.evaluate(output=output, sources=sources),
-            cache_kwargs={"output": output, "sources": "|".join(sources), "threshold": str(t)},
+            cache_kwargs={
+                "output": output,
+                "sources": "|".join(sources),
+                "threshold": str(t),
+            },
             runs=runs,
             threshold=t,
             input_preview=output,
@@ -1263,7 +1397,10 @@ class JudgeChecksMixin:
         runs: int | None = None,
         system_prompt: str | None = None,
     ) -> CheckResult:
-        from checkllm.metrics.instruction_completeness import InstructionCompletenessMetric
+        from checkllm.metrics.instruction_completeness import (
+            InstructionCompletenessMetric,
+        )
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = InstructionCompletenessMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -1272,7 +1409,11 @@ class JudgeChecksMixin:
             metric_name="instruction_completeness",
             metric_factory=lambda: metric,
             coro_factory=lambda: metric.evaluate(output=output, instructions=instructions),
-            cache_kwargs={"output": output, "instructions": "|".join(instructions), "threshold": str(t)},
+            cache_kwargs={
+                "output": output,
+                "instructions": "|".join(instructions),
+                "threshold": str(t),
+            },
             runs=runs,
             threshold=t,
             input_preview=output,
@@ -1288,6 +1429,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.comparative_quality import ComparativeQualityMetric
+
         t = threshold if threshold is not None else 0.5
         metric = ComparativeQualityMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -1295,8 +1437,15 @@ class JudgeChecksMixin:
         return self._cached_judge_check(
             metric_name="comparative_quality",
             metric_factory=lambda: metric,
-            coro_factory=lambda: metric.evaluate(output_a=output_a, output_b=output_b, criteria=criteria),
-            cache_kwargs={"output": output_a, "output_b": output_b, "criteria": criteria, "threshold": str(t)},
+            coro_factory=lambda: metric.evaluate(
+                output_a=output_a, output_b=output_b, criteria=criteria
+            ),
+            cache_kwargs={
+                "output": output_a,
+                "output_b": output_b,
+                "criteria": criteria,
+                "threshold": str(t),
+            },
             runs=runs,
             threshold=t,
             input_preview=output_a,
@@ -1311,6 +1460,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.image_text_alignment import ImageTextAlignmentMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = ImageTextAlignmentMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -1341,6 +1491,7 @@ class JudgeChecksMixin:
         from checkllm.metrics.image_captioning_quality import (
             ImageCaptioningQualityMetric,
         )
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = ImageCaptioningQualityMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -1376,6 +1527,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.ocr_accuracy import OCRAccuracyMetric
+
         t = threshold if threshold is not None else 0.85
         metric = OCRAccuracyMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -1414,6 +1566,7 @@ class JudgeChecksMixin:
         from checkllm.metrics.diagram_comprehension import (
             DiagramComprehensionMetric,
         )
+
         t = threshold if threshold is not None else 0.7
         metric = DiagramComprehensionMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -1449,6 +1602,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.visual_hallucination import VisualHallucinationMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = VisualHallucinationMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -1463,9 +1617,7 @@ class JudgeChecksMixin:
         return self._cached_judge_check(
             metric_name="visual_hallucination",
             metric_factory=lambda: metric,
-            coro_factory=lambda: metric.evaluate(
-                image=image, response=response, query=query
-            ),
+            coro_factory=lambda: metric.evaluate(image=image, response=response, query=query),
             cache_kwargs=cache_kw,
             runs=runs,
             threshold=t,
@@ -1485,6 +1637,7 @@ class JudgeChecksMixin:
         from checkllm.metrics.chart_value_extraction import (
             ChartValueExtractionMetric,
         )
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = ChartValueExtractionMetric(
             judge=self._get_judge(), threshold=t, tolerance=tolerance
@@ -1492,6 +1645,7 @@ class JudgeChecksMixin:
         if system_prompt is not None:
             metric.system_prompt = system_prompt
         import json as _json
+
         cache_kw = {
             "output": _json.dumps(dict(expected_values), sort_keys=True),
             "image": _images_cache_key(image),
@@ -1499,9 +1653,7 @@ class JudgeChecksMixin:
             "threshold": str(t),
         }
         if extracted_values is not None:
-            cache_kw["extracted_values"] = _json.dumps(
-                dict(extracted_values), sort_keys=True
-            )
+            cache_kw["extracted_values"] = _json.dumps(dict(extracted_values), sort_keys=True)
         return self._cached_judge_check(
             metric_name="chart_value_extraction",
             metric_factory=lambda: metric,
@@ -1525,6 +1677,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.image_safety import ImageSafetyMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = ImageSafetyMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -1555,6 +1708,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.visual_faithfulness import VisualFaithfulnessMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = VisualFaithfulnessMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -1569,9 +1723,7 @@ class JudgeChecksMixin:
         return self._cached_judge_check(
             metric_name="visual_faithfulness",
             metric_factory=lambda: metric,
-            coro_factory=lambda: metric.evaluate(
-                image=image, output=output, query=query
-            ),
+            coro_factory=lambda: metric.evaluate(image=image, output=output, query=query),
             cache_kwargs=cache_kw,
             runs=runs,
             threshold=t,
@@ -1588,6 +1740,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.image_consistency import ImageConsistencyMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = ImageConsistencyMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -1602,9 +1755,7 @@ class JudgeChecksMixin:
         return self._cached_judge_check(
             metric_name="image_consistency",
             metric_factory=lambda: metric,
-            coro_factory=lambda: metric.evaluate(
-                images=images, response=response, query=query
-            ),
+            coro_factory=lambda: metric.evaluate(images=images, response=response, query=query),
             cache_kwargs=cache_kw,
             runs=runs,
             threshold=t,
@@ -1622,6 +1773,7 @@ class JudgeChecksMixin:
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.visual_reasoning import VisualReasoningMetric
+
         t = threshold if threshold is not None else 0.7
         metric = VisualReasoningMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -1650,10 +1802,14 @@ class JudgeChecksMixin:
     # --- Async LLM-as-judge checks ---
 
     async def ahallucination(
-        self, output: str, context: str, threshold: float | None = None,
+        self,
+        output: str,
+        context: str,
+        threshold: float | None = None,
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.hallucination import HallucinationMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = HallucinationMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -1679,10 +1835,14 @@ class JudgeChecksMixin:
         return result
 
     async def arelevance(
-        self, output: str, query: str, threshold: float | None = None,
+        self,
+        output: str,
+        query: str,
+        threshold: float | None = None,
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.relevance import RelevanceMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = RelevanceMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -1708,10 +1868,13 @@ class JudgeChecksMixin:
         return result
 
     async def atoxicity(
-        self, output: str, threshold: float | None = None,
+        self,
+        output: str,
+        threshold: float | None = None,
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.toxicity import ToxicityMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = ToxicityMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -1737,10 +1900,14 @@ class JudgeChecksMixin:
         return result
 
     async def arubric(
-        self, output: str, criteria: str, threshold: float | None = None,
+        self,
+        output: str,
+        criteria: str,
+        threshold: float | None = None,
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.rubric import RubricMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = RubricMetric(judge=self._get_judge())
         if system_prompt is not None:
@@ -1766,10 +1933,13 @@ class JudgeChecksMixin:
         return result
 
     async def afluency(
-        self, output: str, threshold: float | None = None,
+        self,
+        output: str,
+        threshold: float | None = None,
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.fluency import FluencyMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = FluencyMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -1795,10 +1965,13 @@ class JudgeChecksMixin:
         return result
 
     async def acoherence(
-        self, output: str, threshold: float | None = None,
+        self,
+        output: str,
+        threshold: float | None = None,
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.coherence import CoherenceMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = CoherenceMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -1824,10 +1997,13 @@ class JudgeChecksMixin:
         return result
 
     async def asentiment(
-        self, output: str, threshold: float | None = None,
+        self,
+        output: str,
+        threshold: float | None = None,
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.sentiment import SentimentMetric
+
         t = threshold if threshold is not None else 0.5
         metric = SentimentMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:
@@ -1853,10 +2029,14 @@ class JudgeChecksMixin:
         return result
 
     async def acorrectness(
-        self, output: str, expected: str, threshold: float | None = None,
+        self,
+        output: str,
+        expected: str,
+        threshold: float | None = None,
         system_prompt: str | None = None,
     ) -> CheckResult:
         from checkllm.metrics.correctness import CorrectnessMetric
+
         t = threshold if threshold is not None else self.config.default_threshold
         metric = CorrectnessMetric(judge=self._get_judge(), threshold=t)
         if system_prompt is not None:

@@ -41,5 +41,12 @@ def test_summarize_scores_returns_dict_with_known_keys():
     scores = [_mk("a", 0.9), _mk("b", 0.1), _mk("c", 0.8), _mk("d", 0.2)]
     labels = {"a": 1.0, "b": 0.0, "c": 1.0, "d": 0.0}
     summary = summarize_scores(scores, labels)
-    assert set(summary.keys()) >= {"auc", "best_f1", "best_threshold", "n", "mean_latency_ms", "total_cost_usd"}
+    assert set(summary.keys()) >= {
+        "auc",
+        "best_f1",
+        "best_threshold",
+        "n",
+        "mean_latency_ms",
+        "total_cost_usd",
+    }
     assert summary["n"] == 4

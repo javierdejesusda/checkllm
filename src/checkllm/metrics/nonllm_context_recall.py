@@ -95,7 +95,6 @@ class NonLLMContextRecallMetric:
                 metric_name="nonllm_context_recall",
             )
 
-        combined_context = " ".join(retrieved_contexts)
         matched = 0
         for sentence in ref_sentences:
             for ctx in retrieved_contexts:

@@ -27,22 +27,33 @@ Tracers can also be resolved by name through :func:`get_tracer`::
 
     tracer = get_tracer("langfuse")
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from checkllm.integrations.claude_agents import CheckllmAgentHandler as ClaudeAgentHandler
+    from checkllm.integrations.claude_agents import (
+        CheckllmAgentHandler as ClaudeAgentHandler,
+    )
     from checkllm.integrations.cloud_sync import SyncResult, push_to_remote
     from checkllm.integrations.crewai import CheckllmCrewCallback as CrewAICallback
     from checkllm.integrations.datadog import DatadogTracer
-    from checkllm.integrations.langchain import CheckllmCallbackHandler as LangChainHandler
+    from checkllm.integrations.langchain import (
+        CheckllmCallbackHandler as LangChainHandler,
+    )
     from checkllm.integrations.langfuse import LangFuseTracer
     from checkllm.integrations.langsmith import LangSmithTracer
-    from checkllm.integrations.llamaindex import CheckllmCallbackHandler as LlamaIndexHandler
-    from checkllm.integrations.openai_agents import CheckllmRunHandler as OpenAIAgentsHandler
+    from checkllm.integrations.llamaindex import (
+        CheckllmCallbackHandler as LlamaIndexHandler,
+    )
+    from checkllm.integrations.openai_agents import (
+        CheckllmRunHandler as OpenAIAgentsHandler,
+    )
     from checkllm.integrations.prometheus import PrometheusExporter
-    from checkllm.integrations.pydantic_ai import CheckllmResultValidator as PydanticAIValidator
+    from checkllm.integrations.pydantic_ai import (
+        CheckllmResultValidator as PydanticAIValidator,
+    )
 
 __all__ = [
     "ClaudeAgentHandler",
@@ -88,9 +99,7 @@ def get_tracer(name: str, **kwargs: Any) -> Any:
     target = _TRACER_FACTORIES.get(key)
     if target is None:
         available = ", ".join(sorted(_TRACER_FACTORIES))
-        raise ValueError(
-            f"Unknown tracer '{name}'. Available tracers: {available}"
-        )
+        raise ValueError(f"Unknown tracer '{name}'. Available tracers: {available}")
     module_path, _, class_name = target.partition(":")
     import importlib
 
@@ -103,52 +112,64 @@ def __getattr__(name: str) -> Any:
     """Lazy-load integration classes on first access."""
     if name == "LangChainHandler":
         from checkllm.integrations.langchain import CheckllmCallbackHandler
+
         return CheckllmCallbackHandler
 
     if name == "LlamaIndexHandler":
         from checkllm.integrations.llamaindex import (
             CheckllmCallbackHandler as _LlamaIndexHandler,
         )
+
         return _LlamaIndexHandler
 
     if name == "CrewAICallback":
         from checkllm.integrations.crewai import CheckllmCrewCallback
+
         return CheckllmCrewCallback
 
     if name == "PydanticAIValidator":
         from checkllm.integrations.pydantic_ai import CheckllmResultValidator
+
         return CheckllmResultValidator
 
     if name == "OpenAIAgentsHandler":
         from checkllm.integrations.openai_agents import CheckllmRunHandler
+
         return CheckllmRunHandler
 
     if name == "ClaudeAgentHandler":
         from checkllm.integrations.claude_agents import CheckllmAgentHandler
+
         return CheckllmAgentHandler
 
     if name == "LangSmithTracer":
         from checkllm.integrations.langsmith import LangSmithTracer
+
         return LangSmithTracer
 
     if name == "LangFuseTracer":
         from checkllm.integrations.langfuse import LangFuseTracer
+
         return LangFuseTracer
 
     if name == "DatadogTracer":
         from checkllm.integrations.datadog import DatadogTracer
+
         return DatadogTracer
 
     if name == "PrometheusExporter":
         from checkllm.integrations.prometheus import PrometheusExporter
+
         return PrometheusExporter
 
     if name == "push_to_remote":
         from checkllm.integrations.cloud_sync import push_to_remote
+
         return push_to_remote
 
     if name == "SyncResult":
         from checkllm.integrations.cloud_sync import SyncResult
+
         return SyncResult
 
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

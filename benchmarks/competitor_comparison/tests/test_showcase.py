@@ -5,6 +5,7 @@ section name, correct return type, and a non-negative total. Exact scores and
 pass counts are not asserted because they depend on CheckLLM internals that
 may vary across versions.
 """
+
 import pytest
 from bench.showcase import (
     ShowcaseReport,

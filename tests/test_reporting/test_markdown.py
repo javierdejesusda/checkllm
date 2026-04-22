@@ -1,6 +1,5 @@
 """Tests for Markdown report generation."""
 
-
 from checkllm.models import CheckResult
 from checkllm.reporting.markdown import generate_markdown_report
 
@@ -8,11 +7,32 @@ from checkllm.reporting.markdown import generate_markdown_report
 def _sample_results():
     return {
         "test_foo": [
-            CheckResult(passed=True, score=0.9, reasoning="Good", cost=0.001, latency_ms=100, metric_name="hallucination"),
-            CheckResult(passed=False, score=0.3, reasoning="Bad output", cost=0.002, latency_ms=200, metric_name="relevance"),
+            CheckResult(
+                passed=True,
+                score=0.9,
+                reasoning="Good",
+                cost=0.001,
+                latency_ms=100,
+                metric_name="hallucination",
+            ),
+            CheckResult(
+                passed=False,
+                score=0.3,
+                reasoning="Bad output",
+                cost=0.002,
+                latency_ms=200,
+                metric_name="relevance",
+            ),
         ],
         "test_bar": [
-            CheckResult(passed=True, score=1.0, reasoning="Perfect", cost=0.0, latency_ms=0, metric_name="contains"),
+            CheckResult(
+                passed=True,
+                score=1.0,
+                reasoning="Perfect",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="contains",
+            ),
         ],
     }
 

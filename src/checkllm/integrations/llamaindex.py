@@ -17,6 +17,7 @@ Usage::
 
 Requires: ``pip install llama-index-core``
 """
+
 from __future__ import annotations
 
 import logging
@@ -83,7 +84,9 @@ class CheckllmCallbackHandler:
 
         return result
 
-    def on_event_end(self, event_type: Any, payload: dict[str, Any] | None = None, **kwargs: Any) -> None:
+    def on_event_end(
+        self, event_type: Any, payload: dict[str, Any] | None = None, **kwargs: Any
+    ) -> None:
         """LlamaIndex callback: called when an event finishes."""
         if payload is None:
             return

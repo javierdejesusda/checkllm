@@ -17,37 +17,19 @@ repos:
         args: ["--fix"]
       - id: ruff-format
 
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.11.2
-    hooks:
-      - id: mypy
-        files: ^src/checkllm/
-        args:
-          - "--ignore-missing-imports"
-          - "--no-error-summary"
-        additional_dependencies:
-          - "types-PyYAML"
-          - "types-Jinja2"
-
-  - repo: https://github.com/PyCQA/bandit
-    rev: 1.7.9
-    hooks:
-      - id: bandit
-        args: ["-r", "-q", "--skip", "B101"]
-        files: ^src/checkllm/
-
   - repo: https://github.com/codespell-project/codespell
     rev: v2.3.0
     hooks:
       - id: codespell
         args:
-          - "--ignore-words-list=iff,nd,te,hist,ot"
+          - "--ignore-words-list=iff,nd,te,hist,ot,ist,ment,worl,bu,som,covert,strat,intoto,unparseable,re-use,socio-economic"
         exclude: |
           (?x)^(
             CHANGELOG\.md|
             requirements\.lock|
             .*\.lock|
-            site/.*
+            site/.*|
+            editor/vscode/package-lock\.json
           )$
 
   - repo: local

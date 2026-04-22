@@ -3,6 +3,7 @@
 Provides up to 50% cost savings by batching evaluation requests into a single
 JSONL file and submitting them through the OpenAI Batch API endpoint.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -168,9 +169,7 @@ class BatchEvaluator:
         loop = asyncio.get_running_loop()
 
         def _upload_and_create() -> tuple[str, str]:
-            with tempfile.NamedTemporaryFile(
-                mode="w", suffix=".jsonl", delete=False
-            ) as f:
+            with tempfile.NamedTemporaryFile(mode="w", suffix=".jsonl", delete=False) as f:
                 f.write(jsonl_content)
                 tmp_path = f.name
 
@@ -198,9 +197,7 @@ class BatchEvaluator:
             total_requests=len(requests),
             metadata={"file_id": file_id, "model": self._model},
         )
-        logger.info(
-            "Batch job submitted: %s (%d requests)", batch_id, len(requests)
-        )
+        logger.info("Batch job submitted: %s (%d requests)", batch_id, len(requests))
         return job
 
     async def poll(
@@ -232,8 +229,7 @@ class BatchEvaluator:
             elapsed = time.monotonic() - start
             if elapsed > timeout_seconds:
                 raise TimeoutError(
-                    f"Batch job {job.job_id} did not complete within "
-                    f"{timeout_seconds}s"
+                    f"Batch job {job.job_id} did not complete within {timeout_seconds}s"
                 )
 
             def _check_status() -> Any:
@@ -265,9 +261,7 @@ class BatchEvaluator:
                         job.metadata["errors"] = str(errors)
                     logger.error("Batch job %s failed: %s", job.job_id, errors)
                 elif job.status == BatchStatus.COMPLETED:
-                    job.metadata["output_file_id"] = getattr(
-                        batch, "output_file_id", None
-                    )
+                    job.metadata["output_file_id"] = getattr(batch, "output_file_id", None)
                     logger.info("Batch job %s completed", job.job_id)
                 return job
 
@@ -295,8 +289,7 @@ class BatchEvaluator:
         output_file_id = job.metadata.get("output_file_id")
         if not output_file_id:
             raise ValueError(
-                "No output_file_id found in job metadata. "
-                "Ensure the job was polled to completion."
+                "No output_file_id found in job metadata. Ensure the job was polled to completion."
             )
 
         loop = asyncio.get_running_loop()

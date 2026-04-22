@@ -22,10 +22,12 @@ class FakeLangChainLLM:
 
     async def ainvoke(self, prompt, **kwargs):
         from types import SimpleNamespace
+
         return SimpleNamespace(content=self.payload)
 
     def invoke(self, prompt, **kwargs):
         from types import SimpleNamespace
+
         return SimpleNamespace(content=self.payload)
 
 

@@ -48,9 +48,7 @@ def roc_auc(scores: list[BenchmarkScore], labels: Mapping[str, float]) -> float:
     return float(roc_auc_score(y_true, y_score))
 
 
-def best_f1(
-    scores: list[BenchmarkScore], labels: Mapping[str, float]
-) -> tuple[float, float]:
+def best_f1(scores: list[BenchmarkScore], labels: Mapping[str, float]) -> tuple[float, float]:
     """Find the threshold that maximises F1 over the score range.
 
     Args:
@@ -89,9 +87,7 @@ def spearman(scores: list[BenchmarkScore], labels: Mapping[str, float]) -> float
     return float(corr)
 
 
-def summarize_scores(
-    scores: list[BenchmarkScore], labels: Mapping[str, float]
-) -> dict[str, float]:
+def summarize_scores(scores: list[BenchmarkScore], labels: Mapping[str, float]) -> dict[str, float]:
     """Compute a summary of all scoring metrics for a set of benchmark results.
 
     Args:

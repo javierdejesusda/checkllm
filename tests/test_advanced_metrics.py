@@ -248,6 +248,7 @@ class TestTurnRelevancyMetric:
             nonlocal call_count
             call_count += 1
             from checkllm.models import JudgeResponse
+
             if call_count == 1:
                 return JudgeResponse(score=1.0, reasoning="Perfect", cost=0.0)
             return JudgeResponse(score=0.4, reasoning="Not great", cost=0.0)
@@ -356,6 +357,7 @@ class TestNVContextRelevanceMetric:
             nonlocal call_count
             call_count += 1
             from checkllm.models import JudgeResponse
+
             if call_count == 1:
                 return JudgeResponse(score=0.8, reasoning="Relevant context", cost=0.01)
             return JudgeResponse(score=0.6, reasoning="Some irrelevant info", cost=0.01)
@@ -398,6 +400,7 @@ class TestNVAnswerAccuracyMetric:
             nonlocal call_count
             call_count += 1
             from checkllm.models import JudgeResponse
+
             if call_count == 1:
                 return JudgeResponse(score=0.9, reasoning="Accurate", cost=0.01)
             return JudgeResponse(score=0.7, reasoning="Mostly matches", cost=0.01)
@@ -438,6 +441,7 @@ class TestNVResponseGroundednessMetric:
             nonlocal call_count
             call_count += 1
             from checkllm.models import JudgeResponse
+
             if call_count == 1:
                 return JudgeResponse(score=0.8, reasoning="Grounded", cost=0.01)
             return JudgeResponse(score=0.6, reasoning="Some additions", cost=0.01)
@@ -588,6 +592,7 @@ class TestPromptAlignmentMetric:
             nonlocal call_count
             call_count += 1
             from checkllm.models import JudgeResponse
+
             if call_count == 1:
                 return JudgeResponse(score=1.0, reasoning="Followed", cost=0.0)
             return JudgeResponse(score=0.0, reasoning="Not followed", cost=0.0)

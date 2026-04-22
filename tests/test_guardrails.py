@@ -1,4 +1,5 @@
 """Tests for the guardrails runtime validation module."""
+
 from __future__ import annotations
 
 import json
@@ -54,11 +55,17 @@ class TestValidationResult:
 
     def test_raise_on_failure_raises_when_invalid(self):
         failed = CheckResult(
-            passed=False, score=0.0, reasoning="bad",
-            cost=0.0, latency_ms=0, metric_name="test_check",
+            passed=False,
+            score=0.0,
+            reasoning="bad",
+            cost=0.0,
+            latency_ms=0,
+            metric_name="test_check",
         )
         r = ValidationResult(
-            valid=False, results=[failed], failed_checks=[failed],
+            valid=False,
+            results=[failed],
+            failed_checks=[failed],
         )
         with pytest.raises(GuardrailError) as exc_info:
             r.raise_on_failure()
@@ -66,12 +73,19 @@ class TestValidationResult:
 
     def test_summary_passed(self):
         ok = CheckResult(
-            passed=True, score=1.0, reasoning="ok",
-            cost=0.0, latency_ms=0, metric_name="contains",
+            passed=True,
+            score=1.0,
+            reasoning="ok",
+            cost=0.0,
+            latency_ms=0,
+            metric_name="contains",
         )
         r = ValidationResult(
-            valid=True, results=[ok], failed_checks=[],
-            total_latency_ms=5, total_cost=0.0,
+            valid=True,
+            results=[ok],
+            failed_checks=[],
+            total_latency_ms=5,
+            total_cost=0.0,
         )
         s = r.summary()
         assert "PASSED" in s
@@ -79,12 +93,19 @@ class TestValidationResult:
 
     def test_summary_failed(self):
         fail = CheckResult(
-            passed=False, score=0.1, reasoning="missing",
-            cost=0.01, latency_ms=100, metric_name="no_pii",
+            passed=False,
+            score=0.1,
+            reasoning="missing",
+            cost=0.01,
+            latency_ms=100,
+            metric_name="no_pii",
         )
         r = ValidationResult(
-            valid=False, results=[fail], failed_checks=[fail],
-            total_latency_ms=100, total_cost=0.01,
+            valid=False,
+            results=[fail],
+            failed_checks=[fail],
+            total_latency_ms=100,
+            total_cost=0.01,
         )
         s = r.summary()
         assert "FAILED" in s
@@ -106,8 +127,12 @@ class TestGuardrailError:
 
     def test_message_contains_check_names(self):
         fail = CheckResult(
-            passed=False, score=0.0, reasoning="bad",
-            cost=0.0, latency_ms=0, metric_name="no_pii",
+            passed=False,
+            score=0.0,
+            reasoning="bad",
+            cost=0.0,
+            latency_ms=0,
+            metric_name="no_pii",
         )
         r = ValidationResult(valid=False, results=[fail], failed_checks=[fail])
         err = GuardrailError(r)
@@ -172,11 +197,13 @@ class TestGuardDeterministic:
         assert result.valid is True
 
     def test_validate_multiple_deterministic(self):
-        guard = _make_guard([
-            CheckSpec(check_type="contains", params={"substring": "hello"}),
-            CheckSpec(check_type="no_pii"),
-            CheckSpec(check_type="max_tokens", params={"limit": 1000}),
-        ])
+        guard = _make_guard(
+            [
+                CheckSpec(check_type="contains", params={"substring": "hello"}),
+                CheckSpec(check_type="no_pii"),
+                CheckSpec(check_type="max_tokens", params={"limit": 1000}),
+            ]
+        )
         result = guard.validate("hello world")
         assert result.valid is True
         assert len(result.results) == 3
@@ -291,10 +318,12 @@ class TestGuardMixed:
 
 class TestGuardSoftChecks:
     def test_soft_check_failure_does_not_invalidate(self):
-        guard = _make_guard([
-            CheckSpec(check_type="contains", params={"substring": "missing"}, soft=True),
-            CheckSpec(check_type="no_pii"),
-        ])
+        guard = _make_guard(
+            [
+                CheckSpec(check_type="contains", params={"substring": "missing"}, soft=True),
+                CheckSpec(check_type="no_pii"),
+            ]
+        )
         result = guard.validate("Hello safe world")
         # The contains check fails but is soft, no_pii passes
         assert result.valid is True
@@ -303,20 +332,24 @@ class TestGuardSoftChecks:
         assert result.failed_checks[0].metric_name == "contains"
 
     def test_soft_and_hard_failure(self):
-        guard = _make_guard([
-            CheckSpec(check_type="contains", params={"substring": "missing"}, soft=True),
-            CheckSpec(check_type="contains", params={"substring": "also_missing"}),
-        ])
+        guard = _make_guard(
+            [
+                CheckSpec(check_type="contains", params={"substring": "missing"}, soft=True),
+                CheckSpec(check_type="contains", params={"substring": "also_missing"}),
+            ]
+        )
         result = guard.validate("Hello world")
         # Hard check failed -> invalid
         assert result.valid is False
         assert len(result.failed_checks) == 2
 
     def test_all_soft_failures_still_valid(self):
-        guard = _make_guard([
-            CheckSpec(check_type="contains", params={"substring": "x"}, soft=True),
-            CheckSpec(check_type="contains", params={"substring": "y"}, soft=True),
-        ])
+        guard = _make_guard(
+            [
+                CheckSpec(check_type="contains", params={"substring": "x"}, soft=True),
+                CheckSpec(check_type="contains", params={"substring": "y"}, soft=True),
+            ]
+        )
         result = guard.validate("hello")
         assert result.valid is True
         assert len(result.failed_checks) == 2
@@ -362,9 +395,11 @@ class TestGuardCall:
         assert output == "Hello safe world"
 
     def test_call_raises_on_failure(self):
-        guard = _make_guard([
-            CheckSpec(check_type="contains", params={"substring": "required"}),
-        ])
+        guard = _make_guard(
+            [
+                CheckSpec(check_type="contains", params={"substring": "required"}),
+            ]
+        )
         with pytest.raises(GuardrailError):
             guard("missing the keyword")
 
@@ -547,18 +582,22 @@ class TestGuardrailMiddleware:
         body_bytes = json.dumps(response_body).encode()
 
         async def app(scope: dict, receive, send) -> None:
-            await send({
-                "type": "http.response.start",
-                "status": status,
-                "headers": [
-                    (b"content-type", b"application/json"),
-                    (b"content-length", str(len(body_bytes)).encode()),
-                ],
-            })
-            await send({
-                "type": "http.response.body",
-                "body": body_bytes,
-            })
+            await send(
+                {
+                    "type": "http.response.start",
+                    "status": status,
+                    "headers": [
+                        (b"content-type", b"application/json"),
+                        (b"content-length", str(len(body_bytes)).encode()),
+                    ],
+                }
+            )
+            await send(
+                {
+                    "type": "http.response.body",
+                    "body": body_bytes,
+                }
+            )
 
         return app
 
@@ -596,7 +635,10 @@ class TestGuardrailMiddleware:
         app = self._make_asgi_app({"output": "Email: test@example.com"})
         guard = _make_guard([CheckSpec(check_type="no_pii")])
         middleware = GuardrailMiddleware(
-            app, guard=guard, response_field="output", on_failure="reject",
+            app,
+            guard=guard,
+            response_field="output",
+            on_failure="reject",
         )
 
         sent_messages: list[dict] = []
@@ -626,7 +668,10 @@ class TestGuardrailMiddleware:
         app = self._make_asgi_app({"output": "Email: test@example.com"})
         guard = _make_guard([CheckSpec(check_type="no_pii")])
         middleware = GuardrailMiddleware(
-            app, guard=guard, response_field="output", on_failure="flag",
+            app,
+            guard=guard,
+            response_field="output",
+            on_failure="flag",
         )
 
         sent_messages: list[dict] = []

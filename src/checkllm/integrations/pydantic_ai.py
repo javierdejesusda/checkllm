@@ -19,6 +19,7 @@ Usage::
 
 Requires: ``pip install pydantic-ai``
 """
+
 from __future__ import annotations
 
 import logging

@@ -1,4 +1,5 @@
 """Tests for community metric plugin discovery."""
+
 from unittest.mock import patch, MagicMock
 import pluggy
 import pytest
@@ -8,8 +9,12 @@ from checkllm.models import CheckResult
 
 def _make_fake_metric(output: str, **kwargs) -> CheckResult:
     return CheckResult(
-        passed=True, score=0.9, reasoning="fake",
-        cost=0.0, latency_ms=0, metric_name="fake_metric",
+        passed=True,
+        score=0.9,
+        reasoning="fake",
+        cost=0.0,
+        latency_ms=0,
+        metric_name="fake_metric",
     )
 
 
@@ -63,14 +68,17 @@ def test_entry_point_errors_are_silenced():
 class TestPluginDiscovery:
     def test_plugin_manager_loads_without_error(self):
         from checkllm.hookspecs import get_plugin_manager
+
         pm = get_plugin_manager()
         assert isinstance(pm, pluggy.PluginManager)
 
     def test_hookspecs_registered(self):
         from checkllm.hookspecs import get_plugin_manager
+
         pm = get_plugin_manager()
         assert pm.parse_hookimpl_opts is not None
 
     def test_entry_point_group_name(self):
         from checkllm.hookspecs import PROJECT_NAME
+
         assert PROJECT_NAME == "checkllm"

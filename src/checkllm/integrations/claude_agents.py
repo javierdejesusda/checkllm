@@ -24,6 +24,7 @@ Usage::
 
 Requires: ``pip install claude-agent-sdk``
 """
+
 from __future__ import annotations
 
 import functools
@@ -152,7 +153,9 @@ class CheckllmAgentHandler:
                 return self.validate(text)
         except Exception as exc:
             logger.debug(
-                "checkllm callback error (tool=%s): %s", tool_name, exc,
+                "checkllm callback error (tool=%s): %s",
+                tool_name,
+                exc,
             )
         return self.validate("")
 

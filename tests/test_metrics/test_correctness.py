@@ -1,4 +1,5 @@
 """Tests for the correctness metric."""
+
 from unittest.mock import AsyncMock
 
 import pytest
@@ -12,7 +13,9 @@ class TestCorrectnessMetric:
     def mock_judge(self):
         judge = AsyncMock()
         judge.evaluate.return_value = JudgeResponse(
-            score=0.9, reasoning="Semantically equivalent to expected answer", cost=0.001
+            score=0.9,
+            reasoning="Semantically equivalent to expected answer",
+            cost=0.001,
         )
         return judge
 

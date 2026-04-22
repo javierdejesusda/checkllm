@@ -4,6 +4,7 @@ For multi-image inputs, scores whether a single response is consistent with
 ALL supplied images — not only one. Useful for comparative reasoning, image
 sets, and multi-frame workflows.
 """
+
 from __future__ import annotations
 
 import time
@@ -57,9 +58,7 @@ class ImageConsistencyMetric:
         """
         payloads = _ensure_payloads(images)
         if len(payloads) < 2:
-            raise ValueError(
-                "image_consistency requires at least two images"
-            )
+            raise ValueError("image_consistency requires at least two images")
 
         parts = []
         if query:

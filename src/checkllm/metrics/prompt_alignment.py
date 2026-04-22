@@ -55,9 +55,7 @@ class PromptAlignmentMetric:
                 f"LLM Output:\n{output}\n\n"
                 "Does the output follow this specific instruction? Score it."
             )
-            response = await self.judge.evaluate(
-                prompt=prompt, system_prompt=self.system_prompt
-            )
+            response = await self.judge.evaluate(prompt=prompt, system_prompt=self.system_prompt)
             instruction_scores.append(response.score)
             instruction_details.append(
                 f"Instruction {i + 1} ({instruction[:50]}): "

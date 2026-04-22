@@ -1,4 +1,5 @@
 """Tests for A/B comparison reporting module."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -17,12 +18,20 @@ def _results_a() -> dict[str, list[CheckResult]]:
     return {
         "test_summary": [
             CheckResult(
-                passed=True, score=0.85, reasoning="Decent summary",
-                cost=0.002, latency_ms=300, metric_name="hallucination",
+                passed=True,
+                score=0.85,
+                reasoning="Decent summary",
+                cost=0.002,
+                latency_ms=300,
+                metric_name="hallucination",
             ),
             CheckResult(
-                passed=True, score=0.9, reasoning="Relevant",
-                cost=0.001, latency_ms=200, metric_name="relevance",
+                passed=True,
+                score=0.9,
+                reasoning="Relevant",
+                cost=0.001,
+                latency_ms=200,
+                metric_name="relevance",
             ),
         ],
     }
@@ -32,12 +41,20 @@ def _results_b() -> dict[str, list[CheckResult]]:
     return {
         "test_summary": [
             CheckResult(
-                passed=True, score=0.95, reasoning="Great summary",
-                cost=0.003, latency_ms=250, metric_name="hallucination",
+                passed=True,
+                score=0.95,
+                reasoning="Great summary",
+                cost=0.003,
+                latency_ms=250,
+                metric_name="hallucination",
             ),
             CheckResult(
-                passed=False, score=0.4, reasoning="Not relevant",
-                cost=0.001, latency_ms=180, metric_name="relevance",
+                passed=False,
+                score=0.4,
+                reasoning="Not relevant",
+                cost=0.001,
+                latency_ms=180,
+                metric_name="relevance",
             ),
         ],
     }
@@ -158,16 +175,24 @@ class TestComparisonEdgeCases:
             results_a={
                 "test_alpha": [
                     CheckResult(
-                        passed=True, score=0.9, reasoning="ok",
-                        cost=0.001, latency_ms=100, metric_name="hallucination",
+                        passed=True,
+                        score=0.9,
+                        reasoning="ok",
+                        cost=0.001,
+                        latency_ms=100,
+                        metric_name="hallucination",
                     ),
                 ],
             },
             results_b={
                 "test_beta": [
                     CheckResult(
-                        passed=True, score=0.8, reasoning="fine",
-                        cost=0.002, latency_ms=150, metric_name="relevance",
+                        passed=True,
+                        score=0.8,
+                        reasoning="fine",
+                        cost=0.002,
+                        latency_ms=150,
+                        metric_name="relevance",
                     ),
                 ],
             },
@@ -185,14 +210,20 @@ class TestComparisonEdgeCases:
         shared = {
             "test_x": [
                 CheckResult(
-                    passed=True, score=0.8, reasoning="ok",
-                    cost=0.001, latency_ms=100, metric_name="hallucination",
+                    passed=True,
+                    score=0.8,
+                    reasoning="ok",
+                    cost=0.001,
+                    latency_ms=100,
+                    metric_name="hallucination",
                 ),
             ],
         }
         report = ComparisonReport(
-            results_a=shared, results_b=shared,
-            label_a="Run1", label_b="Run2",
+            results_a=shared,
+            results_b=shared,
+            label_a="Run1",
+            label_b="Run2",
         )
         output = tmp_path / "tie.html"
         generate_comparison_html(report, output)

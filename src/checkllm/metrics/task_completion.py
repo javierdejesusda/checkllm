@@ -47,12 +47,8 @@ class TaskCompletionMetric:
     ) -> CheckResult:
         constraints_section = ""
         if constraints:
-            formatted_constraints = "\n".join(
-                f"  {i}. {c}" for i, c in enumerate(constraints, 1)
-            )
-            constraints_section = (
-                f"\nConstraints:\n{formatted_constraints}\n"
-            )
+            formatted_constraints = "\n".join(f"  {i}. {c}" for i, c in enumerate(constraints, 1))
+            constraints_section = f"\nConstraints:\n{formatted_constraints}\n"
 
         prompt = (
             f"Task Description:\n{task_description}\n"
@@ -63,9 +59,7 @@ class TaskCompletionMetric:
         )
 
         start = time.perf_counter_ns()
-        response = await self.judge.evaluate(
-            prompt=prompt, system_prompt=self.system_prompt
-        )
+        response = await self.judge.evaluate(prompt=prompt, system_prompt=self.system_prompt)
         elapsed_ms = (time.perf_counter_ns() - start) // 1_000_000
 
         return CheckResult(

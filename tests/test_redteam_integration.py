@@ -52,12 +52,8 @@ class MockJudge:
             raw = json.dumps({"mutated_prompt": "mutated seed"})
             return JudgeResponse(score=1.0, reasoning="mock", raw_output=raw)
         if "adversarial prompt" in sys:
-            raw = json.dumps(
-                {"success_score": self.success_score, "reasoning": "mock"}
-            )
-            return JudgeResponse(
-                score=self.success_score, reasoning="mock", raw_output=raw
-            )
+            raw = json.dumps({"success_score": self.success_score, "reasoning": "mock"})
+            return JudgeResponse(score=self.success_score, reasoning="mock", raw_output=raw)
         return JudgeResponse(score=0.0, reasoning="n/a", raw_output="{}")
 
 
@@ -67,9 +63,7 @@ class TestUsePreset:
         red = RedTeamer()
         target = RefusalTarget()
 
-        report = await red.use_preset(
-            "advbench", target=target, limit=5
-        )
+        report = await red.use_preset("advbench", target=target, limit=5)
 
         assert isinstance(report, VulnerabilityReport)
         assert report.total_attacks == 5
@@ -80,9 +74,7 @@ class TestUsePreset:
         red = RedTeamer()
         target = RefusalTarget()
 
-        report = await red.use_preset(
-            "jailbreakbench", target=target, limit=3
-        )
+        report = await red.use_preset("jailbreakbench", target=target, limit=3)
 
         assert report.total_attacks == 3
         for result in report.results:
@@ -94,9 +86,7 @@ class TestUsePreset:
     async def test_use_preset_rejects_unknown_name(self):
         red = RedTeamer()
         with pytest.raises(ValueError):
-            await red.use_preset(
-                "no-such-preset", target=RefusalTarget(), limit=1
-            )
+            await red.use_preset("no-such-preset", target=RefusalTarget(), limit=1)
 
     @pytest.mark.asyncio
     async def test_use_preset_labels_results(self):

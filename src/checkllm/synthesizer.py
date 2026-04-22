@@ -126,9 +126,7 @@ class SynthesisConfig(BaseModel):
     """Configuration for test case synthesis."""
 
     num_cases: int = Field(default=10, ge=1)
-    strategies: list[EvolutionStrategy] = Field(
-        default_factory=lambda: [EvolutionStrategy.SIMPLE]
-    )
+    strategies: list[EvolutionStrategy] = Field(default_factory=lambda: [EvolutionStrategy.SIMPLE])
     max_retries: int = Field(default=3, ge=1)
     temperature: float = Field(default=0.7, ge=0.0, le=2.0)
 
@@ -166,6 +164,7 @@ class KnowledgeGraph(BaseModel):
 # ---------------------------------------------------------------------------
 # JSON extraction helper
 # ---------------------------------------------------------------------------
+
 
 def _extract_json_array(text: str) -> list[dict[str, Any]]:
     """Best-effort extraction of a JSON array from LLM output.
@@ -264,9 +263,7 @@ class Synthesizer:
         )
     """
 
-    def __init__(
-        self, judge: JudgeBackend, config: SynthesisConfig | None = None
-    ) -> None:
+    def __init__(self, judge: JudgeBackend, config: SynthesisConfig | None = None) -> None:
         self.judge = judge
         self.config = config or SynthesisConfig()
         self._total_cost: float = 0.0
@@ -305,13 +302,9 @@ class Synthesizer:
 
         tasks: list[asyncio.Task[list[Case]]] = []
         for strategy, count in plan:
-            prompt, system_prompt = self._build_document_prompt(
-                documents, strategy, count
-            )
+            prompt, system_prompt = self._build_document_prompt(documents, strategy, count)
             tasks.append(
-                asyncio.ensure_future(
-                    self._generate_batch(prompt, system_prompt, count, strategy)
-                )
+                asyncio.ensure_future(self._generate_batch(prompt, system_prompt, count, strategy))
             )
 
         batches = await asyncio.gather(*tasks, return_exceptions=True)
@@ -355,13 +348,9 @@ class Synthesizer:
 
         tasks: list[asyncio.Task[list[Case]]] = []
         for strategy, count in plan:
-            prompt, system_prompt = self._build_description_prompt(
-                description, strategy, count
-            )
+            prompt, system_prompt = self._build_description_prompt(description, strategy, count)
             tasks.append(
-                asyncio.ensure_future(
-                    self._generate_batch(prompt, system_prompt, count, strategy)
-                )
+                asyncio.ensure_future(self._generate_batch(prompt, system_prompt, count, strategy))
             )
 
         batches = await asyncio.gather(*tasks, return_exceptions=True)
@@ -381,9 +370,7 @@ class Synthesizer:
         )
         return cases
 
-    async def evolve(
-        self, cases: list[Case], strategy: EvolutionStrategy
-    ) -> list[Case]:
+    async def evolve(self, cases: list[Case], strategy: EvolutionStrategy) -> list[Case]:
         """Take existing *cases* and make them more challenging.
 
         Each case is rewritten according to *strategy* (e.g. add adversarial
@@ -400,9 +387,7 @@ class Synthesizer:
             prompt, system_prompt = self._build_evolution_prompt(batch, strategy)
             tasks.append(
                 asyncio.ensure_future(
-                    self._generate_batch(
-                        prompt, system_prompt, len(batch), strategy
-                    )
+                    self._generate_batch(prompt, system_prompt, len(batch), strategy)
                 )
             )
 
@@ -499,7 +484,7 @@ class Synthesizer:
                 raw = raw.strip()
                 for fence in ("```json", "```"):
                     if raw.startswith(fence):
-                        raw = raw[len(fence):]
+                        raw = raw[len(fence) :]
                     if raw.endswith("```"):
                         raw = raw[:-3]
                 raw = raw.strip()
@@ -512,12 +497,14 @@ class Synthesizer:
                 themes = []
                 summary = ""
 
-            nodes.append(KnowledgeNode(
-                content=chunk,
-                summary=summary,
-                entities=entities,
-                themes=themes,
-            ))
+            nodes.append(
+                KnowledgeNode(
+                    content=chunk,
+                    summary=summary,
+                    entities=entities,
+                    themes=themes,
+                )
+            )
 
         # Build connections between nodes sharing entities or themes
         for i, node_i in enumerate(nodes):
@@ -526,10 +513,7 @@ class Synthesizer:
             for j, node_j in enumerate(nodes):
                 if i == j:
                     continue
-                if (
-                    shared_entities & set(node_j.entities)
-                    or shared_themes & set(node_j.themes)
-                ):
+                if shared_entities & set(node_j.entities) or shared_themes & set(node_j.themes):
                     if j not in node_i.connections:
                         node_i.connections.append(j)
 
@@ -566,10 +550,7 @@ class Synthesizer:
             if use_multi_hop:
                 pair_idx = i % len(pairs)
                 a, b = pairs[pair_idx]
-                context = (
-                    f"Passage A: {kg.nodes[a].content}\n\n"
-                    f"Passage B: {kg.nodes[b].content}"
-                )
+                context = f"Passage A: {kg.nodes[a].content}\n\nPassage B: {kg.nodes[b].content}"
                 prompt_text = (
                     f"Generate a multi-hop question-answer pair that requires "
                     f"information from BOTH passages below.\n\n{context}\n\n"
@@ -584,9 +565,7 @@ class Synthesizer:
                     f'Respond with JSON: {{"question": "...", "answer": "...", "context": "..."}}'
                 )
 
-            tasks.append(asyncio.ensure_future(
-                self._generate_kg_case(prompt_text, strategy)
-            ))
+            tasks.append(asyncio.ensure_future(self._generate_kg_case(prompt_text, strategy)))
 
         results = await asyncio.gather(*tasks, return_exceptions=True)
         for result in results:
@@ -598,9 +577,7 @@ class Synthesizer:
 
         return cases
 
-    async def _generate_kg_case(
-        self, prompt: str, strategy: EvolutionStrategy
-    ) -> Case | None:
+    async def _generate_kg_case(self, prompt: str, strategy: EvolutionStrategy) -> Case | None:
         """Generate a single Case from a knowledge-graph prompt.
 
         Args:
@@ -616,7 +593,7 @@ class Synthesizer:
             raw = raw.strip()
             for fence in ("```json", "```"):
                 if raw.startswith(fence):
-                    raw = raw[len(fence):]
+                    raw = raw[len(fence) :]
                 if raw.endswith("```"):
                     raw = raw[:-3]
             raw = raw.strip()
@@ -692,8 +669,7 @@ class Synthesizer:
             count,
         )
         raise RuntimeError(
-            f"Failed to generate cases after {self.config.max_retries} attempts: "
-            f"{last_error}"
+            f"Failed to generate cases after {self.config.max_retries} attempts: {last_error}"
         )
 
     # ------------------------------------------------------------------
@@ -840,9 +816,7 @@ class Synthesizer:
             header = f"[Document {i}]\n"
             remaining = _MAX_DOC_CHARS - total_chars - len(header)
             if remaining <= 0:
-                parts.append(
-                    f"... ({len(documents) - i + 1} more document(s) truncated)"
-                )
+                parts.append(f"... ({len(documents) - i + 1} more document(s) truncated)")
                 break
             if len(doc) > remaining:
                 parts.append(header + doc[:remaining] + " [truncated]")
@@ -952,12 +926,11 @@ class ConversationSimulator:
             loop = None
         if loop and loop.is_running():
             import concurrent.futures
+
             with concurrent.futures.ThreadPoolExecutor() as pool:
                 return pool.submit(
                     asyncio.run,
-                    self.agenerate(
-                        topic, num_conversations, turns_per_conversation, persona
-                    ),
+                    self.agenerate(topic, num_conversations, turns_per_conversation, persona),
                 ).result()
         return asyncio.run(
             self.agenerate(topic, num_conversations, turns_per_conversation, persona)
@@ -1048,9 +1021,7 @@ class ConversationSimulator:
         if history:
             prompt_parts.append(f"Conversation so far:\n{history}")
         if turn_idx == 0:
-            prompt_parts.append(
-                "Generate the user's opening message. Be natural and specific."
-            )
+            prompt_parts.append("Generate the user's opening message. Be natural and specific.")
         else:
             prompt_parts.append(
                 "Generate the user's next message. Follow up naturally on the conversation."

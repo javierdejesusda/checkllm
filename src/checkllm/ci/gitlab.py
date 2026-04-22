@@ -121,10 +121,7 @@ def post_mr_comment(
     if ctx is None or ctx.mr_iid is None or not ctx.token:
         return False
 
-    url = (
-        f"{ctx.server_url}/api/v4/projects/{ctx.project_id}"
-        f"/merge_requests/{ctx.mr_iid}/notes"
-    )
+    url = f"{ctx.server_url}/api/v4/projects/{ctx.project_id}/merge_requests/{ctx.mr_iid}/notes"
     payload = json.dumps({"body": body}).encode("utf-8")
 
     req = Request(url, data=payload, method="POST")

@@ -1,4 +1,5 @@
 """JSONL export — one JSON object per line, ideal for data pipelines."""
+
 from __future__ import annotations
 
 import json

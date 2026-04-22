@@ -46,7 +46,10 @@ class DeepEvalAdapter:
             MetricFamily.HALLUCINATION: (HallucinationMetric, "hallucination"),
             MetricFamily.FAITHFULNESS: (FaithfulnessMetric, "faithfulness"),
             MetricFamily.ANSWER_RELEVANCY: (AnswerRelevancyMetric, "answer_relevancy"),
-            MetricFamily.CONTEXT_RELEVANCE: (ContextualRelevancyMetric, "contextual_relevancy"),
+            MetricFamily.CONTEXT_RELEVANCE: (
+                ContextualRelevancyMetric,
+                "contextual_relevancy",
+            ),
         }
         if family not in metric_map:
             raise NotImplementedError(f"{family} not supported by deepeval adapter")

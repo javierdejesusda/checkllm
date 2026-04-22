@@ -45,8 +45,7 @@ def render_results(
     failed = sum(1 for r in results if not r.passed)
     summary_style = "bold green" if failed == 0 else "bold red"
     console.print(
-        f"\n[{summary_style}]{passed} passed, {failed} failed[/] "
-        f"| Total cost: ${total_cost:.4f}"
+        f"\n[{summary_style}]{passed} passed, {failed} failed[/] | Total cost: ${total_cost:.4f}"
     )
 
     if buf:
@@ -94,9 +93,7 @@ def render_regression_report(
 
     regressions = [i for i in items if i.comparison.is_regression]
     if regressions:
-        console.print(
-            f"\n[bold red]{len(regressions)} regression(s) detected[/]"
-        )
+        console.print(f"\n[bold red]{len(regressions)} regression(s) detected[/]")
     else:
         console.print("\n[bold green]No regressions detected[/]")
 

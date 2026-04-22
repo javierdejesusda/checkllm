@@ -1,4 +1,5 @@
 """Integration test: verify all maturity improvements work together."""
+
 import warnings
 
 

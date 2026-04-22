@@ -29,10 +29,7 @@ def _make_label(
 
 def _make_labels(scores: list[float]) -> list[HumanLabel]:
     """Create a list of HumanLabels with varying outputs."""
-    return [
-        _make_label(s, output=f"output_{i}", query=f"query_{i}")
-        for i, s in enumerate(scores)
-    ]
+    return [_make_label(s, output=f"output_{i}", query=f"query_{i}") for i, s in enumerate(scores)]
 
 
 class TestHumanLabel:
@@ -49,15 +46,11 @@ class TestHumanLabel:
 
     def test_score_below_zero_rejected(self):
         with pytest.raises(ValueError):
-            HumanLabel(
-                output="x", context="c", query="q", human_score=-0.1
-            )
+            HumanLabel(output="x", context="c", query="q", human_score=-0.1)
 
     def test_score_above_one_rejected(self):
         with pytest.raises(ValueError):
-            HumanLabel(
-                output="x", context="c", query="q", human_score=1.1
-            )
+            HumanLabel(output="x", context="c", query="q", human_score=1.1)
 
     def test_optional_fields(self):
         label = HumanLabel(
@@ -153,9 +146,7 @@ class TestAlign:
             iteration_count += 1
             score = min(1.0, 0.3 + iteration_count * 0.02)
             raw = json.dumps({"prompt": "improved prompt", "score": score})
-            return JudgeResponse(
-                score=score, reasoning="evaluated", raw_output=raw, cost=0.001
-            )
+            return JudgeResponse(score=score, reasoning="evaluated", raw_output=raw, cost=0.001)
 
         mock_judge = AsyncMock()
         mock_judge.evaluate = AsyncMock(side_effect=fake_evaluate)

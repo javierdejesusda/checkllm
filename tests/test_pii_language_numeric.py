@@ -57,7 +57,7 @@ class TestLanguageDetection:
     def test_english_detected(self):
         result = self.checks.language(
             "The quick brown fox jumps over the lazy dog and is a great animal",
-            expected="en"
+            expected="en",
         )
         assert result.passed is True
         assert result.metric_name == "language"
@@ -65,15 +65,12 @@ class TestLanguageDetection:
     def test_spanish_detected(self):
         result = self.checks.language(
             "El perro grande corre por el parque con los gatos y las aves",
-            expected="es"
+            expected="es",
         )
         assert result.passed is True
 
     def test_wrong_language(self):
-        result = self.checks.language(
-            "The quick brown fox jumps over the lazy dog",
-            expected="es"
-        )
+        result = self.checks.language("The quick brown fox jumps over the lazy dog", expected="es")
         assert result.passed is False
 
     def test_unsupported_language(self):

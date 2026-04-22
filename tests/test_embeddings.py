@@ -162,9 +162,7 @@ class TestOpenAIEmbeddings:
     @pytest.mark.asyncio
     async def test_cost_tracking(self, monkeypatch):
         monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-        backend = OpenAIEmbeddings(
-            model="text-embedding-3-small", api_key="test-key"
-        )
+        backend = OpenAIEmbeddings(model="text-embedding-3-small", api_key="test-key")
 
         mock_emb = MagicMock()
         mock_emb.index = 0
@@ -276,9 +274,7 @@ class TestSentenceTransformerEmbeddings:
         import numpy as np
 
         mock_model = MagicMock()
-        mock_model.encode.return_value = np.array(
-            [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]
-        )
+        mock_model.encode.return_value = np.array([[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]])
 
         # Patch the import and model instantiation
         mock_st_module = MagicMock()
@@ -322,9 +318,7 @@ class TestSentenceTransformerEmbeddings:
     def test_repr(self):
         mock_st_module = MagicMock()
         with patch.dict("sys.modules", {"sentence_transformers": mock_st_module}):
-            backend = SentenceTransformerEmbeddings(
-                model="all-MiniLM-L6-v2", device="cpu"
-            )
+            backend = SentenceTransformerEmbeddings(model="all-MiniLM-L6-v2", device="cpu")
         assert "all-MiniLM-L6-v2" in repr(backend)
         assert "cpu" in repr(backend)
 
@@ -447,9 +441,7 @@ class TestSemanticSimilarity:
     @pytest.mark.asyncio
     async def test_threshold_pass(self):
         backend = FakeBackend(dim=8)
-        result = await semantic_similarity(
-            "hello", "hello", backend, threshold=0.5
-        )
+        result = await semantic_similarity("hello", "hello", backend, threshold=0.5)
         assert result.passed is True
         assert result.score >= 0.5
 
@@ -554,14 +546,10 @@ class TestBatchSemanticSimilarity:
             [0.7071, 0.7071],  # ~45-degree angle => cos ~ 0.7071
         ]
         pairs = [("a", "b")]
-        results = await batch_semantic_similarity(
-            pairs, mock_backend, threshold=0.5
-        )
+        results = await batch_semantic_similarity(pairs, mock_backend, threshold=0.5)
         assert results[0].passed is True  # 0.7071 >= 0.5
 
-        results_strict = await batch_semantic_similarity(
-            pairs, mock_backend, threshold=0.9
-        )
+        results_strict = await batch_semantic_similarity(pairs, mock_backend, threshold=0.9)
         assert results_strict[0].passed is False  # 0.7071 < 0.9
 
 
@@ -589,9 +577,7 @@ class TestEdgeCases:
     @pytest.mark.asyncio
     async def test_unicode_text(self):
         backend = FakeBackend(dim=4)
-        result = await semantic_similarity(
-            "Hello, world!", "Hello, world!", backend
-        )
+        result = await semantic_similarity("Hello, world!", "Hello, world!", backend)
         assert result.score == pytest.approx(1.0)
 
     @pytest.mark.asyncio

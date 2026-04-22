@@ -19,28 +19,18 @@ class TestRunRecord(BaseModel):
 
 class Snapshot(BaseModel):
     version: int = 1
-    timestamp: str = Field(
-        default_factory=lambda: datetime.now(timezone.utc).isoformat()
-    )
+    timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
     tests: dict[str, list[TestRunRecord]] = Field(default_factory=dict)
 
     def get_scores(self, test_name: str, metric_name: str) -> list[float]:
         """Get all scores for a given test and metric across runs."""
         runs = self.tests.get(test_name, [])
-        return [
-            run.metrics[metric_name].score
-            for run in runs
-            if metric_name in run.metrics
-        ]
+        return [run.metrics[metric_name].score for run in runs if metric_name in run.metrics]
 
     def get_pass_results(self, test_name: str, metric_name: str) -> list[bool]:
         """Get all pass/fail results for a given test and metric across runs."""
         runs = self.tests.get(test_name, [])
-        return [
-            run.metrics[metric_name].passed
-            for run in runs
-            if metric_name in run.metrics
-        ]
+        return [run.metrics[metric_name].passed for run in runs if metric_name in run.metrics]
 
 
 def save_snapshot(snapshot: Snapshot, path: Path) -> None:

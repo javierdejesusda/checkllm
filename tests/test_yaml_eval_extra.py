@@ -1,17 +1,16 @@
 """Additional tests for yaml_eval covering uncovered assertion branches."""
+
 from __future__ import annotations
 
 import asyncio
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 
 from checkllm.models import CheckResult
 from checkllm.yaml_eval import (
     AssertionConfig,
     EvalSettings,
     EvalTestConfig,
-    JudgeConfig,
     YAMLEvalConfig,
     YAMLEvalResult,
     YAMLEvaluator,
@@ -131,7 +130,12 @@ class TestDeterministicAssertionBranches:
         )
         evaluator = YAMLEvaluator()
         with (
-            patch.object(evaluator, "_generate_output", new_callable=AsyncMock, return_value=output),
+            patch.object(
+                evaluator,
+                "_generate_output",
+                new_callable=AsyncMock,
+                return_value=output,
+            ),
             patch.object(evaluator, "_create_judge", return_value=None),
         ):
             return _run(evaluator.run_from_config(config))
@@ -185,7 +189,9 @@ class TestDeterministicAssertionBranches:
         assert result.passed == 1
 
     def test_similarity(self):
-        result = self._run_assertion("similarity", "hello world", value="hello world", threshold=0.5)
+        result = self._run_assertion(
+            "similarity", "hello world", value="hello world", threshold=0.5
+        )
         assert result.passed == 1
 
     def test_is_valid_python(self):
@@ -206,7 +212,12 @@ class TestDeterministicAssertionBranches:
         config = _config_with_assertion(AssertionConfig(type="nonexistent_check_xyz"))
         evaluator = YAMLEvaluator()
         with (
-            patch.object(evaluator, "_generate_output", new_callable=AsyncMock, return_value="output"),
+            patch.object(
+                evaluator,
+                "_generate_output",
+                new_callable=AsyncMock,
+                return_value="output",
+            ),
             patch.object(evaluator, "_create_judge", return_value=judge),
         ):
             result = _run(evaluator.run_from_config(config))
@@ -222,7 +233,12 @@ class TestLLMAssertionBranchesNoJudge:
         config = _config_with_assertion(AssertionConfig(type=atype, value=value))
         evaluator = YAMLEvaluator()
         with (
-            patch.object(evaluator, "_generate_output", new_callable=AsyncMock, return_value="output"),
+            patch.object(
+                evaluator,
+                "_generate_output",
+                new_callable=AsyncMock,
+                return_value="output",
+            ),
             patch.object(evaluator, "_create_judge", return_value=None),
         ):
             return _run(evaluator.run_from_config(config))
@@ -256,12 +272,15 @@ class TestBudgetAndFailedTests:
     """Test budget handling and failed test tracking."""
 
     def test_test_passed_false_when_assertion_fails(self):
-        config = _config_with_assertion(
-            AssertionConfig(type="contains", value="NOTINOUTPUT")
-        )
+        config = _config_with_assertion(AssertionConfig(type="contains", value="NOTINOUTPUT"))
         evaluator = YAMLEvaluator()
         with (
-            patch.object(evaluator, "_generate_output", new_callable=AsyncMock, return_value="hello"),
+            patch.object(
+                evaluator,
+                "_generate_output",
+                new_callable=AsyncMock,
+                return_value="hello",
+            ),
             patch.object(evaluator, "_create_judge", return_value=None),
         ):
             result = _run(evaluator.run_from_config(config))
@@ -282,7 +301,12 @@ class TestBudgetAndFailedTests:
         )
         evaluator = YAMLEvaluator()
         with (
-            patch.object(evaluator, "_generate_output", new_callable=AsyncMock, return_value="hello world"),
+            patch.object(
+                evaluator,
+                "_generate_output",
+                new_callable=AsyncMock,
+                return_value="hello world",
+            ),
             patch.object(evaluator, "_create_judge", return_value=None),
         ):
             result = _run(evaluator.run_from_config(config))
@@ -294,13 +318,19 @@ class TestBudgetAndFailedTests:
         """Zero budget triggers budget_exceeded logic."""
         config = YAMLEvalConfig(
             tests=[
-                EvalTestConfig(vars={}, assert_=[
-                    AssertionConfig(type="contains", value="x"),
-                    AssertionConfig(type="contains", value="x"),
-                ]),
-                EvalTestConfig(vars={}, assert_=[
-                    AssertionConfig(type="contains", value="x"),
-                ]),
+                EvalTestConfig(
+                    vars={},
+                    assert_=[
+                        AssertionConfig(type="contains", value="x"),
+                        AssertionConfig(type="contains", value="x"),
+                    ],
+                ),
+                EvalTestConfig(
+                    vars={},
+                    assert_=[
+                        AssertionConfig(type="contains", value="x"),
+                    ],
+                ),
             ],
             settings=EvalSettings(budget=0.000001),
         )

@@ -5,6 +5,7 @@ at well-defined extension points. Plugin authors implement hook functions
 decorated with @hookimpl, then register via the ``checkllm`` entry
 point group or by calling ``get_plugin_manager().register(plugin)``.
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -22,7 +23,9 @@ class CheckllmHookSpec:
 
     @hookspec
     def checkllm_before_check(
-        self, metric_name: str, kwargs: dict[str, Any],
+        self,
+        metric_name: str,
+        kwargs: dict[str, Any],
     ) -> dict[str, Any] | None:
         """Called before a check is run.
 
@@ -54,7 +57,9 @@ class CheckllmHookSpec:
 
     @hookspec
     def checkllm_modify_judge_prompt(
-        self, prompt: str, metric_name: str,
+        self,
+        prompt: str,
+        metric_name: str,
     ) -> str | None:
         """Called before sending a prompt to the LLM judge.
 

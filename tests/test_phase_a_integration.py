@@ -1,4 +1,5 @@
 """Integration test for Phase A competitive features."""
+
 from checkllm.redteam import VulnerabilityType, AttackStrategy
 from checkllm.compare import ProviderMatrix, MatrixResult
 from checkllm.benchmarks import list_benchmarks, load_benchmark
@@ -12,6 +13,7 @@ class TestPhaseAIntegration:
 
     def test_owasp_mapping_complete(self):
         from checkllm.redteam import get_owasp_mapping
+
         mapping = get_owasp_mapping()
         assert len(mapping) >= 52
 
@@ -35,16 +37,25 @@ class TestPhaseAIntegration:
     def test_new_agentic_metrics_on_collector(self):
         config = CheckllmConfig()
         c = CheckCollector(config=config)
-        for method in ["plan_quality", "goal_accuracy", "step_efficiency",
-                       "argument_correctness", "plan_adherence"]:
+        for method in [
+            "plan_quality",
+            "goal_accuracy",
+            "step_efficiency",
+            "argument_correctness",
+            "plan_adherence",
+        ]:
             assert hasattr(c, method), f"Missing: {method}"
             assert callable(getattr(c, method))
 
     def test_new_safety_metrics_on_collector(self):
         config = CheckllmConfig()
         c = CheckCollector(config=config)
-        for method in ["pii_detection", "misuse_detection",
-                       "role_violation", "non_advice"]:
+        for method in [
+            "pii_detection",
+            "misuse_detection",
+            "role_violation",
+            "non_advice",
+        ]:
             assert hasattr(c, method), f"Missing: {method}"
             assert callable(getattr(c, method))
 
@@ -53,17 +64,39 @@ class TestPhaseAIntegration:
         config = CheckllmConfig()
         c = CheckCollector(config=config)
         all_judge_methods = [
-            "hallucination", "relevance", "toxicity", "rubric",
-            "fluency", "coherence", "sentiment", "correctness",
-            "faithfulness", "context_relevance", "answer_completeness",
-            "instruction_following", "summarization", "bias",
-            "consistency", "groundedness", "g_eval",
-            "contextual_precision", "contextual_recall",
-            "task_completion", "role_adherence", "tool_accuracy",
-            "knowledge_retention", "conversation_completeness",
-            "plan_quality", "goal_accuracy", "step_efficiency",
-            "argument_correctness", "plan_adherence",
-            "pii_detection", "misuse_detection", "role_violation", "non_advice",
+            "hallucination",
+            "relevance",
+            "toxicity",
+            "rubric",
+            "fluency",
+            "coherence",
+            "sentiment",
+            "correctness",
+            "faithfulness",
+            "context_relevance",
+            "answer_completeness",
+            "instruction_following",
+            "summarization",
+            "bias",
+            "consistency",
+            "groundedness",
+            "g_eval",
+            "contextual_precision",
+            "contextual_recall",
+            "task_completion",
+            "role_adherence",
+            "tool_accuracy",
+            "knowledge_retention",
+            "conversation_completeness",
+            "plan_quality",
+            "goal_accuracy",
+            "step_efficiency",
+            "argument_correctness",
+            "plan_adherence",
+            "pii_detection",
+            "misuse_detection",
+            "role_violation",
+            "non_advice",
         ]
         for method in all_judge_methods:
             assert hasattr(c, method), f"Missing: {method}"

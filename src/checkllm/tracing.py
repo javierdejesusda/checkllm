@@ -4,6 +4,7 @@ Provides a ``Tracer`` that records evaluation spans and check results.
 Integrates with OpenTelemetry if the ``opentelemetry`` package is installed,
 otherwise stores spans locally for inspection and JSON export.
 """
+
 from __future__ import annotations
 
 import functools
@@ -73,9 +74,7 @@ class Tracer:
         to local-only tracing if the package is not installed.
     """
 
-    def __init__(
-        self, service_name: str = "checkllm", enable_otel: bool = True
-    ) -> None:
+    def __init__(self, service_name: str = "checkllm", enable_otel: bool = True) -> None:
         self._service_name = service_name
         self._spans: list[Span] = []
         self._span_stack: list[Span] = []
@@ -91,9 +90,7 @@ class Tracer:
                 self._otel_status_error = StatusCode.ERROR
                 logger.debug("OpenTelemetry tracing enabled for '%s'", service_name)
             except ImportError:
-                logger.debug(
-                    "OpenTelemetry not installed; using local-only tracing"
-                )
+                logger.debug("OpenTelemetry not installed; using local-only tracing")
                 self._otel_tracer = None
 
     @property

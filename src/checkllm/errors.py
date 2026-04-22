@@ -1,4 +1,5 @@
 """User-friendly error messages for common failure scenarios."""
+
 from __future__ import annotations
 
 
@@ -24,7 +25,7 @@ def format_budget_error(
         f"(spent ${spent:.4f}).\n\n"
         f"To fix this:\n"
         f"  - Increase budget:  checkllm run tests/ --budget {budget * 2:.0f}\n"
-        f"  - Use a cheaper model:  judge_model = \"gpt-4o-mini\" in pyproject.toml\n"
+        f'  - Use a cheaper model:  judge_model = "gpt-4o-mini" in pyproject.toml\n'
         f"  - Replace judge checks with deterministic alternatives where possible"
     )
 

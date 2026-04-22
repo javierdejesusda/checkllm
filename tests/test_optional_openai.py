@@ -18,9 +18,7 @@ def test_deterministic_checks_import_without_openai():
         capture_output=True,
         text=True,
     )
-    assert result.returncode == 0, (
-        f"Script failed with stderr:\n{result.stderr}"
-    )
+    assert result.returncode == 0, f"Script failed with stderr:\n{result.stderr}"
 
 
 def test_checkllm_version_accessible():

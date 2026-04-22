@@ -49,6 +49,7 @@ class TestCheckCollectorProperties:
 class TestCheckCollectorExpect:
     def test_expect_returns_soft_proxy(self):
         from checkllm.expect import SoftCheckProxy
+
         c = _c()
         proxy = c.expect
         assert isinstance(proxy, SoftCheckProxy)
@@ -113,6 +114,7 @@ class TestCheckCollectorBudget:
 class TestCheckCollectorRunWithRepeats:
     def test_single_run_no_aggregation(self):
         c = _c_with_judge(0.9)
+
         # Use _run_with_repeats directly with a simple coroutine
         async def mock_coro():
             return CheckResult(
@@ -156,8 +158,12 @@ class TestCheckCollectorTrackCost:
     def test_track_cost_zero_cost_no_change(self):
         c = _c()
         result = CheckResult(
-            passed=True, score=0.9, reasoning="ok", cost=0.0,
-            latency_ms=0, metric_name="test",
+            passed=True,
+            score=0.9,
+            reasoning="ok",
+            cost=0.0,
+            latency_ms=0,
+            metric_name="test",
         )
         c._track_cost(result)
         assert c.total_cost == 0.0
@@ -166,8 +172,12 @@ class TestCheckCollectorTrackCost:
         c = _c()
         for _ in range(3):
             result = CheckResult(
-                passed=True, score=0.9, reasoning="ok", cost=0.005,
-                latency_ms=0, metric_name="test",
+                passed=True,
+                score=0.9,
+                reasoning="ok",
+                cost=0.005,
+                latency_ms=0,
+                metric_name="test",
             )
             c._track_cost(result)
         assert abs(c.total_cost - 0.015) < 1e-10
@@ -176,6 +186,7 @@ class TestCheckCollectorTrackCost:
 class TestCheckCollectorThat:
     def test_that_returns_assertion_chain(self):
         from checkllm.chain import AssertionChain
+
         c = _c()
         chain = c.that("Hello world")
         assert isinstance(chain, AssertionChain)

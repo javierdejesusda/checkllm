@@ -5,6 +5,7 @@ compositional queries). Uses chain-of-thought prompting: the judge is asked
 to outline the reasoning steps before scoring correctness against an
 expected answer.
 """
+
 from __future__ import annotations
 
 import time

@@ -95,6 +95,7 @@ class TestBatchEvaluatorBuildRequest:
 
         try:
             from checkllm.batch import BatchEvaluator
+
             evaluator = BatchEvaluator(api_key="test-key", model="gpt-4o")
         finally:
             if original is None:
@@ -151,6 +152,7 @@ class TestBatchEvaluatorImportError:
         with patch.dict(sys.modules, {"openai": None}):
             with pytest.raises(ImportError, match="openai"):
                 from checkllm.batch import BatchEvaluator
+
                 BatchEvaluator(api_key="test")
 
 

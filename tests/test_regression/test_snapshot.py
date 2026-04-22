@@ -17,11 +17,7 @@ class TestSnapshotModel:
             version=1,
             tests={
                 "test_foo": [
-                    TestRunRecord(
-                        metrics={
-                            "hallucination": MetricRecord(score=0.9, passed=True)
-                        }
-                    )
+                    TestRunRecord(metrics={"hallucination": MetricRecord(score=0.9, passed=True)})
                 ]
             },
         )
@@ -50,9 +46,7 @@ class TestSaveAndLoadSnapshot:
             version=1,
             tests={
                 "test_bar": [
-                    TestRunRecord(
-                        metrics={"relevance": MetricRecord(score=0.8, passed=True)}
-                    )
+                    TestRunRecord(metrics={"relevance": MetricRecord(score=0.8, passed=True)})
                 ]
             },
         )

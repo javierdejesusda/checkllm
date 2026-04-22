@@ -113,8 +113,7 @@ class DPODataset(BaseModel):
             path: Destination file path.
         """
         records = [
-            {"prompt": p.prompt, "chosen": p.chosen, "rejected": p.rejected}
-            for p in self.pairs
+            {"prompt": p.prompt, "chosen": p.chosen, "rejected": p.rejected} for p in self.pairs
         ]
         Path(path).write_text(json.dumps(records, indent=2), encoding="utf-8")
 
@@ -279,9 +278,7 @@ class DPOExporter:
                 rejected_out, rejected_score = candidates[j]
                 gap = chosen_score - rejected_score
                 if gap >= min_score_gap:
-                    raw_pairs.append(
-                        (chosen_out, chosen_score, rejected_out, rejected_score, gap)
-                    )
+                    raw_pairs.append((chosen_out, chosen_score, rejected_out, rejected_score, gap))
 
         raw_pairs.sort(key=lambda x: x[4], reverse=True)
 
@@ -311,9 +308,7 @@ class DPOExporter:
         """
         for result in arena_results:
             prompt = result["prompt"]
-            contestants = sorted(
-                result["contestants"], key=lambda c: c["score"], reverse=True
-            )
+            contestants = sorted(result["contestants"], key=lambda c: c["score"], reverse=True)
             if len(contestants) < 2:
                 continue
             best = contestants[0]

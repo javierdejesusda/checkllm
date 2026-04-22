@@ -58,9 +58,7 @@ class TestContextualPrecisionMetric:
 
     @pytest.mark.asyncio
     async def test_prompt_contains_documents_and_query(self, mock_judge):
-        mock_judge.evaluate.return_value = JudgeResponse(
-            score=0.9, reasoning="ok", raw_output=""
-        )
+        mock_judge.evaluate.return_value = JudgeResponse(score=0.9, reasoning="ok", raw_output="")
         metric = ContextualPrecisionMetric(judge=mock_judge, threshold=0.8)
         await metric.evaluate(
             output="test output",

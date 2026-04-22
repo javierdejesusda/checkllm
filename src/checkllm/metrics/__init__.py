@@ -82,10 +82,7 @@ class MetricRegistry:
 
         def decorator(func: Callable[..., CheckResult]) -> Callable[..., CheckResult]:
             if name in self.metrics:
-                raise ValueError(
-                    f"Metric '{name}' is already registered. "
-                    "Choose a different name."
-                )
+                raise ValueError(f"Metric '{name}' is already registered. Choose a different name.")
             self.metrics[name] = func
             self._sources[name] = source
             return func
@@ -98,8 +95,7 @@ class MetricRegistry:
     def list_metrics_detailed(self) -> list[dict[str, str]]:
         """Return metrics with source attribution."""
         return [
-            {"name": name, "source": self._sources.get(name, "unknown")}
-            for name in self.metrics
+            {"name": name, "source": self._sources.get(name, "unknown")} for name in self.metrics
         ]
 
     def load_entry_points(self) -> None:

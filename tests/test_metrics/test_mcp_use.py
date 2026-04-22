@@ -22,7 +22,12 @@ class TestMCPUseMetric:
         metric = MCPUseMetric(judge=mock_judge, threshold=0.8)
         result = await metric.evaluate(
             output="Here are the search results for Python documentation.",
-            tools_available=["web_search", "file_read", "code_execute", "database_query"],
+            tools_available=[
+                "web_search",
+                "file_read",
+                "code_execute",
+                "database_query",
+            ],
             tools_used=["web_search"],
             query="Search for Python official documentation",
         )
@@ -50,7 +55,9 @@ class TestMCPUseMetric:
     @pytest.mark.asyncio
     async def test_custom_threshold(self, mock_judge):
         mock_judge.evaluate.return_value = JudgeResponse(
-            score=0.5, reasoning="Acceptable but not optimal tool selection", raw_output=""
+            score=0.5,
+            reasoning="Acceptable but not optimal tool selection",
+            raw_output="",
         )
         metric = MCPUseMetric(judge=mock_judge, threshold=0.4)
         result = await metric.evaluate(
@@ -63,9 +70,7 @@ class TestMCPUseMetric:
 
     @pytest.mark.asyncio
     async def test_prompt_contains_inputs(self, mock_judge):
-        mock_judge.evaluate.return_value = JudgeResponse(
-            score=0.9, reasoning="ok", raw_output=""
-        )
+        mock_judge.evaluate.return_value = JudgeResponse(score=0.9, reasoning="ok", raw_output="")
         metric = MCPUseMetric(judge=mock_judge, threshold=0.8)
         await metric.evaluate(
             output="test output",

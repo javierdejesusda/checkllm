@@ -3,6 +3,7 @@
 OpenTelemetry and ``ddtrace`` are stubbed so no network or SDK init
 actually happens.
 """
+
 from __future__ import annotations
 
 import sys
@@ -19,9 +20,7 @@ def patched_configure(monkeypatch):
 
     calls: dict = {}
 
-    def fake_otlp(
-        endpoint, transport, service, env, version, headers
-    ):
+    def fake_otlp(endpoint, transport, service, env, version, headers):
         calls["otlp"] = {
             "endpoint": endpoint,
             "transport": transport,
@@ -124,9 +123,7 @@ def test_import_error_without_ddtrace(monkeypatch):
 
     monkeypatch.setitem(sys.modules, "ddtrace", None)
     with pytest.raises(ImportError, match="Datadog integration"):
-        _configure_ddtrace(
-            service="svc", env=None, version=None, agent_url=None
-        )
+        _configure_ddtrace(service="svc", env=None, version=None, agent_url=None)
 
 
 def test_factory_returns_datadog_tracer(patched_configure):
@@ -163,13 +160,9 @@ def _install_fake_opentelemetry(monkeypatch):
     trace_mod.TracerProvider = fake_provider_cls
     export_mod = types.ModuleType("opentelemetry.sdk.trace.export")
     export_mod.BatchSpanProcessor = fake_batch_cls
-    exporter_http = types.ModuleType(
-        "opentelemetry.exporter.otlp.proto.http.trace_exporter"
-    )
+    exporter_http = types.ModuleType("opentelemetry.exporter.otlp.proto.http.trace_exporter")
     exporter_http.OTLPSpanExporter = fake_http_exporter_cls
-    exporter_grpc = types.ModuleType(
-        "opentelemetry.exporter.otlp.proto.grpc.trace_exporter"
-    )
+    exporter_grpc = types.ModuleType("opentelemetry.exporter.otlp.proto.grpc.trace_exporter")
     exporter_grpc.OTLPSpanExporter = fake_grpc_exporter_cls
 
     for name, mod in {
@@ -179,12 +172,8 @@ def _install_fake_opentelemetry(monkeypatch):
         "opentelemetry.sdk.trace": trace_mod,
         "opentelemetry.sdk.trace.export": export_mod,
         "opentelemetry.exporter": types.ModuleType("opentelemetry.exporter"),
-        "opentelemetry.exporter.otlp": types.ModuleType(
-            "opentelemetry.exporter.otlp"
-        ),
-        "opentelemetry.exporter.otlp.proto": types.ModuleType(
-            "opentelemetry.exporter.otlp.proto"
-        ),
+        "opentelemetry.exporter.otlp": types.ModuleType("opentelemetry.exporter.otlp"),
+        "opentelemetry.exporter.otlp.proto": types.ModuleType("opentelemetry.exporter.otlp.proto"),
         "opentelemetry.exporter.otlp.proto.http": types.ModuleType(
             "opentelemetry.exporter.otlp.proto.http"
         ),
@@ -257,9 +246,7 @@ def test_configure_ddtrace_sets_tags(monkeypatch):
         service="svc", env="prod", version="1.0", agent_url="http://agent:8126"
     )
     assert result is fake_tracer
-    fake_tracer.configure.assert_called_once_with(
-        agent_url="http://agent:8126"
-    )
+    fake_tracer.configure.assert_called_once_with(agent_url="http://agent:8126")
     fake_tracer.set_tags.assert_called_once()
     tags = fake_tracer.set_tags.call_args.args[0]
     assert tags == {"service": "svc", "env": "prod", "version": "1.0"}

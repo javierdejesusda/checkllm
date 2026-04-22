@@ -107,9 +107,7 @@ class TestBatchEvaluator:
         assert messages[0]["role"] == "user"
 
     def test_estimate_batch_cost(self):
-        cost = BatchEvaluator._estimate_batch_cost(
-            prompt_tokens=1000, completion_tokens=500
-        )
+        cost = BatchEvaluator._estimate_batch_cost(prompt_tokens=1000, completion_tokens=500)
         # Standard: input = 1000 * 2.50/1M, output = 500 * 10.00/1M
         # Batch (50%): input = 0.00125, output = 0.0025
         expected = (1000 * 2.50 / 1_000_000 * 0.5) + (500 * 10.00 / 1_000_000 * 0.5)

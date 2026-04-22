@@ -4,6 +4,7 @@ Provides an SQLite-backed experiment tracker for recording evaluation runs,
 comparing results across different configurations, and identifying the best
 performing prompt/model combinations.
 """
+
 from __future__ import annotations
 
 import json
@@ -452,9 +453,7 @@ class ExperimentTracker:
 
         return comparison
 
-    def best_run(
-        self, experiment_name: str, metric: str = "avg_score"
-    ) -> ExperimentRun | None:
+    def best_run(self, experiment_name: str, metric: str = "avg_score") -> ExperimentRun | None:
         """Find the best run for an experiment by a given metric.
 
         Parameters
@@ -489,9 +488,7 @@ class ExperimentTracker:
         else:
             # Try to find the metric by name in results
             def _metric_score(run: ExperimentRun) -> float:
-                scores = [
-                    r.score for r in run.results if r.metric_name == metric
-                ]
+                scores = [r.score for r in run.results if r.metric_name == metric]
                 return sum(scores) / len(scores) if scores else 0.0
 
             return max(runs_with_results, key=_metric_score)
@@ -509,9 +506,7 @@ class ExperimentTracker:
         bool
             ``True`` if the run existed and was deleted.
         """
-        cursor = self._conn.execute(
-            "DELETE FROM experiment_runs WHERE run_id = ?", (run_id,)
-        )
+        cursor = self._conn.execute("DELETE FROM experiment_runs WHERE run_id = ?", (run_id,))
         self._conn.commit()
         deleted = cursor.rowcount > 0
         if deleted:

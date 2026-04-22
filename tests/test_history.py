@@ -17,11 +17,32 @@ def history(tmp_path):
 def _make_results():
     return {
         "test_foo": [
-            CheckResult(passed=True, score=0.9, reasoning="good", cost=0.001, latency_ms=100, metric_name="hallucination"),
-            CheckResult(passed=True, score=0.85, reasoning="ok", cost=0.001, latency_ms=120, metric_name="relevance"),
+            CheckResult(
+                passed=True,
+                score=0.9,
+                reasoning="good",
+                cost=0.001,
+                latency_ms=100,
+                metric_name="hallucination",
+            ),
+            CheckResult(
+                passed=True,
+                score=0.85,
+                reasoning="ok",
+                cost=0.001,
+                latency_ms=120,
+                metric_name="relevance",
+            ),
         ],
         "test_bar": [
-            CheckResult(passed=False, score=0.3, reasoning="bad", cost=0.002, latency_ms=200, metric_name="toxicity"),
+            CheckResult(
+                passed=False,
+                score=0.3,
+                reasoning="bad",
+                cost=0.002,
+                latency_ms=200,
+                metric_name="toxicity",
+            ),
         ],
     }
 
@@ -74,8 +95,11 @@ class TestRunHistory:
             results = {
                 "test_foo": [
                     CheckResult(
-                        passed=True, score=0.7 + i * 0.1,
-                        reasoning="ok", cost=0.001, latency_ms=100,
+                        passed=True,
+                        score=0.7 + i * 0.1,
+                        reasoning="ok",
+                        cost=0.001,
+                        latency_ms=100,
                         metric_name="hallucination",
                     ),
                 ],

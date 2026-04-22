@@ -59,9 +59,7 @@ class AgentTestCase(BaseModel):
             if step.action:
                 lines.append(f"  Action: {step.action}")
             if step.tool_call:
-                lines.append(
-                    f"  Tool: {step.tool_call.name}({step.tool_call.parameters})"
-                )
+                lines.append(f"  Tool: {step.tool_call.name}({step.tool_call.parameters})")
                 if step.tool_call.result:
                     lines.append(f"  Result: {step.tool_call.result}")
             if step.observation:
@@ -113,9 +111,7 @@ def validate_tool_calls(test_case: AgentTestCase) -> CheckResult:
                 found = True
                 break
         if not found:
-            details.append(
-                f"Expected tool call not found: {exp.name}({exp.parameters})"
-            )
+            details.append(f"Expected tool call not found: {exp.name}({exp.parameters})")
 
     denominator = max(len(expected), len(actual))
     score = correct / denominator if denominator > 0 else 1.0
@@ -125,9 +121,8 @@ def validate_tool_calls(test_case: AgentTestCase) -> CheckResult:
         extra_names = [c.name for c in unmatched_actual]
         details.append(f"Unexpected tool calls: {extra_names}")
 
-    reasoning = (
-        f"{correct}/{denominator} tool calls matched."
-        + ((" " + " ".join(details)) if details else "")
+    reasoning = f"{correct}/{denominator} tool calls matched." + (
+        (" " + " ".join(details)) if details else ""
     )
 
     return CheckResult(
@@ -140,9 +135,7 @@ def validate_tool_calls(test_case: AgentTestCase) -> CheckResult:
     )
 
 
-def validate_trajectory_length(
-    test_case: AgentTestCase, max_steps: int
-) -> CheckResult:
+def validate_trajectory_length(test_case: AgentTestCase, max_steps: int) -> CheckResult:
     """Check the agent did not take too many steps.
 
     Score = min(1.0, max_steps / actual_steps).
@@ -190,9 +183,7 @@ def _longest_common_subsequence_length(a: list[str], b: list[str]) -> int:
     return dp[m][n]
 
 
-def validate_tool_order(
-    test_case: AgentTestCase, expected_order: list[str]
-) -> CheckResult:
+def validate_tool_order(test_case: AgentTestCase, expected_order: list[str]) -> CheckResult:
     """Check tools were called in the expected order.
 
     Extra tool calls between expected ones are allowed.  Uses the longest
@@ -231,9 +222,7 @@ def validate_tool_order(
     )
 
 
-def validate_no_repeated_tools(
-    test_case: AgentTestCase, max_repeats: int = 1
-) -> CheckResult:
+def validate_no_repeated_tools(test_case: AgentTestCase, max_repeats: int = 1) -> CheckResult:
     """Check no tool was called more than *max_repeats* times.
 
     Passes when every tool's call count is at most *max_repeats*.
@@ -258,10 +247,7 @@ def validate_no_repeated_tools(
     score = 1.0 if passed else (len(counts) - len(violators)) / len(counts)
 
     if passed:
-        reasoning = (
-            f"All tools called at most {max_repeats} time(s). "
-            f"Counts: {dict(counts)}."
-        )
+        reasoning = f"All tools called at most {max_repeats} time(s). Counts: {dict(counts)}."
     else:
         reasoning = (
             f"{len(violators)} tool(s) exceeded {max_repeats} call(s): "

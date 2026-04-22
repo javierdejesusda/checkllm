@@ -65,6 +65,7 @@ def estimate_cost(model: str, prompt_tokens: int, completion_tokens: int) -> flo
 # Custom exceptions
 # ---------------------------------------------------------------------------
 
+
 class JudgeConfigError(Exception):
     """Raised when a judge backend is misconfigured (e.g., missing API key)."""
 
@@ -73,13 +74,12 @@ class JudgeConfigError(Exception):
 # Protocol
 # ---------------------------------------------------------------------------
 
+
 @runtime_checkable
 class JudgeBackend(Protocol):
     """Protocol for LLM judge backends."""
 
-    async def evaluate(
-        self, prompt: str, system_prompt: str | None = None
-    ) -> JudgeResponse: ...
+    async def evaluate(self, prompt: str, system_prompt: str | None = None) -> JudgeResponse: ...
 
 
 EarlyStopFn = Callable[[str], bool]
@@ -134,11 +134,17 @@ def _parse_judge_json(raw_output: str) -> tuple[float, str]:
 # Retry decorator for transient API errors
 # ---------------------------------------------------------------------------
 
-def _make_retry():
+
+def _make_retry() -> Any:
     """Create a retry decorator for transient API failures."""
     try:
         from openai import APITimeoutError, RateLimitError, APIConnectionError
-        transient = (APITimeoutError, RateLimitError, APIConnectionError)
+
+        transient: tuple[type[BaseException], ...] = (
+            APITimeoutError,
+            RateLimitError,
+            APIConnectionError,
+        )
     except ImportError:
         transient = (TimeoutError, ConnectionError)
 
@@ -149,12 +155,14 @@ def _make_retry():
         reraise=True,
     )
 
-_api_retry = _make_retry()
+
+_api_retry: Any = _make_retry()
 
 
 # ---------------------------------------------------------------------------
 # OpenAI judge
 # ---------------------------------------------------------------------------
+
 
 class OpenAIJudge:
     """OpenAI-based LLM judge for evaluating outputs."""
@@ -188,9 +196,7 @@ class OpenAIJudge:
         self._client = AsyncOpenAI(api_key=resolved_key)
 
     @_api_retry
-    async def evaluate(
-        self, prompt: str, system_prompt: str | None = None
-    ) -> JudgeResponse:
+    async def evaluate(self, prompt: str, system_prompt: str | None = None) -> JudgeResponse:
         messages: list[dict[str, str]] = []
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
@@ -254,9 +260,7 @@ class OpenAIJudge:
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
 
-        content: list[dict[str, object]] = [
-            to_openai_content(img) for img in images
-        ]
+        content: list[dict[str, object]] = [to_openai_content(img) for img in images]
         content.append({"type": "text", "text": prompt})
         messages.append({"role": "user", "content": content})
 
@@ -387,6 +391,7 @@ class OpenAIJudge:
 # Anthropic judge
 # ---------------------------------------------------------------------------
 
+
 class AnthropicJudge:
     """Anthropic Claude-based LLM judge for evaluating outputs."""
 
@@ -417,13 +422,11 @@ class AnthropicJudge:
 
         self._client = AsyncAnthropic(api_key=resolved_key)
 
-    async def evaluate(
-        self, prompt: str, system_prompt: str | None = None
-    ) -> JudgeResponse:
+    async def evaluate(self, prompt: str, system_prompt: str | None = None) -> JudgeResponse:
         system = system_prompt or ""
         full_prompt = (
             f"{prompt}\n\n"
-            "Respond with JSON only: {\"score\": <float 0-1>, \"reasoning\": \"<explanation>\"}"
+            'Respond with JSON only: {"score": <float 0-1>, "reasoning": "<explanation>"}'
         )
 
         response = await self._client.messages.create(
@@ -482,11 +485,9 @@ class AnthropicJudge:
         system = system_prompt or ""
         full_prompt = (
             f"{prompt}\n\n"
-            "Respond with JSON only: {\"score\": <float 0-1>, \"reasoning\": \"<explanation>\"}"
+            'Respond with JSON only: {"score": <float 0-1>, "reasoning": "<explanation>"}'
         )
-        content: list[dict[str, object]] = [
-            to_anthropic_content(img) for img in images
-        ]
+        content: list[dict[str, object]] = [to_anthropic_content(img) for img in images]
         content.append({"type": "text", "text": full_prompt})
 
         response = await self._client.messages.create(
@@ -665,9 +666,7 @@ class DeepSeekJudge:
         self._client = AsyncOpenAI(api_key=resolved_key, base_url=self._base_url)
 
     @_api_retry
-    async def evaluate(
-        self, prompt: str, system_prompt: str | None = None
-    ) -> JudgeResponse:
+    async def evaluate(self, prompt: str, system_prompt: str | None = None) -> JudgeResponse:
         """Call the DeepSeek chat-completions endpoint.
 
         Args:
@@ -683,14 +682,16 @@ class DeepSeekJudge:
         messages: list[dict[str, str]] = []
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
-        messages.append({
-            "role": "user",
-            "content": (
-                f"{prompt}\n\n"
-                'Respond with JSON only: '
-                '{"score": <float 0-1>, "reasoning": "<explanation>"}'
-            ),
-        })
+        messages.append(
+            {
+                "role": "user",
+                "content": (
+                    f"{prompt}\n\n"
+                    "Respond with JSON only: "
+                    '{"score": <float 0-1>, "reasoning": "<explanation>"}'
+                ),
+            }
+        )
 
         response = await self._client.chat.completions.create(
             model=self.model,
@@ -705,9 +706,7 @@ class DeepSeekJudge:
 
         raw_output = content
         if reasoning_content:
-            raw_output = (
-                f"{content}\n\n<reasoning>\n{reasoning_content}\n</reasoning>"
-            )
+            raw_output = f"{content}\n\n<reasoning>\n{reasoning_content}\n</reasoning>"
 
         cost = 0.0
         if response.usage:
@@ -752,14 +751,16 @@ class DeepSeekJudge:
         messages: list[dict[str, str]] = []
         if system_prompt:
             messages.append({"role": "system", "content": system_prompt})
-        messages.append({
-            "role": "user",
-            "content": (
-                f"{prompt}\n\n"
-                'Respond with JSON only: '
-                '{"score": <float 0-1>, "reasoning": "<explanation>"}'
-            ),
-        })
+        messages.append(
+            {
+                "role": "user",
+                "content": (
+                    f"{prompt}\n\n"
+                    "Respond with JSON only: "
+                    '{"score": <float 0-1>, "reasoning": "<explanation>"}'
+                ),
+            }
+        )
 
         stream = await self._client.chat.completions.create(
             model=self.model,
@@ -811,9 +812,7 @@ class DeepSeekJudge:
 
         raw_output = raw_content
         if reasoning_content:
-            raw_output = (
-                f"{raw_content}\n\n<reasoning>\n{reasoning_content}\n</reasoning>"
-            )
+            raw_output = f"{raw_content}\n\n<reasoning>\n{reasoning_content}\n</reasoning>"
 
         cost = estimate_cost(self.model, prompt_tokens, completion_tokens)
         self.last_cost = cost
@@ -833,7 +832,4 @@ class DeepSeekJudge:
         )
 
     def __repr__(self) -> str:
-        return (
-            f"DeepSeekJudge(model={self.model!r}, "
-            f"total_cost=${self.total_cost:.4f})"
-        )
+        return f"DeepSeekJudge(model={self.model!r}, total_cost=${self.total_cost:.4f})"

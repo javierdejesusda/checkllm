@@ -3,6 +3,7 @@
 Supports a promptfoo-inspired YAML format for defining providers, prompts,
 test cases, and assertions declaratively.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -194,9 +195,7 @@ class YamlEvalRunner:
                         output = await self._generate(rendered, provider_cfg)
 
                         # Run assertions
-                        check_results = await self._run_test(
-                            test_cfg, output, judge
-                        )
+                        check_results = await self._run_test(test_cfg, output, judge)
 
                         elapsed = int((time.perf_counter() - t0) * 1000)
                         passed = all(r.passed for r in check_results)
@@ -250,8 +249,7 @@ class YamlEvalRunner:
             return create_judge(provider.id, **kwargs)
         except (ValueError, Exception) as exc:
             logger.warning(
-                "Could not create judge for provider '%s': %s. "
-                "Falling back to OpenAI judge.",
+                "Could not create judge for provider '%s': %s. Falling back to OpenAI judge.",
                 provider.id,
                 exc,
             )
@@ -288,9 +286,7 @@ class YamlEvalRunner:
                     return "[google-generativeai package not installed]"
                 genai.configure(api_key=provider.api_key)
                 gen_model = genai.GenerativeModel(model or "gemini-pro")
-                response = await asyncio.to_thread(
-                    gen_model.generate_content, prompt
-                )
+                response = await asyncio.to_thread(gen_model.generate_content, prompt)
                 return response.text
 
             else:
@@ -321,14 +317,10 @@ class YamlEvalRunner:
         results: list[CheckResult] = []
         for assertion in test.assertions:
             try:
-                result = await self._run_assertion(
-                    assertion, prompt_output, test, judge
-                )
+                result = await self._run_assertion(assertion, prompt_output, test, judge)
                 results.append(result)
             except Exception as exc:
-                logger.error(
-                    "Assertion '%s' raised: %s", assertion.type, exc
-                )
+                logger.error("Assertion '%s' raised: %s", assertion.type, exc)
                 results.append(
                     CheckResult(
                         passed=False,
@@ -363,9 +355,7 @@ class YamlEvalRunner:
 
         if atype == "exact_match":
             ignore_case = assertion.options.get("ignore_case", False)
-            return self._deterministic.exact_match(
-                output, str(value), ignore_case=ignore_case
-            )
+            return self._deterministic.exact_match(output, str(value), ignore_case=ignore_case)
 
         if atype == "regex":
             return self._deterministic.regex(output, str(value))
@@ -475,18 +465,16 @@ class YamlEvalRunner:
 
             context = test.context or test.input
             metric = FaithfulnessMetric(judge=judge, threshold=t)
-            return await metric.evaluate(
-                output=output, context=context, query=test.query
-            )
+            return await metric.evaluate(output=output, context=context, query=test.query)
 
         if atype == "rubric":
             from checkllm.metrics.rubric import RubricMetric
 
-            criteria = str(value) if value else "Output should be accurate, helpful, and well-structured."
-            metric = RubricMetric(judge=judge)
-            return await metric.evaluate(
-                output=output, criteria=criteria, threshold=t
+            criteria = (
+                str(value) if value else "Output should be accurate, helpful, and well-structured."
             )
+            metric = RubricMetric(judge=judge)
+            return await metric.evaluate(output=output, criteria=criteria, threshold=t)
 
         if atype == "sentiment":
             from checkllm.metrics.sentiment import SentimentMetric
@@ -515,9 +503,7 @@ class YamlEvalRunner:
 
             instructions = str(value) if value else test.input
             metric = InstructionFollowingMetric(judge=judge, threshold=t)
-            return await metric.evaluate(
-                output=output, instructions=instructions
-            )
+            return await metric.evaluate(output=output, instructions=instructions)
 
         if atype == "answer_completeness":
             from checkllm.metrics.answer_completeness import (

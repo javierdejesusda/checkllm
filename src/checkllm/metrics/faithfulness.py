@@ -38,9 +38,7 @@ class FaithfulnessMetric:
         self.threshold = threshold
         self.system_prompt: str = FAITHFULNESS_SYSTEM_PROMPT
 
-    async def evaluate(
-        self, output: str, context: str, query: str | None = None
-    ) -> CheckResult:
+    async def evaluate(self, output: str, context: str, query: str | None = None) -> CheckResult:
         parts = [f"Retrieved Context:\n{context}\n"]
         if query:
             parts.append(f"Original Query:\n{query}\n")
@@ -52,9 +50,7 @@ class FaithfulnessMetric:
         prompt = "\n".join(parts)
 
         start = time.perf_counter_ns()
-        response = await self.judge.evaluate(
-            prompt=prompt, system_prompt=self.system_prompt
-        )
+        response = await self.judge.evaluate(prompt=prompt, system_prompt=self.system_prompt)
         elapsed_ms = (time.perf_counter_ns() - start) // 1_000_000
 
         return CheckResult(

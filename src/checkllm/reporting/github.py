@@ -1,4 +1,5 @@
 """GitHub integration — generate PR comments and post them via the GitHub API."""
+
 from __future__ import annotations
 
 import os
@@ -35,8 +36,7 @@ def generate_pr_comment(
     lines.append(f"## {status_emoji} checkllm Report")
     lines.append("")
     lines.append(
-        f"**{passed}/{total}** checks passed ({rate:.0f}%) | "
-        f"**${total_cost:.4f}** total cost"
+        f"**{passed}/{total}** checks passed ({rate:.0f}%) | **${total_cost:.4f}** total cost"
     )
     lines.append("")
 
@@ -81,29 +81,21 @@ def generate_pr_comment(
         lines.append("")
         lines.append(f"| Metric | {comparison.label_a} | {comparison.label_b} |")
         lines.append("|--------|------:|------:|")
-        lines.append(
-            f"| Pass rate | {stats_a['pass_rate']:.0%} | {stats_b['pass_rate']:.0%} |"
-        )
-        lines.append(
-            f"| Avg score | {stats_a['avg_score']:.3f} | {stats_b['avg_score']:.3f} |"
-        )
+        lines.append(f"| Pass rate | {stats_a['pass_rate']:.0%} | {stats_b['pass_rate']:.0%} |")
+        lines.append(f"| Avg score | {stats_a['avg_score']:.3f} | {stats_b['avg_score']:.3f} |")
         lines.append(
             f"| Total cost | ${stats_a['total_cost']:.4f} | ${stats_b['total_cost']:.4f} |"
         )
         lines.append("")
 
         rows = _paired_rows(comparison)
-        lines.append(
-            f"| Test | Metric | {comparison.label_a} | {comparison.label_b} | Delta |"
-        )
+        lines.append(f"| Test | Metric | {comparison.label_a} | {comparison.label_b} | Delta |")
         lines.append("|------|--------|------:|------:|------:|")
         for r in rows:
             sa = f"{r['score_a']:.2f}" if r["score_a"] is not None else "-"
             sb = f"{r['score_b']:.2f}" if r["score_b"] is not None else "-"
             delta = f"{r['delta']:+.3f}" if r["delta"] is not None else "-"
-            lines.append(
-                f"| {r['test_name']} | {r['metric_name']} | {sa} | {sb} | {delta} |"
-            )
+            lines.append(f"| {r['test_name']} | {r['metric_name']} | {sa} | {sb} | {delta} |")
         lines.append("")
         lines.append("</details>")
         lines.append("")
@@ -114,6 +106,7 @@ def generate_pr_comment(
 # ---------------------------------------------------------------------------
 # Post to GitHub API
 # ---------------------------------------------------------------------------
+
 
 def post_pr_comment(
     comment: str,
@@ -138,9 +131,7 @@ def post_pr_comment(
 
     resolved_token = token or os.environ.get("GITHUB_TOKEN")
     if not resolved_token:
-        raise ValueError(
-            "A GitHub token is required. Pass it as 'token' or set GITHUB_TOKEN."
-        )
+        raise ValueError("A GitHub token is required. Pass it as 'token' or set GITHUB_TOKEN.")
 
     headers = {
         "Authorization": f"Bearer {resolved_token}",

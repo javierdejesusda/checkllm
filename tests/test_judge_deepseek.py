@@ -84,26 +84,20 @@ class TestDeepSeekConfig:
         assert judge._base_url == "https://api.deepseek.com/v1"
         assert isinstance(judge, JudgeBackend)
 
-    def test_constructor_with_explicit_key(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_constructor_with_explicit_key(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
         judge = DeepSeekJudge(api_key="sk-explicit", model="deepseek-reasoner")
         assert judge._api_key == "sk-explicit"
         assert judge.model == "deepseek-reasoner"
 
     def test_custom_base_url(self) -> None:
-        judge = DeepSeekJudge(
-            api_key="k", base_url="https://proxy.example.com/v2/"
-        )
+        judge = DeepSeekJudge(api_key="k", base_url="https://proxy.example.com/v2/")
         assert judge._base_url == "https://proxy.example.com/v2"
 
     def test_client_configured_with_deepseek_endpoint(self) -> None:
         judge = DeepSeekJudge(api_key="k")
         # The underlying AsyncOpenAI client should be pointed at DeepSeek.
-        assert str(judge._client.base_url).startswith(
-            "https://api.deepseek.com"
-        )
+        assert str(judge._client.base_url).startswith("https://api.deepseek.com")
 
 
 class TestDeepSeekEvaluate:
@@ -162,9 +156,7 @@ class TestDeepSeekEvaluate:
     @pytest.mark.asyncio
     async def test_system_prompt_forwarded(self) -> None:
         judge = DeepSeekJudge(api_key="k")
-        resp = _make_chat_response(
-            content=json.dumps({"score": 0.5, "reasoning": ""})
-        )
+        resp = _make_chat_response(content=json.dumps({"score": 0.5, "reasoning": ""}))
         with patch.object(
             judge._client.chat.completions, "create", new_callable=AsyncMock
         ) as mock_create:
@@ -224,9 +216,7 @@ class TestDeepSeekStreaming:
         judge = DeepSeekJudge(api_key="k", model="deepseek-reasoner")
         chunks = [
             _make_stream_chunk(reasoning_content="thinking..."),
-            _make_stream_chunk(
-                content='{"score": 0.3, "reasoning": "meh"}'
-            ),
+            _make_stream_chunk(content='{"score": 0.3, "reasoning": "meh"}'),
         ]
 
         with patch.object(
@@ -260,9 +250,7 @@ class TestDeepSeekStreaming:
 
             seen: list[str] = []
             final: StreamingJudgeResult | None = None
-            async for item in judge.stream_evaluate(
-                "hi", on_token=lambda t: "STOP" in t
-            ):
+            async for item in judge.stream_evaluate("hi", on_token=lambda t: "STOP" in t):
                 if isinstance(item, str):
                     seen.append(item)
                 else:
@@ -275,9 +263,7 @@ class TestDeepSeekStreaming:
 
 
 class TestDeepSeekFactoryIntegration:
-    def test_factory_alias_deepseek_chat(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_factory_alias_deepseek_chat(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("DEEPSEEK_API_KEY", "k")
         from checkllm.providers import create_judge
 
@@ -285,9 +271,7 @@ class TestDeepSeekFactoryIntegration:
         assert isinstance(judge, DeepSeekJudge)
         assert judge.model == "deepseek-chat"
 
-    def test_factory_alias_deepseek_reasoner(
-        self, monkeypatch: pytest.MonkeyPatch
-    ) -> None:
+    def test_factory_alias_deepseek_reasoner(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.setenv("DEEPSEEK_API_KEY", "k")
         from checkllm.providers import create_judge
 

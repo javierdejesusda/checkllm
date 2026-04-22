@@ -57,9 +57,7 @@ class TestConversationSimulator:
     @pytest.mark.asyncio
     async def test_alternating_roles(self):
         judge = AsyncMock()
-        judge.evaluate.return_value = JudgeResponse(
-            score=1.0, reasoning="Test message", cost=0.001
-        )
+        judge.evaluate.return_value = JudgeResponse(score=1.0, reasoning="Test message", cost=0.001)
         sim = ConversationSimulator(judge=judge)
         convs = await sim.agenerate(
             topic="test",
@@ -72,9 +70,7 @@ class TestConversationSimulator:
     @pytest.mark.asyncio
     async def test_custom_persona(self):
         judge = AsyncMock()
-        judge.evaluate.return_value = JudgeResponse(
-            score=1.0, reasoning="I'm confused", cost=0.001
-        )
+        judge.evaluate.return_value = JudgeResponse(score=1.0, reasoning="I'm confused", cost=0.001)
         sim = ConversationSimulator(judge=judge)
         convs = await sim.agenerate(
             topic="billing",
@@ -86,9 +82,7 @@ class TestConversationSimulator:
 
     def test_sync_generate(self):
         judge = AsyncMock()
-        judge.evaluate.return_value = JudgeResponse(
-            score=1.0, reasoning="Test", cost=0.001
-        )
+        judge.evaluate.return_value = JudgeResponse(score=1.0, reasoning="Test", cost=0.001)
         sim = ConversationSimulator(judge=judge)
         convs = sim.generate(
             topic="test",

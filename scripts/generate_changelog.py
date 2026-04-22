@@ -47,9 +47,7 @@ COMMIT_RE = re.compile(
 
 
 def run(cmd: list[str]) -> str:
-    result = subprocess.run(
-        cmd, cwd=ROOT, check=True, capture_output=True, text=True
-    )
+    result = subprocess.run(cmd, cwd=ROOT, check=True, capture_output=True, text=True)
     return result.stdout.strip()
 
 
@@ -124,7 +122,7 @@ def splice_section(existing: str, version: str, section: str) -> str:
     match = heading_re.search(existing)
     if match:
         start = match.start()
-        next_heading = re.search(r"^## v", existing[match.end():], re.MULTILINE)
+        next_heading = re.search(r"^## v", existing[match.end() :], re.MULTILINE)
         if next_heading:
             end = match.end() + next_heading.start()
         else:

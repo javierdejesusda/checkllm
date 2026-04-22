@@ -4,6 +4,7 @@ Flags claims in a text response that are not grounded in the supplied
 image(s). Returns a score where 1.0 means fully grounded and 0.0 means every
 claim is fabricated or contradicted by the image.
 """
+
 from __future__ import annotations
 
 import time

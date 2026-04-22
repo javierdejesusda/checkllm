@@ -15,6 +15,7 @@ Usage::
     judge = MockJudge(default_score=0.9)
     judge.add_response("hallucination", score=0.95, reasoning="Well grounded")
 """
+
 from __future__ import annotations
 
 from collections import defaultdict
@@ -32,7 +33,9 @@ class MockJudge:
     Tracks all calls for assertions in tests.
     """
 
-    def __init__(self, default_score: float = 0.85, default_reasoning: str = "Mock evaluation") -> None:
+    def __init__(
+        self, default_score: float = 0.85, default_reasoning: str = "Mock evaluation"
+    ) -> None:
         self.default_score = default_score
         self.default_reasoning = default_reasoning
         self.calls: list[dict[str, Any]] = []
@@ -51,36 +54,44 @@ class MockJudge:
         cost: float = 0.0,
     ) -> None:
         """Queue a specific response for a metric. Responses are consumed in order."""
-        self._responses[metric].append(
-            JudgeResponse(score=score, reasoning=reasoning, cost=cost)
-        )
+        self._responses[metric].append(JudgeResponse(score=score, reasoning=reasoning, cost=cost))
 
     def set_default(self, score: float, reasoning: str = "Mock evaluation") -> None:
         """Change the default score for all unqueued metrics."""
         self.default_score = score
         self.default_reasoning = reasoning
 
-    async def evaluate(
-        self, prompt: str, system_prompt: str | None = None
-    ) -> JudgeResponse:
+    async def evaluate(self, prompt: str, system_prompt: str | None = None) -> JudgeResponse:
         """Return a mock response. Tracks the call for test assertions."""
         # Try to detect the metric from the system prompt
         metric = "unknown"
         if system_prompt:
-            for keyword in ["hallucination", "relevance", "toxicity", "rubric",
-                            "fluency", "coherence", "sentiment", "correctness"]:
+            for keyword in [
+                "hallucination",
+                "relevance",
+                "toxicity",
+                "rubric",
+                "fluency",
+                "coherence",
+                "sentiment",
+                "correctness",
+            ]:
                 if keyword in system_prompt.lower():
                     metric = keyword
                     break
 
-        self.calls.append({
-            "prompt": prompt,
-            "system_prompt": system_prompt,
-            "metric": metric,
-        })
+        self.calls.append(
+            {
+                "prompt": prompt,
+                "system_prompt": system_prompt,
+                "metric": metric,
+            }
+        )
 
         # Check for queued responses
-        if metric in self._responses and self._response_index[metric] < len(self._responses[metric]):
+        if metric in self._responses and self._response_index[metric] < len(
+            self._responses[metric]
+        ):
             idx = self._response_index[metric]
             self._response_index[metric] += 1
             resp = self._responses[metric][idx]

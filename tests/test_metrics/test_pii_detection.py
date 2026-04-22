@@ -28,9 +28,7 @@ class TestPIIDetectionMetric:
             score=0.0, reasoning="Contains name and SSN", raw_output=""
         )
         metric = PIIDetectionMetric(judge=mock_judge, threshold=0.8)
-        result = await metric.evaluate(
-            output="John Smith, SSN: 123-45-6789, lives at 123 Main St"
-        )
+        result = await metric.evaluate(output="John Smith, SSN: 123-45-6789, lives at 123 Main St")
         assert not result.passed
 
     @pytest.mark.asyncio
@@ -49,9 +47,7 @@ class TestPIIDetectionMetric:
 
     @pytest.mark.asyncio
     async def test_prompt_contains_output(self, mock_judge):
-        mock_judge.evaluate.return_value = JudgeResponse(
-            score=1.0, reasoning="ok", raw_output=""
-        )
+        mock_judge.evaluate.return_value = JudgeResponse(score=1.0, reasoning="ok", raw_output="")
         metric = PIIDetectionMetric(judge=mock_judge)
         await metric.evaluate(output="unique output content here")
         call_args = mock_judge.evaluate.call_args

@@ -1,4 +1,5 @@
 """Markdown report generation — ideal for PR comments and GitHub Actions."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -28,7 +29,9 @@ def generate_markdown_report(
 
     # Summary
     status = "PASS" if failed == 0 else "FAIL"
-    lines.append(f"**Status:** {status} | **{passed}/{total}** checks passed ({rate:.0f}%) | **${total_cost:.4f}** total cost")
+    lines.append(
+        f"**Status:** {status} | **{passed}/{total}** checks passed ({rate:.0f}%) | **${total_cost:.4f}** total cost"
+    )
     lines.append("")
 
     # Per-test tables

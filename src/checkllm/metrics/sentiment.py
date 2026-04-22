@@ -24,14 +24,9 @@ class SentimentMetric:
         self.system_prompt: str = SENTIMENT_SYSTEM_PROMPT
 
     async def evaluate(self, output: str) -> CheckResult:
-        prompt = (
-            f"Output to evaluate:\n{output}\n\n"
-            "What is the sentiment of this output? Score it."
-        )
+        prompt = f"Output to evaluate:\n{output}\n\nWhat is the sentiment of this output? Score it."
         start = time.perf_counter_ns()
-        response = await self.judge.evaluate(
-            prompt=prompt, system_prompt=self.system_prompt
-        )
+        response = await self.judge.evaluate(prompt=prompt, system_prompt=self.system_prompt)
         elapsed_ms = (time.perf_counter_ns() - start) // 1_000_000
 
         return CheckResult(

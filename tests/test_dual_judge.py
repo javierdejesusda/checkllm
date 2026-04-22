@@ -17,9 +17,7 @@ def _mock_judge(score: float, reasoning: str = "ok", cost: float = 0.01) -> Asyn
     """Create a mock judge that returns a fixed response."""
     judge = AsyncMock()
     judge.evaluate = AsyncMock(
-        return_value=JudgeResponse(
-            score=score, reasoning=reasoning, cost=cost
-        )
+        return_value=JudgeResponse(score=score, reasoning=reasoning, cost=cost)
     )
     return judge
 

@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 
 import pytest
@@ -181,7 +180,9 @@ judge_model = "gpt-4o"
     def test_env_var_cache_enabled(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         monkeypatch.setenv("CHECKLLM_CACHE_ENABLED", "false")
         config = load_config(project_dir=tmp_path)
-        assert config.cache_enabled == "false" or config.cache_enabled is False  # string or converted
+        assert (
+            config.cache_enabled == "false" or config.cache_enabled is False
+        )  # string or converted
 
     def test_env_var_budget(self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         monkeypatch.setenv("CHECKLLM_BUDGET", "5.0")

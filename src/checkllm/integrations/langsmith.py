@@ -18,6 +18,7 @@ Environment variables:
 
 Install with ``pip install checkllm[langsmith]``.
 """
+
 from __future__ import annotations
 
 import logging
@@ -82,17 +83,15 @@ class LangSmithTracer(Tracer):
     ) -> None:
         super().__init__(service_name="checkllm", enable_otel=enable_otel)
 
-        self.project_name = (
-            project_name or os.getenv("LANGSMITH_PROJECT") or "checkllm"
-        )
+        self.project_name = project_name or os.getenv("LANGSMITH_PROJECT") or "checkllm"
 
         if client is not None:
             self._client = client
         else:
             client_cls = _import_langsmith()
             kwargs: dict[str, Any] = {}
-            resolved_key = api_key or os.getenv("LANGSMITH_API_KEY") or os.getenv(
-                "LANGCHAIN_API_KEY"
+            resolved_key = (
+                api_key or os.getenv("LANGSMITH_API_KEY") or os.getenv("LANGCHAIN_API_KEY")
             )
             if resolved_key:
                 kwargs["api_key"] = resolved_key
@@ -108,9 +107,7 @@ class LangSmithTracer(Tracer):
     ) -> Generator[Span, None, None]:
         """Open a traced span and mirror it as a LangSmith run."""
         run_id = uuid.uuid4()
-        parent_run_id = (
-            self._run_stack[-1]["run_id"] if self._run_stack else None
-        )
+        parent_run_id = self._run_stack[-1]["run_id"] if self._run_stack else None
         start_time = time.time()
 
         run_info: dict[str, Any] = {

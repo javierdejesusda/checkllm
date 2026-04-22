@@ -107,34 +107,70 @@ _VULNERABILITY_PATTERNS: dict[str, list[str]] = {
 
 _VULNERABILITY_KEYWORDS: dict[str, list[str]] = {
     VulnerabilityType.PROMPT_INJECTION.value: [
-        "ignore", "override", "disregard", "forget", "new instructions",
+        "ignore",
+        "override",
+        "disregard",
+        "forget",
+        "new instructions",
     ],
     VulnerabilityType.JAILBREAK.value: [
-        "jailbreak", "DAN", "unrestricted", "no limits", "bypass",
+        "jailbreak",
+        "DAN",
+        "unrestricted",
+        "no limits",
+        "bypass",
     ],
     VulnerabilityType.PII_LEAKAGE.value: [
-        "SSN", "social security", "credit card", "password", "secret",
+        "SSN",
+        "social security",
+        "credit card",
+        "password",
+        "secret",
     ],
     VulnerabilityType.HARMFUL_CONTENT.value: [
-        "weapon", "bomb", "poison", "harm", "kill", "attack",
+        "weapon",
+        "bomb",
+        "poison",
+        "harm",
+        "kill",
+        "attack",
     ],
     VulnerabilityType.BIAS_EXPLOITATION.value: [
-        "stereotype", "inferior", "superior", "discriminate",
+        "stereotype",
+        "inferior",
+        "superior",
+        "discriminate",
     ],
     VulnerabilityType.DATA_EXTRACTION.value: [
-        "system prompt", "training data", "confidential", "internal",
+        "system prompt",
+        "training data",
+        "confidential",
+        "internal",
     ],
     VulnerabilityType.ROLE_ESCAPE.value: [
-        "persona", "identity", "character", "role",
+        "persona",
+        "identity",
+        "character",
+        "role",
     ],
     VulnerabilityType.INSTRUCTION_OVERRIDE.value: [
-        "safety off", "disable filter", "bypass", "override",
+        "safety off",
+        "disable filter",
+        "bypass",
+        "override",
     ],
     VulnerabilityType.ENCODING_ATTACK.value: [
-        "base64", "rot13", "hex", "unicode", "encoded",
+        "base64",
+        "rot13",
+        "hex",
+        "unicode",
+        "encoded",
     ],
     VulnerabilityType.CONTEXT_MANIPULATION.value: [
-        "hypothetical", "fiction", "imagine", "pretend",
+        "hypothetical",
+        "fiction",
+        "imagine",
+        "pretend",
     ],
 }
 
@@ -240,9 +276,21 @@ def _extract_keywords(attack_prompt: str) -> list[str]:
     keywords: list[str] = []
     lowered = attack_prompt.lower()
     candidates = [
-        "ignore", "override", "bypass", "jailbreak", "DAN", "unrestricted",
-        "system prompt", "injection", "extract", "reveal", "hack",
-        "password", "credentials", "admin", "confidential",
+        "ignore",
+        "override",
+        "bypass",
+        "jailbreak",
+        "DAN",
+        "unrestricted",
+        "system prompt",
+        "injection",
+        "extract",
+        "reveal",
+        "hack",
+        "password",
+        "credentials",
+        "admin",
+        "confidential",
     ]
     for kw in candidates:
         if kw.lower() in lowered:
@@ -265,9 +313,7 @@ class AdaptiveGuardrail:
         self.rules: list[GuardrailRule] = []
         self.base_checks = base_checks or []
 
-    def learn_from_report(
-        self, report: VulnerabilityReport
-    ) -> list[GuardrailRule]:
+    def learn_from_report(self, report: VulnerabilityReport) -> list[GuardrailRule]:
         """Analyze a red team report and generate new guardrail rules.
 
         Args:
@@ -279,9 +325,7 @@ class AdaptiveGuardrail:
         successful = [r for r in report.results if r.vulnerable]
         return self.learn_from_attacks(successful)
 
-    def learn_from_attacks(
-        self, attacks: list[AttackResult]
-    ) -> list[GuardrailRule]:
+    def learn_from_attacks(self, attacks: list[AttackResult]) -> list[GuardrailRule]:
         """Learn from individual successful attack results.
 
         Args:
@@ -299,15 +343,11 @@ class AdaptiveGuardrail:
 
             vtype = attack.vulnerability_type.value
 
-            patterns = list(
-                _VULNERABILITY_PATTERNS.get(vtype, [])
-            )
+            patterns = list(_VULNERABILITY_PATTERNS.get(vtype, []))
             attack_patterns = _extract_attack_patterns(attack.attack_prompt)
             patterns.extend(attack_patterns)
 
-            keywords = list(
-                _VULNERABILITY_KEYWORDS.get(vtype, [])
-            )
+            keywords = list(_VULNERABILITY_KEYWORDS.get(vtype, []))
             attack_keywords = _extract_keywords(attack.attack_prompt)
             keywords.extend(attack_keywords)
 
@@ -364,20 +404,14 @@ class AdaptiveGuardrail:
                     None,
                 )
                 if existing is not None:
-                    merged_patterns = list(
-                        dict.fromkeys(existing.detection_patterns + patterns)
-                    )
-                    merged_keywords = list(
-                        dict.fromkeys(existing.detection_keywords + keywords)
-                    )
+                    merged_patterns = list(dict.fromkeys(existing.detection_patterns + patterns))
+                    merged_keywords = list(dict.fromkeys(existing.detection_keywords + keywords))
                     existing.detection_patterns = merged_patterns
                     existing.detection_keywords = merged_keywords
 
         return new_rules
 
-    async def validate(
-        self, input_text: str, output_text: str
-    ) -> AdaptiveValidationResult:
+    async def validate(self, input_text: str, output_text: str) -> AdaptiveValidationResult:
         """Validate input/output against learned rules and base checks.
 
         Args:
@@ -404,8 +438,7 @@ class AdaptiveGuardrail:
                 )
                 if input_hit:
                     input_violations.append(
-                        f"Rule '{rule.name}' triggered on input "
-                        f"(severity={rule.severity})"
+                        f"Rule '{rule.name}' triggered on input (severity={rule.severity})"
                     )
 
             if rule.block_output:
@@ -414,8 +447,7 @@ class AdaptiveGuardrail:
                 )
                 if output_hit:
                     output_violations.append(
-                        f"Rule '{rule.name}' triggered on output "
-                        f"(severity={rule.severity})"
+                        f"Rule '{rule.name}' triggered on output (severity={rule.severity})"
                     )
 
             if input_hit or output_hit:
@@ -423,10 +455,7 @@ class AdaptiveGuardrail:
                 if rule.action == "block":
                     blocked = True
                 elif rule.action == "warn":
-                    warnings.append(
-                        f"Warning from rule '{rule.name}': "
-                        f"{rule.description}"
-                    )
+                    warnings.append(f"Warning from rule '{rule.name}': {rule.description}")
 
         valid = not blocked
         return AdaptiveValidationResult(

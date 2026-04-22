@@ -48,9 +48,7 @@ def test_train_test_split_rejects_invalid_size():
 def test_train_test_split_stratified_preserves_class_ratio():
     labels = ["A"] * 80 + ["B"] * 20
     cases = _make_cases(100, labels=labels)
-    train, test = train_test_split(
-        cases, test_size=0.2, seed=42, stratify_by="metadata.label"
-    )
+    train, test = train_test_split(cases, test_size=0.2, seed=42, stratify_by="metadata.label")
     train_b = sum(1 for c in train if c.metadata["label"] == "B")
     test_b = sum(1 for c in test if c.metadata["label"] == "B")
     assert train_b + test_b == 20

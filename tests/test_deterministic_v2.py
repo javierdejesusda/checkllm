@@ -128,18 +128,20 @@ class TestJsonField:
 
     @pytest.fixture
     def sample_json(self):
-        return json.dumps({
-            "name": "Alice",
-            "age": 30,
-            "data": {"name": "nested_value", "count": 10},
-            "items": [
-                {"name": "first", "price": 5},
-                {"name": "second", "price": 15},
-            ],
-            "tags": ["python", "testing"],
-            "empty_str": "",
-            "is_active": True,
-        })
+        return json.dumps(
+            {
+                "name": "Alice",
+                "age": 30,
+                "data": {"name": "nested_value", "count": 10},
+                "items": [
+                    {"name": "first", "price": 5},
+                    {"name": "second", "price": 15},
+                ],
+                "tags": ["python", "testing"],
+                "empty_str": "",
+                "is_active": True,
+            }
+        )
 
     def test_field_exists(self, dc, sample_json):
         result = dc.json_field(sample_json, "name", condition="exists")
@@ -299,9 +301,7 @@ class TestIsValidSql:
         assert result.metric_name == "is_valid_sql"
 
     def test_valid_with_subquery(self, dc):
-        result = dc.is_valid_sql(
-            "SELECT * FROM users WHERE id IN (SELECT user_id FROM orders)"
-        )
+        result = dc.is_valid_sql("SELECT * FROM users WHERE id IN (SELECT user_id FROM orders)")
         assert result.passed is True
         assert result.score == 1.0
 
@@ -342,9 +342,7 @@ class TestIsValidSql:
         assert "Empty SQL" in result.reasoning
 
     def test_valid_create_table(self, dc):
-        result = dc.is_valid_sql(
-            "CREATE TABLE users (id INT PRIMARY KEY, name VARCHAR(100))"
-        )
+        result = dc.is_valid_sql("CREATE TABLE users (id INT PRIMARY KEY, name VARCHAR(100))")
         assert result.passed is True
         assert result.score == 1.0
 

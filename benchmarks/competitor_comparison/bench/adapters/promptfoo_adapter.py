@@ -187,9 +187,7 @@ class PromptfooAdapter:
         config = {
             "providers": [{"id": "echo"}],
             "prompts": ["OUTPUT_TO_EVALUATE: {{answer}}"],
-            "defaultTest": {
-                "options": {"provider": f"openai:{judge_model}"}
-            },
+            "defaultTest": {"options": {"provider": f"openai:{judge_model}"}},
             "tests": [
                 {
                     "vars": {
@@ -197,9 +195,7 @@ class PromptfooAdapter:
                         "query": str(sample.query),
                         "context": str(sample.context),
                     },
-                    "assert": [
-                        {"type": "llm-rubric", "value": rubric, "threshold": 0.5}
-                    ],
+                    "assert": [{"type": "llm-rubric", "value": rubric, "threshold": 0.5}],
                 }
             ],
         }
@@ -240,9 +236,7 @@ class PromptfooAdapter:
             reason = str(grading.get("reason") or first.get("error") or "")
             stats = (data.get("results") or {}).get("stats") or {}
             eval_duration_ms = int(
-                stats.get("evaluationDurationMs")
-                or stats.get("durationMs")
-                or 0
+                stats.get("evaluationDurationMs") or stats.get("durationMs") or 0
             )
             provider_latency_ms = int(first.get("latencyMs", 0) or 0)
             # The echo provider is ~5ms; the real cost/latency live in the

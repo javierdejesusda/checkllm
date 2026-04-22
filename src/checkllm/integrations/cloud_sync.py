@@ -20,6 +20,7 @@ This module has no required third-party dependencies. ``urllib`` from
 the standard library is used by default; when the ``requests`` package
 is installed it is used automatically for connection pooling.
 """
+
 from __future__ import annotations
 
 import json
@@ -90,11 +91,9 @@ def _post_json(
         headers["Authorization"] = f"Bearer {token}"
 
     try:
-        import requests
+        import requests  # type: ignore[import-untyped,unused-ignore]
 
-        response = requests.post(
-            url, json=payload, headers=headers, timeout=timeout
-        )
+        response = requests.post(url, json=payload, headers=headers, timeout=timeout)
         status_code: int = response.status_code
         text: str = response.text
         return status_code, text
@@ -139,9 +138,7 @@ def push_to_remote(
     """
     resolved_url = url or os.getenv("CHECKLLM_REMOTE_URL")
     if not resolved_url:
-        raise ValueError(
-            "Remote URL not provided; set CHECKLLM_REMOTE_URL or pass url=..."
-        )
+        raise ValueError("Remote URL not provided; set CHECKLLM_REMOTE_URL or pass url=...")
     resolved_token = token or os.getenv("CHECKLLM_REMOTE_TOKEN")
 
     runs = _serialize_runs(history, limit=limit)
@@ -150,20 +147,14 @@ def push_to_remote(
         payload.update(extra)
 
     try:
-        status, body = _post_json(
-            resolved_url, payload, resolved_token, timeout
-        )
+        status, body = _post_json(resolved_url, payload, resolved_token, timeout)
     except Exception as exc:
         logger.warning("cloud sync failed: %s", exc)
-        return SyncResult(
-            runs_pushed=len(runs), status_code=0, ok=False, error=str(exc)
-        )
+        return SyncResult(runs_pushed=len(runs), status_code=0, ok=False, error=str(exc))
 
     ok = 200 <= status < 300
     if not ok:
-        logger.warning(
-            "cloud sync returned %d: %s", status, body[:500]
-        )
+        logger.warning("cloud sync returned %d: %s", status, body[:500])
     return SyncResult(
         runs_pushed=len(runs),
         status_code=status,

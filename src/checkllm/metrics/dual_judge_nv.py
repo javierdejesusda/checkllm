@@ -113,12 +113,8 @@ class NVContextRelevanceMetric:
         )
 
         start = time.perf_counter_ns()
-        response_a = await self.judge.evaluate(
-            prompt=prompt_a, system_prompt=self.system_prompt_a
-        )
-        response_b = await self.judge.evaluate(
-            prompt=prompt_b, system_prompt=self.system_prompt_b
-        )
+        response_a = await self.judge.evaluate(prompt=prompt_a, system_prompt=self.system_prompt_a)
+        response_b = await self.judge.evaluate(prompt=prompt_b, system_prompt=self.system_prompt_b)
         elapsed_ms = (time.perf_counter_ns() - start) // 1_000_000
 
         avg_score = (response_a.score + response_b.score) / 2.0
@@ -182,12 +178,8 @@ class NVAnswerAccuracyMetric:
         )
 
         start = time.perf_counter_ns()
-        response_a = await self.judge.evaluate(
-            prompt=prompt_a, system_prompt=self.system_prompt_a
-        )
-        response_b = await self.judge.evaluate(
-            prompt=prompt_b, system_prompt=self.system_prompt_b
-        )
+        response_a = await self.judge.evaluate(prompt=prompt_a, system_prompt=self.system_prompt_a)
+        response_b = await self.judge.evaluate(prompt=prompt_b, system_prompt=self.system_prompt_b)
         elapsed_ms = (time.perf_counter_ns() - start) // 1_000_000
 
         avg_score = (response_a.score + response_b.score) / 2.0
@@ -252,12 +244,8 @@ class NVResponseGroundednessMetric:
         )
 
         start = time.perf_counter_ns()
-        response_a = await self.judge.evaluate(
-            prompt=prompt_a, system_prompt=self.system_prompt_a
-        )
-        response_b = await self.judge.evaluate(
-            prompt=prompt_b, system_prompt=self.system_prompt_b
-        )
+        response_a = await self.judge.evaluate(prompt=prompt_a, system_prompt=self.system_prompt_a)
+        response_b = await self.judge.evaluate(prompt=prompt_b, system_prompt=self.system_prompt_b)
         elapsed_ms = (time.perf_counter_ns() - start) // 1_000_000
 
         avg_score = (response_a.score + response_b.score) / 2.0

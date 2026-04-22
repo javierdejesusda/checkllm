@@ -3,6 +3,7 @@
 Provides 16 benchmarks: MMLU, TruthfulQA, GSM8K, HellaSwag, HumanEval, BBH,
 ARC, BoolQ, DROP, IFEval, LAMBADA, LogiQA, MathQA, SQuAD, WinoGrande, and BBQ.
 """
+
 from __future__ import annotations
 
 from pydantic import BaseModel
@@ -355,9 +356,7 @@ _GSM8K_SAMPLES: list[dict] = [
         "category": "money",
     },
     {
-        "question": (
-            "A train travels at 60 km/h. How long does it take to travel 180 km?"
-        ),
+        "question": ("A train travels at 60 km/h. How long does it take to travel 180 km?"),
         "correct_answer": "3",
         "category": "rate",
     },
@@ -395,8 +394,7 @@ _GSM8K_SAMPLES: list[dict] = [
     },
     {
         "question": (
-            "A store sells apples for $0.50 each. If you buy 14 apples, "
-            "how much do you spend?"
+            "A store sells apples for $0.50 each. If you buy 14 apples, how much do you spend?"
         ),
         "correct_answer": "7",
         "category": "money",
@@ -410,30 +408,22 @@ _GSM8K_SAMPLES: list[dict] = [
         "category": "rate",
     },
     {
-        "question": (
-            "Anna reads 25 pages a day. How many pages does she read in 2 weeks?"
-        ),
+        "question": ("Anna reads 25 pages a day. How many pages does she read in 2 weeks?"),
         "correct_answer": "350",
         "category": "multiplication",
     },
     {
-        "question": (
-            "A class has 30 students. 18 are boys. How many are girls?"
-        ),
+        "question": ("A class has 30 students. 18 are boys. How many are girls?"),
         "correct_answer": "12",
         "category": "arithmetic",
     },
     {
-        "question": (
-            "If 3 pencils cost $1.50, how much do 7 pencils cost?"
-        ),
+        "question": ("If 3 pencils cost $1.50, how much do 7 pencils cost?"),
         "correct_answer": "3.50",
         "category": "money",
     },
     {
-        "question": (
-            "A square garden has sides of 9 meters. What is the perimeter of the garden?"
-        ),
+        "question": ("A square garden has sides of 9 meters. What is the perimeter of the garden?"),
         "correct_answer": "36",
         "category": "geometry",
     },
@@ -471,8 +461,7 @@ _GSM8K_SAMPLES: list[dict] = [
     },
     {
         "question": (
-            "A triangle has a base of 10 cm and a height of 6 cm. "
-            "What is the area of the triangle?"
+            "A triangle has a base of 10 cm and a height of 6 cm. What is the area of the triangle?"
         ),
         "correct_answer": "30",
         "category": "geometry",
@@ -487,8 +476,7 @@ _GSM8K_SAMPLES: list[dict] = [
     },
     {
         "question": (
-            "A rope is 84 cm long. It is cut into 7 equal pieces. "
-            "How long is each piece?"
+            "A rope is 84 cm long. It is cut into 7 equal pieces. How long is each piece?"
         ),
         "correct_answer": "12",
         "category": "division",
@@ -919,11 +907,7 @@ _HUMANEVAL_SAMPLES: list[dict] = [
             "        The GCD of a and b.\n"
             '    """\n'
         ),
-        "correct_answer": (
-            "while b:\n"
-            "    a, b = b, a % b\n"
-            "return a"
-        ),
+        "correct_answer": ("while b:\n    a, b = b, a % b\nreturn a"),
         "category": "math",
     },
     {
@@ -1120,17 +1104,14 @@ _BBH_SAMPLES: list[dict] = [
         "category": "logical_deduction",
     },
     {
-        "question": (
-            "Today is Wednesday. What day will it be 100 days from now?"
-        ),
+        "question": ("Today is Wednesday. What day will it be 100 days from now?"),
         "choices": ["A. Monday", "B. Friday", "C. Thursday", "D. Saturday"],
         "correct_answer": "B",
         "category": "date_understanding",
     },
     {
         "question": (
-            "If January 1st of a non-leap year is a Monday, what day of the week "
-            "is March 1st?"
+            "If January 1st of a non-leap year is a Monday, what day of the week is March 1st?"
         ),
         "choices": ["A. Monday", "B. Tuesday", "C. Wednesday", "D. Thursday"],
         "correct_answer": "D",
@@ -1212,17 +1193,14 @@ _BBH_SAMPLES: list[dict] = [
         "category": "logical_deduction",
     },
     {
-        "question": (
-            "June 15, 2023 is a Thursday. What day of the week was June 1, 2023?"
-        ),
+        "question": ("June 15, 2023 is a Thursday. What day of the week was June 1, 2023?"),
         "choices": ["A. Thursday", "B. Wednesday", "C. Tuesday", "D. Monday"],
         "correct_answer": "A",
         "category": "date_understanding",
     },
     {
         "question": (
-            "You start facing west. You turn left three times. "
-            "What direction are you facing?"
+            "You start facing west. You turn left three times. What direction are you facing?"
         ),
         "choices": ["A. North", "B. South", "C. East", "D. West"],
         "correct_answer": "A",
@@ -1413,9 +1391,7 @@ _ARC_SAMPLES: list[dict] = [
         "category": "earth_science",
     },
     {
-        "question": (
-            "A sound wave travels fastest through which medium?"
-        ),
+        "question": ("A sound wave travels fastest through which medium?"),
         "choices": ["A. Air", "B. Water", "C. Steel", "D. Vacuum"],
         "correct_answer": "C",
         "category": "physics",
@@ -1480,8 +1456,7 @@ _BOOLQ_SAMPLES: list[dict] = [
     },
     {
         "question": (
-            "Was the printing press invented in China before Gutenberg's "
-            "version in Europe?"
+            "Was the printing press invented in China before Gutenberg's version in Europe?"
         ),
         "correct_answer": "Yes",
         "category": "history",
@@ -1571,8 +1546,7 @@ _DROP_SAMPLES: list[dict] = [
     },
     {
         "question": (
-            "King Henry VIII ruled England from 1509 to 1547. "
-            "How many years did he rule?"
+            "King Henry VIII ruled England from 1509 to 1547. How many years did he rule?"
         ),
         "correct_answer": "38",
         "category": "history",
@@ -1667,8 +1641,7 @@ _IFEVAL_SAMPLES: list[dict] = [
     },
     {
         "question": (
-            "Describe the benefits of exercise. Your entire response must be "
-            "in uppercase letters."
+            "Describe the benefits of exercise. Your entire response must be in uppercase letters."
         ),
         "correct_answer": "response should be entirely in uppercase",
         "category": "format_constraint",
@@ -1691,16 +1664,14 @@ _IFEVAL_SAMPLES: list[dict] = [
     },
     {
         "question": (
-            "Explain the concept of gravity. Your response must be exactly "
-            "5 sentences long."
+            "Explain the concept of gravity. Your response must be exactly 5 sentences long."
         ),
         "correct_answer": "response should contain exactly 5 sentences",
         "category": "format_constraint",
     },
     {
         "question": (
-            "Name five programming languages. Separate each one with a "
-            "semicolon, not commas."
+            "Name five programming languages. Separate each one with a semicolon, not commas."
         ),
         "correct_answer": "response should use semicolons as separators",
         "category": "format_constraint",
@@ -1730,17 +1701,12 @@ _IFEVAL_SAMPLES: list[dict] = [
         "category": "format_constraint",
     },
     {
-        "question": (
-            "Provide a recipe for scrambled eggs. Use exactly 4 numbered steps."
-        ),
+        "question": ("Provide a recipe for scrambled eggs. Use exactly 4 numbered steps."),
         "correct_answer": "response should have exactly 4 numbered steps",
         "category": "format_constraint",
     },
     {
-        "question": (
-            "Describe the color blue without using the words 'sky', 'ocean', "
-            "or 'water'."
-        ),
+        "question": ("Describe the color blue without using the words 'sky', 'ocean', or 'water'."),
         "correct_answer": "response should not contain the words sky, ocean, or water",
         "category": "word_constraint",
     },
@@ -1754,16 +1720,13 @@ _IFEVAL_SAMPLES: list[dict] = [
     },
     {
         "question": (
-            "Explain how a car engine works. Your response must contain "
-            "between 50 and 100 words."
+            "Explain how a car engine works. Your response must contain between 50 and 100 words."
         ),
         "correct_answer": "response should contain between 50 and 100 words",
         "category": "length_constraint",
     },
     {
-        "question": (
-            "Write about climate change. Use the word 'therefore' exactly once."
-        ),
+        "question": ("Write about climate change. Use the word 'therefore' exactly once."),
         "correct_answer": "response should contain the word therefore exactly once",
         "category": "word_constraint",
     },
@@ -1919,8 +1882,7 @@ _LOGIQA_SAMPLES: list[dict] = [
     },
     {
         "question": (
-            "No reptiles are warm-blooded. Some pets are reptiles. "
-            "What can be concluded?"
+            "No reptiles are warm-blooded. Some pets are reptiles. What can be concluded?"
         ),
         "choices": [
             "A. No pets are warm-blooded.",
@@ -1933,8 +1895,7 @@ _LOGIQA_SAMPLES: list[dict] = [
     },
     {
         "question": (
-            "If it rains, then the ground is wet. The ground is not wet. "
-            "What can we conclude?"
+            "If it rains, then the ground is wet. The ground is not wet. What can we conclude?"
         ),
         "choices": [
             "A. It is raining.",
@@ -2031,9 +1992,7 @@ _LOGIQA_SAMPLES: list[dict] = [
         "category": "causal_reasoning",
     },
     {
-        "question": (
-            "If P then Q. If Q then R. P is true. What can we conclude?"
-        ),
+        "question": ("If P then Q. If Q then R. P is true. What can we conclude?"),
         "choices": [
             "A. R is true.",
             "B. R is false.",
@@ -2044,9 +2003,7 @@ _LOGIQA_SAMPLES: list[dict] = [
         "category": "conditional_reasoning",
     },
     {
-        "question": (
-            "No birds are mammals. All penguins are birds. What follows?"
-        ),
+        "question": ("No birds are mammals. All penguins are birds. What follows?"),
         "choices": [
             "A. Some mammals are penguins.",
             "B. No penguins are mammals.",
@@ -2072,8 +2029,7 @@ _LOGIQA_SAMPLES: list[dict] = [
     },
     {
         "question": (
-            "If it is a weekday, the office is open. The office is closed. "
-            "What day is it?"
+            "If it is a weekday, the office is open. The office is closed. What day is it?"
         ),
         "choices": [
             "A. It is definitely a weekday.",
@@ -2085,10 +2041,7 @@ _LOGIQA_SAMPLES: list[dict] = [
         "category": "conditional_reasoning",
     },
     {
-        "question": (
-            "All roses are flowers. Some flowers fade quickly. "
-            "What can be concluded?"
-        ),
+        "question": ("All roses are flowers. Some flowers fade quickly. What can be concluded?"),
         "choices": [
             "A. All roses fade quickly.",
             "B. Some roses might fade quickly.",
@@ -2117,18 +2070,19 @@ _LOGIQA_SAMPLES: list[dict] = [
 
 _MATHQA_SAMPLES: list[dict] = [
     {
-        "question": (
-            "If 3x + 7 = 22, what is the value of x?"
-        ),
+        "question": ("If 3x + 7 = 22, what is the value of x?"),
         "choices": ["A. 3", "B. 5", "C. 7", "D. 15"],
         "correct_answer": "B",
         "category": "algebra",
     },
     {
-        "question": (
-            "What is the sum of the interior angles of a hexagon?"
-        ),
-        "choices": ["A. 360 degrees", "B. 540 degrees", "C. 720 degrees", "D. 900 degrees"],
+        "question": ("What is the sum of the interior angles of a hexagon?"),
+        "choices": [
+            "A. 360 degrees",
+            "B. 540 degrees",
+            "C. 720 degrees",
+            "D. 900 degrees",
+        ],
         "correct_answer": "C",
         "category": "geometry",
     },
@@ -2142,57 +2096,44 @@ _MATHQA_SAMPLES: list[dict] = [
         "category": "probability",
     },
     {
-        "question": (
-            "What is the least common multiple (LCM) of 12 and 18?"
-        ),
+        "question": ("What is the least common multiple (LCM) of 12 and 18?"),
         "choices": ["A. 6", "B. 24", "C. 36", "D. 72"],
         "correct_answer": "C",
         "category": "number_theory",
     },
     {
-        "question": (
-            "If f(x) = 2x^2 - 3x + 1, what is f(3)?"
-        ),
+        "question": ("If f(x) = 2x^2 - 3x + 1, what is f(3)?"),
         "choices": ["A. 4", "B. 8", "C. 10", "D. 12"],
         "correct_answer": "C",
         "category": "algebra",
     },
     {
-        "question": (
-            "A circle has a radius of 7 cm. What is its area? (Use pi = 22/7)"
-        ),
+        "question": ("A circle has a radius of 7 cm. What is its area? (Use pi = 22/7)"),
         "choices": ["A. 44 cm^2", "B. 88 cm^2", "C. 154 cm^2", "D. 308 cm^2"],
         "correct_answer": "C",
         "category": "geometry",
     },
     {
-        "question": (
-            "Two dice are rolled. What is the probability that the sum is 7?"
-        ),
+        "question": ("Two dice are rolled. What is the probability that the sum is 7?"),
         "choices": ["A. 1/12", "B. 1/6", "C. 5/36", "D. 7/36"],
         "correct_answer": "B",
         "category": "probability",
     },
     {
-        "question": (
-            "What is the greatest common divisor (GCD) of 48 and 36?"
-        ),
+        "question": ("What is the greatest common divisor (GCD) of 48 and 36?"),
         "choices": ["A. 4", "B. 6", "C. 12", "D. 18"],
         "correct_answer": "C",
         "category": "number_theory",
     },
     {
-        "question": (
-            "Solve for x: 2(x - 4) = 3x + 2"
-        ),
+        "question": ("Solve for x: 2(x - 4) = 3x + 2"),
         "choices": ["A. -10", "B. -6", "C. 2", "D. 10"],
         "correct_answer": "A",
         "category": "algebra",
     },
     {
         "question": (
-            "What is the volume of a cylinder with radius 3 cm and height "
-            "10 cm? (Use pi = 3.14)"
+            "What is the volume of a cylinder with radius 3 cm and height 10 cm? (Use pi = 3.14)"
         ),
         "choices": [
             "A. 94.2 cm^3",
@@ -2213,17 +2154,13 @@ _MATHQA_SAMPLES: list[dict] = [
         "category": "probability",
     },
     {
-        "question": (
-            "How many prime numbers are there between 10 and 30?"
-        ),
+        "question": ("How many prime numbers are there between 10 and 30?"),
         "choices": ["A. 4", "B. 5", "C. 6", "D. 7"],
         "correct_answer": "C",
         "category": "number_theory",
     },
     {
-        "question": (
-            "If the roots of x^2 - 5x + 6 = 0 are r and s, what is r + s?"
-        ),
+        "question": ("If the roots of x^2 - 5x + 6 = 0 are r and s, what is r + s?"),
         "choices": ["A. 2", "B. 3", "C. 5", "D. 6"],
         "correct_answer": "C",
         "category": "algebra",
@@ -2248,9 +2185,7 @@ _MATHQA_SAMPLES: list[dict] = [
         "category": "probability",
     },
     {
-        "question": (
-            "What is the remainder when 2^10 is divided by 7?"
-        ),
+        "question": ("What is the remainder when 2^10 is divided by 7?"),
         "choices": ["A. 1", "B. 2", "C. 3", "D. 4"],
         "correct_answer": "B",
         "category": "number_theory",
@@ -2415,18 +2350,14 @@ _SQUAD_SAMPLES: list[dict] = [
 _WINOGRANDE_SAMPLES: list[dict] = [
     {
         "question": (
-            "The trophy could not fit in the suitcase because it was too "
-            "large. What was too large?"
+            "The trophy could not fit in the suitcase because it was too large. What was too large?"
         ),
         "choices": ["A. The trophy", "B. The suitcase"],
         "correct_answer": "A",
         "category": "physical",
     },
     {
-        "question": (
-            "The ball broke the window because it was fragile. "
-            "What was fragile?"
-        ),
+        "question": ("The ball broke the window because it was fragile. What was fragile?"),
         "choices": ["A. The ball", "B. The window"],
         "correct_answer": "B",
         "category": "physical",
@@ -2442,8 +2373,7 @@ _WINOGRANDE_SAMPLES: list[dict] = [
     },
     {
         "question": (
-            "The police officer arrested the protester because he was "
-            "violent. Who was violent?"
+            "The police officer arrested the protester because he was violent. Who was violent?"
         ),
         "choices": ["A. The police officer", "B. The protester"],
         "correct_answer": "B",
@@ -2451,18 +2381,14 @@ _WINOGRANDE_SAMPLES: list[dict] = [
     },
     {
         "question": (
-            "The tree fell on the car and crushed it because it was "
-            "rotten. What was rotten?"
+            "The tree fell on the car and crushed it because it was rotten. What was rotten?"
         ),
         "choices": ["A. The tree", "B. The car"],
         "correct_answer": "A",
         "category": "physical",
     },
     {
-        "question": (
-            "Tom envied Mark because he had just won the lottery. "
-            "Who won the lottery?"
-        ),
+        "question": ("Tom envied Mark because he had just won the lottery. Who won the lottery?"),
         "choices": ["A. Tom", "B. Mark"],
         "correct_answer": "B",
         "category": "social",
@@ -2487,8 +2413,7 @@ _WINOGRANDE_SAMPLES: list[dict] = [
     },
     {
         "question": (
-            "The vase fell off the shelf and shattered because it was "
-            "unstable. What was unstable?"
+            "The vase fell off the shelf and shattered because it was unstable. What was unstable?"
         ),
         "choices": ["A. The vase", "B. The shelf"],
         "correct_answer": "B",
@@ -2513,19 +2438,13 @@ _WINOGRANDE_SAMPLES: list[dict] = [
         "category": "temporal",
     },
     {
-        "question": (
-            "The ice melted in the glass because it was warm. "
-            "What was warm?"
-        ),
+        "question": ("The ice melted in the glass because it was warm. What was warm?"),
         "choices": ["A. The ice", "B. The glass"],
         "correct_answer": "B",
         "category": "physical",
     },
     {
-        "question": (
-            "Lisa apologized to Karen because she had been rude. "
-            "Who had been rude?"
-        ),
+        "question": ("Lisa apologized to Karen because she had been rude. Who had been rude?"),
         "choices": ["A. Lisa", "B. Karen"],
         "correct_answer": "A",
         "category": "social",

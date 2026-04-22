@@ -1,8 +1,8 @@
 """Tests for NLP metrics and new deterministic checks."""
+
 from __future__ import annotations
 
 import asyncio
-import time
 
 import pytest
 
@@ -190,8 +190,7 @@ class TestExactMatchStrict:
 
     def test_both_options(self, det: DeterministicChecks) -> None:
         result = det.exact_match_strict(
-            "Hello  World", "hello world",
-            ignore_case=True, ignore_whitespace=True
+            "Hello  World", "hello world", ignore_case=True, ignore_whitespace=True
         )
         assert result.passed is True
         assert result.metric_name == "exact_match_strict"
@@ -201,39 +200,42 @@ class TestNonLLMContextPrecision:
     """Tests for NonLLM context precision metric."""
 
     def test_all_relevant(self) -> None:
-        from checkllm.metrics.nonllm_context_precision import NonLLMContextPrecisionMetric
+        from checkllm.metrics.nonllm_context_precision import (
+            NonLLMContextPrecisionMetric,
+        )
+
         metric = NonLLMContextPrecisionMetric(threshold=0.5)
         contexts = [
             "Python is a programming language created by Guido van Rossum.",
             "Python supports object-oriented programming.",
         ]
         reference = "Python is a programming language that supports object-oriented programming."
-        result = asyncio.new_event_loop().run_until_complete(
-            metric.evaluate(contexts, reference)
-        )
+        result = asyncio.new_event_loop().run_until_complete(metric.evaluate(contexts, reference))
         assert 0.0 <= result.score <= 1.0
         assert result.score > 0.0
         assert result.metric_name == "nonllm_context_precision"
 
     def test_no_relevant(self) -> None:
-        from checkllm.metrics.nonllm_context_precision import NonLLMContextPrecisionMetric
+        from checkllm.metrics.nonllm_context_precision import (
+            NonLLMContextPrecisionMetric,
+        )
+
         metric = NonLLMContextPrecisionMetric(threshold=0.5)
         contexts = [
             "The weather forecast for today is sunny.",
             "Basketball was invented in 1891.",
         ]
         reference = "Python is a programming language."
-        result = asyncio.new_event_loop().run_until_complete(
-            metric.evaluate(contexts, reference)
-        )
+        result = asyncio.new_event_loop().run_until_complete(metric.evaluate(contexts, reference))
         assert result.score == 0.0
 
     def test_empty_contexts(self) -> None:
-        from checkllm.metrics.nonllm_context_precision import NonLLMContextPrecisionMetric
-        metric = NonLLMContextPrecisionMetric()
-        result = asyncio.new_event_loop().run_until_complete(
-            metric.evaluate([], "some reference")
+        from checkllm.metrics.nonllm_context_precision import (
+            NonLLMContextPrecisionMetric,
         )
+
+        metric = NonLLMContextPrecisionMetric()
+        result = asyncio.new_event_loop().run_until_complete(metric.evaluate([], "some reference"))
         assert result.passed is False
         assert result.score == 0.0
 
@@ -243,37 +245,36 @@ class TestNonLLMContextRecall:
 
     def test_full_recall(self) -> None:
         from checkllm.metrics.nonllm_context_recall import NonLLMContextRecallMetric
+
         metric = NonLLMContextRecallMetric(threshold=0.5, similarity_threshold=0.3)
         contexts = [
             "Python is a high-level programming language known for readability.",
             "It was created by Guido van Rossum and released in 1991.",
         ]
-        reference = "Python is a high-level programming language. It was created by Guido van Rossum."
-        result = asyncio.new_event_loop().run_until_complete(
-            metric.evaluate(contexts, reference)
+        reference = (
+            "Python is a high-level programming language. It was created by Guido van Rossum."
         )
+        result = asyncio.new_event_loop().run_until_complete(metric.evaluate(contexts, reference))
         assert 0.0 <= result.score <= 1.0
         assert result.score > 0.0
         assert result.metric_name == "nonllm_context_recall"
 
     def test_no_recall(self) -> None:
         from checkllm.metrics.nonllm_context_recall import NonLLMContextRecallMetric
+
         metric = NonLLMContextRecallMetric(threshold=0.5)
         contexts = [
             "The weather is sunny today.",
         ]
         reference = "Python is a programming language. It supports multiple paradigms."
-        result = asyncio.new_event_loop().run_until_complete(
-            metric.evaluate(contexts, reference)
-        )
+        result = asyncio.new_event_loop().run_until_complete(metric.evaluate(contexts, reference))
         assert result.score < 0.5
 
     def test_empty_reference(self) -> None:
         from checkllm.metrics.nonllm_context_recall import NonLLMContextRecallMetric
+
         metric = NonLLMContextRecallMetric()
-        result = asyncio.new_event_loop().run_until_complete(
-            metric.evaluate(["some context"], "")
-        )
+        result = asyncio.new_event_loop().run_until_complete(metric.evaluate(["some context"], ""))
         assert result.passed is False
 
 
@@ -282,18 +283,16 @@ class TestFaithfulnessHHEM:
 
     def test_faithful_response(self) -> None:
         from checkllm.metrics.faithfulness_hhem import FaithfulnessHHEMMetric
+
         metric = FaithfulnessHHEMMetric(threshold=0.5)
         context = (
             "Python is a high-level programming language created by Guido van Rossum. "
             "It was first released in 1991. Python supports multiple programming paradigms."
         )
         output = (
-            "Python is a programming language created by Guido van Rossum. "
-            "It was released in 1991."
+            "Python is a programming language created by Guido van Rossum. It was released in 1991."
         )
-        result = asyncio.new_event_loop().run_until_complete(
-            metric.evaluate(output, context)
-        )
+        result = asyncio.new_event_loop().run_until_complete(metric.evaluate(output, context))
         assert 0.0 <= result.score <= 1.0
         assert result.score > 0.0
         assert result.metric_name == "faithfulness_hhem"
@@ -301,23 +300,21 @@ class TestFaithfulnessHHEM:
 
     def test_unfaithful_response(self) -> None:
         from checkllm.metrics.faithfulness_hhem import FaithfulnessHHEMMetric
+
         metric = FaithfulnessHHEMMetric(threshold=0.8)
         context = "The Earth orbits the Sun."
         output = (
             "Jupiter is the largest planet in the solar system. "
             "Mars has two moons called Phobos and Deimos."
         )
-        result = asyncio.new_event_loop().run_until_complete(
-            metric.evaluate(output, context)
-        )
+        result = asyncio.new_event_loop().run_until_complete(metric.evaluate(output, context))
         assert result.score < 0.8
 
     def test_empty_output(self) -> None:
         from checkllm.metrics.faithfulness_hhem import FaithfulnessHHEMMetric
+
         metric = FaithfulnessHHEMMetric()
-        result = asyncio.new_event_loop().run_until_complete(
-            metric.evaluate("", "some context")
-        )
+        result = asyncio.new_event_loop().run_until_complete(metric.evaluate("", "some context"))
         assert result.passed is False
         assert result.score == 0.0
 
@@ -327,21 +324,21 @@ class TestQuotedSpansAlignment:
 
     def test_all_quotes_match(self) -> None:
         from checkllm.metrics.quoted_spans import QuotedSpansAlignmentMetric
+
         metric = QuotedSpansAlignmentMetric(threshold=0.8)
         contexts = [
             "The report states that climate change is accelerating rapidly.",
             "Scientists warn that sea levels could rise by 2 meters.",
         ]
         output = 'The report says "climate change is accelerating rapidly" and "sea levels could rise by 2 meters".'
-        result = asyncio.new_event_loop().run_until_complete(
-            metric.evaluate(output, contexts)
-        )
+        result = asyncio.new_event_loop().run_until_complete(metric.evaluate(output, contexts))
         assert result.score == 1.0
         assert result.passed is True
         assert result.metric_name == "quoted_spans_alignment"
 
     def test_no_quotes_in_output(self) -> None:
         from checkllm.metrics.quoted_spans import QuotedSpansAlignmentMetric
+
         metric = QuotedSpansAlignmentMetric()
         result = asyncio.new_event_loop().run_until_complete(
             metric.evaluate("No quotes here.", ["some context"])
@@ -351,17 +348,17 @@ class TestQuotedSpansAlignment:
 
     def test_unmatched_quotes(self) -> None:
         from checkllm.metrics.quoted_spans import QuotedSpansAlignmentMetric
+
         metric = QuotedSpansAlignmentMetric(threshold=0.8)
         contexts = ["The sky is blue."]
         output = 'The source says "the grass is green" which is important.'
-        result = asyncio.new_event_loop().run_until_complete(
-            metric.evaluate(output, contexts)
-        )
+        result = asyncio.new_event_loop().run_until_complete(metric.evaluate(output, contexts))
         assert result.score == 0.0
         assert result.passed is False
 
     def test_empty_contexts(self) -> None:
         from checkllm.metrics.quoted_spans import QuotedSpansAlignmentMetric
+
         metric = QuotedSpansAlignmentMetric()
         result = asyncio.new_event_loop().run_until_complete(
             metric.evaluate('She said "hello world" today.', [])
@@ -374,37 +371,35 @@ class TestDataCompyMetric:
 
     def test_identical_csv(self) -> None:
         from checkllm.metrics.datacompy_score import DataCompyMetric
+
         metric = DataCompyMetric(threshold=0.7)
         csv_data = "name,age\nAlice,30\nBob,25"
-        result = asyncio.new_event_loop().run_until_complete(
-            metric.evaluate(csv_data, csv_data)
-        )
+        result = asyncio.new_event_loop().run_until_complete(metric.evaluate(csv_data, csv_data))
         assert result.score == 1.0
         assert result.passed is True
         assert result.metric_name == "datacompy_score"
 
     def test_identical_json(self) -> None:
         from checkllm.metrics.datacompy_score import DataCompyMetric
+
         metric = DataCompyMetric(threshold=0.7)
         json_data = '[{"name": "Alice", "age": "30"}, {"name": "Bob", "age": "25"}]'
-        result = asyncio.new_event_loop().run_until_complete(
-            metric.evaluate(json_data, json_data)
-        )
+        result = asyncio.new_event_loop().run_until_complete(metric.evaluate(json_data, json_data))
         assert result.score == 1.0
         assert result.passed is True
 
     def test_mismatched_data(self) -> None:
         from checkllm.metrics.datacompy_score import DataCompyMetric
+
         metric = DataCompyMetric(threshold=0.9)
         output = "name,age\nAlice,30\nCharlie,40"
         reference = "name,age\nAlice,30\nBob,25"
-        result = asyncio.new_event_loop().run_until_complete(
-            metric.evaluate(output, reference)
-        )
+        result = asyncio.new_event_loop().run_until_complete(metric.evaluate(output, reference))
         assert result.score < 1.0
 
     def test_invalid_format(self) -> None:
         from checkllm.metrics.datacompy_score import DataCompyMetric
+
         metric = DataCompyMetric()
         result = asyncio.new_event_loop().run_until_complete(
             metric.evaluate("[invalid json", "name,age\nAlice,30")

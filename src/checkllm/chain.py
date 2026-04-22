@@ -5,6 +5,7 @@ Usage::
     check.that(output).contains("Python").has_no_pii().max_tokens(200)
     check.that(output).scores_above("relevance", 0.8, query="What is Python?")
 """
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Type
@@ -56,7 +57,9 @@ class AssertionChain:
         self._collector.min_tokens(self._output, minimum)
         return self
 
-    def word_count(self, min_words: int | None = None, max_words: int | None = None) -> AssertionChain:
+    def word_count(
+        self, min_words: int | None = None, max_words: int | None = None
+    ) -> AssertionChain:
         self._collector.word_count(self._output, min_words, max_words)
         return self
 

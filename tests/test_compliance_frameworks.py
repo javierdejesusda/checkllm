@@ -11,7 +11,6 @@ from checkllm.compliance_frameworks import (
     ComplianceReport,
     ComplianceScanner,
     FrameworkMapping,
-    FrameworkRequirement,
     MultiFrameworkReport,
     RequirementResult,
     get_framework_mapping,
@@ -64,9 +63,7 @@ class TestFrameworkMappings:
     @pytest.mark.parametrize("framework", list(ComplianceFramework))
     def test_mapping_has_requirements(self, framework):
         mapping = get_framework_mapping(framework)
-        assert len(mapping.requirements) > 0, (
-            f"{framework.value} has no requirements"
-        )
+        assert len(mapping.requirements) > 0, f"{framework.value} has no requirements"
 
     @pytest.mark.parametrize("framework", list(ComplianceFramework))
     def test_mapping_has_version(self, framework):
@@ -99,42 +96,36 @@ class TestFrameworkMappings:
     def test_requirements_have_descriptions(self, framework):
         mapping = get_framework_mapping(framework)
         for req in mapping.requirements:
-            assert req.description, (
-                f"{req.id} in {framework.value} has no description"
-            )
+            assert req.description, f"{req.id} in {framework.value} has no description"
 
     @pytest.mark.parametrize("framework", list(ComplianceFramework))
     def test_requirements_have_severity(self, framework):
         mapping = get_framework_mapping(framework)
         valid_severities = {"critical", "high", "medium", "low"}
         for req in mapping.requirements:
-            assert req.severity in valid_severities, (
-                f"{req.id} in {framework.value} has invalid severity: {req.severity}"
-            )
+            assert (
+                req.severity in valid_severities
+            ), f"{req.id} in {framework.value} has invalid severity: {req.severity}"
 
     @pytest.mark.parametrize("framework", list(ComplianceFramework))
     def test_requirements_have_test_categories(self, framework):
         mapping = get_framework_mapping(framework)
         for req in mapping.requirements:
-            assert len(req.test_categories) > 0, (
-                f"{req.id} in {framework.value} has no test_categories"
-            )
+            assert (
+                len(req.test_categories) > 0
+            ), f"{req.id} in {framework.value} has no test_categories"
 
     @pytest.mark.parametrize("framework", list(ComplianceFramework))
     def test_requirements_have_remediation(self, framework):
         mapping = get_framework_mapping(framework)
         for req in mapping.requirements:
-            assert req.remediation, (
-                f"{req.id} in {framework.value} has no remediation"
-            )
+            assert req.remediation, f"{req.id} in {framework.value} has no remediation"
 
     @pytest.mark.parametrize("framework", list(ComplianceFramework))
     def test_requirements_unique_ids(self, framework):
         mapping = get_framework_mapping(framework)
         ids = [req.id for req in mapping.requirements]
-        assert len(ids) == len(set(ids)), (
-            f"{framework.value} has duplicate requirement IDs"
-        )
+        assert len(ids) == len(set(ids)), f"{framework.value} has duplicate requirement IDs"
 
 
 class TestOWASPLLMTop10:
@@ -246,10 +237,9 @@ class TestVulnerabilityTypeMapping:
         mapping = get_framework_mapping(framework)
         for req in mapping.requirements:
             for cat in req.test_categories:
-                assert cat in valid_types, (
-                    f"{req.id} in {framework.value} maps to invalid "
-                    f"VulnerabilityType: '{cat}'"
-                )
+                assert (
+                    cat in valid_types
+                ), f"{req.id} in {framework.value} maps to invalid VulnerabilityType: '{cat}'"
 
 
 class TestListAllFrameworks:
@@ -369,9 +359,7 @@ class TestComplianceScannerNoJudge:
         async def target(prompt: str) -> str:
             return "test response"
 
-        result = asyncio.new_event_loop().run_until_complete(
-            scanner.scan(target=target)
-        )
+        result = asyncio.new_event_loop().run_until_complete(scanner.scan(target=target))
         assert isinstance(result, MultiFrameworkReport)
         assert len(result.reports) == 1
         report = result.reports[0]

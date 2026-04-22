@@ -1,4 +1,5 @@
 """Tests for the multimodal helper module (image loading, provider conversion)."""
+
 from __future__ import annotations
 
 import base64
@@ -223,22 +224,26 @@ class TestCallVisionJudge:
 class TestCaseImageFields:
     def test_case_accepts_image(self):
         from checkllm.datasets.case import Case
+
         case = Case(input="x", image="path/to.png")
         assert case.image == "path/to.png"
         assert case.image_sources == ["path/to.png"]
 
     def test_case_accepts_images(self):
         from checkllm.datasets.case import Case
+
         case = Case(input="x", images=["a.png", "b.png"])
         assert case.image_sources == ["a.png", "b.png"]
 
     def test_case_defaults_empty(self):
         from checkllm.datasets.case import Case
+
         case = Case(input="x")
         assert case.image_sources == []
 
     def test_images_takes_precedence(self):
         from checkllm.datasets.case import Case
+
         case = Case(input="x", image="single.png", images=["a.png", "b.png"])
         assert case.image_sources == ["a.png", "b.png"]
 

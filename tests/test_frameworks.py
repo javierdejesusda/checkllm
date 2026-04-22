@@ -133,44 +133,34 @@ class TestFrameworkRequirements:
     def test_all_requirements_have_description(self, framework):
         defn = get_framework_definition(framework)
         for req in defn.requirements:
-            assert req.description, (
-                f"Missing description for {req.id} in {framework.value}"
-            )
+            assert req.description, f"Missing description for {req.id} in {framework.value}"
 
     @pytest.mark.parametrize("framework", list(ComplianceFramework))
     def test_all_requirements_have_valid_severity(self, framework):
         valid_severities = {"critical", "high", "medium", "low"}
         defn = get_framework_definition(framework)
         for req in defn.requirements:
-            assert req.severity in valid_severities, (
-                f"Invalid severity '{req.severity}' for {req.id} "
-                f"in {framework.value}"
-            )
+            assert (
+                req.severity in valid_severities
+            ), f"Invalid severity '{req.severity}' for {req.id} in {framework.value}"
 
     @pytest.mark.parametrize("framework", list(ComplianceFramework))
     def test_all_requirements_have_category(self, framework):
         defn = get_framework_definition(framework)
         for req in defn.requirements:
-            assert req.category, (
-                f"Missing category for {req.id} in {framework.value}"
-            )
+            assert req.category, f"Missing category for {req.id} in {framework.value}"
 
     @pytest.mark.parametrize("framework", list(ComplianceFramework))
     def test_requirement_ids_are_unique(self, framework):
         defn = get_framework_definition(framework)
         ids = [req.id for req in defn.requirements]
-        assert len(ids) == len(set(ids)), (
-            f"Duplicate requirement IDs in {framework.value}"
-        )
+        assert len(ids) == len(set(ids)), f"Duplicate requirement IDs in {framework.value}"
 
     @pytest.mark.parametrize("framework", list(ComplianceFramework))
     def test_most_requirements_have_vulnerability_types_or_metrics(self, framework):
         """At least 60% of requirements should map to vuln types or metrics."""
         defn = get_framework_definition(framework)
-        mapped = sum(
-            1 for req in defn.requirements
-            if req.vulnerability_types or req.metrics
-        )
+        mapped = sum(1 for req in defn.requirements if req.vulnerability_types or req.metrics)
         ratio = mapped / len(defn.requirements) if defn.requirements else 0
         assert ratio >= 0.6, (
             f"Only {ratio:.0%} of requirements in {framework.value} "
@@ -204,9 +194,7 @@ class TestSpecificFrameworks:
     def test_owasp_agentic_ai_ids_start_with_aai(self):
         defn = get_framework_definition(ComplianceFramework.OWASP_AGENTIC_AI)
         for req in defn.requirements:
-            assert req.id.startswith("AAI"), (
-                f"Expected AAI prefix, got {req.id}"
-            )
+            assert req.id.startswith("AAI"), f"Expected AAI prefix, got {req.id}"
 
     def test_nist_ai_rmf_has_govern_map_measure_manage(self):
         defn = get_framework_definition(ComplianceFramework.NIST_AI_RMF)
@@ -232,9 +220,7 @@ class TestSpecificFrameworks:
     def test_mitre_atlas_has_aml_tactic_ids(self):
         defn = get_framework_definition(ComplianceFramework.MITRE_ATLAS)
         for req in defn.requirements:
-            assert req.id.startswith("AML.TA"), (
-                f"Expected AML.TA prefix, got {req.id}"
-            )
+            assert req.id.startswith("AML.TA"), f"Expected AML.TA prefix, got {req.id}"
 
     def test_soc2_has_cc_requirements(self):
         defn = get_framework_definition(ComplianceFramework.SOC2_TYPE2)

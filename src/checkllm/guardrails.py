@@ -19,6 +19,7 @@ Usage::
     # Or use as a callable:
     safe_output = guard(llm_output)  # raises GuardrailError if invalid
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -65,7 +66,6 @@ class ValidationResult(BaseModel):
     def summary(self) -> str:
         """Return a human-readable summary of validation results."""
         passed = sum(1 for r in self.results if r.passed)
-        failed = len(self.results) - passed
         lines = [
             f"Validation: {'PASSED' if self.valid else 'FAILED'} "
             f"({passed}/{len(self.results)} checks passed)",
@@ -83,12 +83,8 @@ class GuardrailError(Exception):
 
     def __init__(self, validation_result: ValidationResult) -> None:
         self.validation_result = validation_result
-        failed_names = ", ".join(
-            r.metric_name for r in validation_result.failed_checks
-        )
-        super().__init__(
-            f"Guardrail validation failed: {failed_names}"
-        )
+        failed_names = ", ".join(r.metric_name for r in validation_result.failed_checks)
+        super().__init__(f"Guardrail validation failed: {failed_names}")
 
 
 class CheckSpec(BaseModel):
@@ -191,22 +187,15 @@ class Guard:
             self._judge = OpenAIJudge(model=self._config.judge_model)
         return self._judge
 
-    def _run_deterministic(
-        self, spec: CheckSpec, output: str, **context: Any
-    ) -> CheckResult:
+    def _run_deterministic(self, spec: CheckSpec, output: str, **context: Any) -> CheckResult:
         method = getattr(self._det, spec.check_type)
-        # Build call args: output is always first, then spec.params
-        sig = inspect.signature(method)
-        params = list(sig.parameters.keys())
         kwargs: dict[str, Any] = {}
         # The first param is always 'self' (bound), second is 'output'
         kwargs["output"] = output
         kwargs.update(spec.params)
         return method(**kwargs)
 
-    async def _run_judge_check(
-        self, spec: CheckSpec, output: str, **context: Any
-    ) -> CheckResult:
+    async def _run_judge_check(self, spec: CheckSpec, output: str, **context: Any) -> CheckResult:
         judge = self._get_judge()
         metric_cls = _JUDGE_CHECKS[spec.check_type]
         threshold = spec.params.get("threshold", self._config.default_threshold)
@@ -408,17 +397,19 @@ class GuardrailMiddleware:
                 score_header = f"{avg_score:.2f}".encode()
 
                 if not validation.valid and self.on_failure == "reject":
-                    error_body = json.dumps({
-                        "error": "Guardrail validation failed",
-                        "details": [
-                            {
-                                "check": r.metric_name,
-                                "score": r.score,
-                                "reasoning": r.reasoning,
-                            }
-                            for r in validation.failed_checks
-                        ],
-                    }).encode()
+                    error_body = json.dumps(
+                        {
+                            "error": "Guardrail validation failed",
+                            "details": [
+                                {
+                                    "check": r.metric_name,
+                                    "score": r.score,
+                                    "reasoning": r.reasoning,
+                                }
+                                for r in validation.failed_checks
+                            ],
+                        }
+                    ).encode()
                     final_body = error_body
                     final_status_code = self.fail_status
         except (json.JSONDecodeError, Exception):
@@ -452,10 +443,12 @@ class GuardrailMiddleware:
             start_message["status"] = 200
 
         await send(start_message)
-        await send({
-            "type": "http.response.body",
-            "body": final_body,
-        })
+        await send(
+            {
+                "type": "http.response.body",
+                "body": final_body,
+            }
+        )
 
 
 # ---------------------------------------------------------------------------

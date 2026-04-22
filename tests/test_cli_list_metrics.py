@@ -1,4 +1,5 @@
 """Tests for the enhanced list-metrics CLI command."""
+
 from typer.testing import CliRunner
 from checkllm.cli import app
 

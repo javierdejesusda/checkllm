@@ -12,6 +12,7 @@ Or via the CLI::
 
     checkllm dashboard
 """
+
 from __future__ import annotations
 
 import datetime
@@ -82,6 +83,7 @@ def build_comparison_view(
         A ComparisonView populated with per-metric score diffs and
         classified lists of improved, regressed, and unchanged metrics.
     """
+
     def _avg_scores(results: dict[str, list]) -> dict[str, float]:
         totals: dict[str, list[float]] = {}
         for checks in results.values():
@@ -161,27 +163,30 @@ def check_alerts(
                 continue
 
             if config.alert_on_failure and not passed:
-                events.append(AlertEvent(
-                    event_type="failure",
-                    metric_name=metric_name,
-                    details=f"Check failed in {node_id}",
-                    score=score,
-                    threshold=threshold,
-                    timestamp=timestamp,
-                ))
+                events.append(
+                    AlertEvent(
+                        event_type="failure",
+                        metric_name=metric_name,
+                        details=f"Check failed in {node_id}",
+                        score=score,
+                        threshold=threshold,
+                        timestamp=timestamp,
+                    )
+                )
 
             if score is not None and score < config.min_score_threshold:
-                events.append(AlertEvent(
-                    event_type="threshold_breach",
-                    metric_name=metric_name,
-                    details=(
-                        f"Score {score:.2f} below threshold"
-                        f" {config.min_score_threshold:.2f}"
-                    ),
-                    score=score,
-                    threshold=config.min_score_threshold,
-                    timestamp=timestamp,
-                ))
+                events.append(
+                    AlertEvent(
+                        event_type="threshold_breach",
+                        metric_name=metric_name,
+                        details=(
+                            f"Score {score:.2f} below threshold {config.min_score_threshold:.2f}"
+                        ),
+                        score=score,
+                        threshold=config.min_score_threshold,
+                        timestamp=timestamp,
+                    )
+                )
 
     return events
 
@@ -911,19 +916,21 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
         history = self._get_history()
         try:
             runs = history.list_runs(limit=200)
-            self._send_json([
-                {
-                    "run_id": r.run_id,
-                    "timestamp": r.timestamp,
-                    "label": r.label,
-                    "git_commit": r.git_commit,
-                    "total_cost": r.total_cost,
-                    "total_checks": r.total_checks,
-                    "passed_checks": r.passed_checks,
-                    "failed_checks": r.failed_checks,
-                }
-                for r in runs
-            ])
+            self._send_json(
+                [
+                    {
+                        "run_id": r.run_id,
+                        "timestamp": r.timestamp,
+                        "label": r.label,
+                        "git_commit": r.git_commit,
+                        "total_cost": r.total_cost,
+                        "total_checks": r.total_checks,
+                        "passed_checks": r.passed_checks,
+                        "failed_checks": r.failed_checks,
+                    }
+                    for r in runs
+                ]
+            )
         finally:
             history.close()
 
@@ -942,17 +949,19 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
                 self._send_json({"error": "run not found"}, status=404)
                 return
 
-            self._send_json({
-                "run_id": record.run_id,
-                "timestamp": record.timestamp,
-                "label": record.label,
-                "git_commit": record.git_commit,
-                "total_cost": record.total_cost,
-                "total_checks": record.total_checks,
-                "passed_checks": record.passed_checks,
-                "failed_checks": record.failed_checks,
-                "results": record.results,
-            })
+            self._send_json(
+                {
+                    "run_id": record.run_id,
+                    "timestamp": record.timestamp,
+                    "label": record.label,
+                    "git_commit": record.git_commit,
+                    "total_cost": record.total_cost,
+                    "total_checks": record.total_checks,
+                    "passed_checks": record.passed_checks,
+                    "failed_checks": record.failed_checks,
+                    "results": record.results,
+                }
+            )
         finally:
             history.close()
 
@@ -987,10 +996,12 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
                     "results": r.results,
                 }
 
-            self._send_json({
-                "run_a": _serialize_run(run_a),
-                "run_b": _serialize_run(run_b),
-            })
+            self._send_json(
+                {
+                    "run_a": _serialize_run(run_a),
+                    "run_b": _serialize_run(run_b),
+                }
+            )
         finally:
             history.close()
 
@@ -1038,33 +1049,68 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
                     test_cost += cost
                 by_test[test_name] = test_cost
 
-            self._send_json({
-                "total_cost": record.total_cost,
-                "by_metric": dict(sorted(by_metric.items(), key=lambda x: -x[1])),
-                "by_test": dict(sorted(by_test.items(), key=lambda x: -x[1])),
-            })
+            self._send_json(
+                {
+                    "total_cost": record.total_cost,
+                    "by_metric": dict(sorted(by_metric.items(), key=lambda x: -x[1])),
+                    "by_test": dict(sorted(by_test.items(), key=lambda x: -x[1])),
+                }
+            )
         finally:
             history.close()
 
     def _serve_metrics(self) -> None:
         """GET /api/metrics -- list available metric names."""
         judge_metrics = [
-            "hallucination", "relevance", "toxicity", "rubric", "fluency",
-            "coherence", "sentiment", "correctness", "faithfulness",
-            "context_relevance", "answer_completeness", "instruction_following",
-            "summarization", "bias", "consistency", "groundedness",
+            "hallucination",
+            "relevance",
+            "toxicity",
+            "rubric",
+            "fluency",
+            "coherence",
+            "sentiment",
+            "correctness",
+            "faithfulness",
+            "context_relevance",
+            "answer_completeness",
+            "instruction_following",
+            "summarization",
+            "bias",
+            "consistency",
+            "groundedness",
         ]
         deterministic_metrics = [
-            "contains", "not_contains", "exact_match", "starts_with",
-            "ends_with", "regex", "max_tokens", "min_tokens", "word_count",
-            "char_count", "sentence_count", "similarity", "readability",
-            "latency", "cost", "json_schema", "is_json", "is_valid_python",
-            "all_of", "any_of", "none_of", "bleu", "rouge_l", "no_pii",
+            "contains",
+            "not_contains",
+            "exact_match",
+            "starts_with",
+            "ends_with",
+            "regex",
+            "max_tokens",
+            "min_tokens",
+            "word_count",
+            "char_count",
+            "sentence_count",
+            "similarity",
+            "readability",
+            "latency",
+            "cost",
+            "json_schema",
+            "is_json",
+            "is_valid_python",
+            "all_of",
+            "any_of",
+            "none_of",
+            "bleu",
+            "rouge_l",
+            "no_pii",
         ]
-        self._send_json({
-            "judge": judge_metrics,
-            "deterministic": deterministic_metrics,
-        })
+        self._send_json(
+            {
+                "judge": judge_metrics,
+                "deterministic": deterministic_metrics,
+            }
+        )
 
 
 # ---------------------------------------------------------------------------
@@ -1106,6 +1152,7 @@ def start_dashboard(
     # Rich banner
     try:
         from rich.console import Console
+
         console = Console()
         console.print(f"\n  [bold green]checkllm dashboard[/] running at [bold cyan]{url}[/]")
         console.print("  [dim]Press Ctrl+C to stop.[/]\n")

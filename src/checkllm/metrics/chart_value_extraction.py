@@ -5,6 +5,7 @@ within a numeric tolerance. Supports both deterministic comparison (when the
 caller supplies extracted values directly) and vision-judge extraction (when
 only the image and the expected values are available).
 """
+
 from __future__ import annotations
 
 import json
@@ -76,14 +77,11 @@ class ChartValueExtractionMetric:
         resolved_values: Mapping[str, float | None]
         if extracted_values is None:
             if image is None:
-                raise ValueError(
-                    "chart_value_extraction requires either image or extracted_values"
-                )
+                raise ValueError("chart_value_extraction requires either image or extracted_values")
             payloads = _ensure_payloads(image)
             labels = list(expected_values.keys())
-            prompt = (
-                "Read the following values from the chart:\n"
-                + "\n".join(f"- {label}" for label in labels)
+            prompt = "Read the following values from the chart:\n" + "\n".join(
+                f"- {label}" for label in labels
             )
             response = await call_vision_judge(
                 self.judge,
@@ -97,10 +95,7 @@ class ChartValueExtractionMetric:
                 raw_values = parsed.get("values", {})
             except (json.JSONDecodeError, ValueError, TypeError):
                 raw_values = {}
-            resolved_values = {
-                label: _coerce_number(raw_values.get(label))
-                for label in labels
-            }
+            resolved_values = {label: _coerce_number(raw_values.get(label)) for label in labels}
             reasoning_extra = response.reasoning
         else:
             resolved_values = extracted_values

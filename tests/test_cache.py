@@ -92,6 +92,7 @@ class TestJudgeCache:
         cache.put("key1", "hallucination", "gpt-4o", sample_result)
         # With TTL=0, the entry is immediately expired
         import time
+
         time.sleep(0.01)
         assert cache.get("key1") is None
         cache.close()
@@ -107,8 +108,12 @@ class TestJudgeCache:
     def test_overwrite_existing_key(self, cache, sample_result):
         cache.put("key1", "hallucination", "gpt-4o", sample_result)
         updated = CheckResult(
-            passed=False, score=0.3, reasoning="Updated",
-            cost=0.001, latency_ms=200, metric_name="hallucination",
+            passed=False,
+            score=0.3,
+            reasoning="Updated",
+            cost=0.001,
+            latency_ms=200,
+            metric_name="hallucination",
         )
         cache.put("key1", "hallucination", "gpt-4o", updated)
         retrieved = cache.get("key1")

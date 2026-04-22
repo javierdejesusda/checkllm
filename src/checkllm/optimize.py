@@ -157,7 +157,7 @@ class PromptOptimizer:
         population = [best]
         for gen in range(1, generations + 1):
             new_variants: list[PromptVariant] = []
-            for parent in population[:max(1, population_size // 2)]:
+            for parent in population[: max(1, population_size // 2)]:
                 for _ in range(2):
                     mutated = await self._mutate_prompt(parent.prompt, objective)
                     score = await self._score_prompt(mutated, fn)
@@ -299,20 +299,14 @@ class MIPROv2Optimizer:
             if score > best_score:
                 best_score = score
                 best_prompt = candidate
-                logger.info(
-                    "MIPROv2 candidate %d: new best score %.2f", idx, best_score
-                )
+                logger.info("MIPROv2 candidate %d: new best score %.2f", idx, best_score)
 
         if max_demos > 0 and test_cases:
             demo_prompt = await self._optimize_demonstrations(
                 best_prompt, test_cases, metric_fn, max_demos
             )
-            demo_score = await self._evaluate_prompt(
-                demo_prompt, test_cases, metric_fn
-            )
-            history.append(
-                PromptVariant(prompt=demo_prompt, score=demo_score, generation=2)
-            )
+            demo_score = await self._evaluate_prompt(demo_prompt, test_cases, metric_fn)
+            history.append(PromptVariant(prompt=demo_prompt, score=demo_score, generation=2))
             if demo_score > best_score:
                 best_score = demo_score
                 best_prompt = demo_prompt
@@ -328,9 +322,7 @@ class MIPROv2Optimizer:
             history=history,
         )
 
-    async def _generate_candidates(
-        self, prompt: str, num_candidates: int
-    ) -> list[str]:
+    async def _generate_candidates(self, prompt: str, num_candidates: int) -> list[str]:
         """Generate candidate instruction variants via the LLM.
 
         Args:
@@ -473,30 +465,20 @@ class COPROOptimizer:
         best_score = initial_score
 
         for iteration in range(1, max_iterations + 1):
-            case_scores = await self._score_all(
-                best_prompt, test_cases, metric_fn
-            )
+            case_scores = await self._score_all(best_prompt, test_cases, metric_fn)
 
             failures = [
-                (tc, sc)
-                for tc, sc in zip(test_cases, case_scores)
-                if sc < failure_threshold
+                (tc, sc) for tc, sc in zip(test_cases, case_scores) if sc < failure_threshold
             ]
 
             if not failures:
                 logger.info("COPRO iteration %d: no failures, stopping", iteration)
                 break
 
-            failure_patterns = await self._identify_failure_patterns(
-                best_prompt, failures
-            )
+            failure_patterns = await self._identify_failure_patterns(best_prompt, failures)
 
-            improved = await self._generate_improvement(
-                best_prompt, failure_patterns
-            )
-            improved_score = await self._mean_score(
-                improved, test_cases, metric_fn
-            )
+            improved = await self._generate_improvement(best_prompt, failure_patterns)
+            improved_score = await self._mean_score(improved, test_cases, metric_fn)
             history.append(
                 PromptVariant(
                     prompt=improved,
@@ -508,9 +490,7 @@ class COPROOptimizer:
 
             if improved_score > best_score:
                 passing_before = [
-                    (tc, sc)
-                    for tc, sc in zip(test_cases, case_scores)
-                    if sc >= failure_threshold
+                    (tc, sc) for tc, sc in zip(test_cases, case_scores) if sc >= failure_threshold
                 ]
                 regression = False
                 if passing_before:
@@ -526,7 +506,9 @@ class COPROOptimizer:
                         logger.info(
                             "COPRO iteration %d: regression detected "
                             "(%.2f -> %.2f on passing cases)",
-                            iteration, old_mean, new_mean,
+                            iteration,
+                            old_mean,
+                            new_mean,
                         )
 
                 if not regression:
@@ -534,7 +516,8 @@ class COPROOptimizer:
                     best_prompt = improved
                     logger.info(
                         "COPRO iteration %d: new best score %.2f",
-                        iteration, best_score,
+                        iteration,
+                        best_score,
                     )
 
         return OptimizationResult(
@@ -616,9 +599,7 @@ class COPROOptimizer:
         response = await self.judge.evaluate(prompt=analysis_prompt)
         return response.reasoning.strip()
 
-    async def _generate_improvement(
-        self, prompt: str, failure_patterns: str
-    ) -> str:
+    async def _generate_improvement(self, prompt: str, failure_patterns: str) -> str:
         """Generate an improved prompt addressing failure patterns.
 
         Args:
@@ -701,24 +682,16 @@ class SIMBAOptimizer:
 
         if prompt_pool:
             best_match = self._find_most_similar(prompt, prompt_pool)
-            match_score = await self._mean_score(
-                best_match, test_cases, metric_fn
-            )
-            history.append(
-                PromptVariant(prompt=best_match, score=match_score, generation=0)
-            )
+            match_score = await self._mean_score(best_match, test_cases, metric_fn)
+            history.append(PromptVariant(prompt=best_match, score=match_score, generation=0))
             if match_score > best_score:
                 best_score = match_score
                 best_prompt = best_match
                 logger.info("SIMBA: pool match score %.2f", best_score)
 
         for iteration in range(1, max_iterations + 1):
-            adapted = await self._adapt_prompt(
-                best_prompt, prompt, test_cases, iteration
-            )
-            adapted_score = await self._mean_score(
-                adapted, test_cases, metric_fn
-            )
+            adapted = await self._adapt_prompt(best_prompt, prompt, test_cases, iteration)
+            adapted_score = await self._mean_score(adapted, test_cases, metric_fn)
             history.append(
                 PromptVariant(
                     prompt=adapted,
@@ -731,7 +704,8 @@ class SIMBAOptimizer:
                 best_prompt = adapted
                 logger.info(
                     "SIMBA iteration %d: new best score %.2f",
-                    iteration, best_score,
+                    iteration,
+                    best_score,
                 )
 
         return OptimizationResult(
@@ -860,8 +834,5 @@ def create_optimizer(
     factory = factories.get(strategy_lower)
     if factory is None:
         valid = ", ".join(sorted(factories.keys()))
-        raise ValueError(
-            f"Unknown optimization strategy {strategy!r}. "
-            f"Valid strategies: {valid}"
-        )
+        raise ValueError(f"Unknown optimization strategy {strategy!r}. Valid strategies: {valid}")
     return factory()

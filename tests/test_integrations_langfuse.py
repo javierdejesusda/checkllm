@@ -2,6 +2,7 @@
 
 The ``langfuse`` SDK is mocked; no network calls are made.
 """
+
 from __future__ import annotations
 
 import sys
@@ -148,9 +149,7 @@ def test_record_check_scores_current_span(fake_langfuse):
         tracer.record_check(_make_check())
 
     span = client.traces[0].children[0]
-    assert span.scores == [
-        {"name": "faithfulness", "value": pytest.approx(0.8), "comment": "ok"}
-    ]
+    assert span.scores == [{"name": "faithfulness", "value": pytest.approx(0.8), "comment": "ok"}]
 
 
 def test_flush_delegates_to_client(fake_langfuse):

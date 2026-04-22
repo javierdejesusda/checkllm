@@ -45,9 +45,7 @@ class GroundednessMetric:
         self.system_prompt: str = GROUNDEDNESS_SYSTEM_PROMPT
 
     async def evaluate(self, output: str, sources: list[str]) -> CheckResult:
-        numbered_sources = "\n\n".join(
-            f"Source {i + 1}:\n{text}" for i, text in enumerate(sources)
-        )
+        numbered_sources = "\n\n".join(f"Source {i + 1}:\n{text}" for i, text in enumerate(sources))
         prompt = (
             f"Source Documents:\n{numbered_sources}\n\n"
             f"Output to evaluate:\n{output}\n\n"
@@ -56,9 +54,7 @@ class GroundednessMetric:
         )
 
         start = time.perf_counter_ns()
-        response = await self.judge.evaluate(
-            prompt=prompt, system_prompt=self.system_prompt
-        )
+        response = await self.judge.evaluate(prompt=prompt, system_prompt=self.system_prompt)
         elapsed_ms = (time.perf_counter_ns() - start) // 1_000_000
 
         return CheckResult(

@@ -286,9 +286,7 @@ class AdversarialAttackEvolver:
 
         population: list[EvolvedAttack] = []
         for seed in seed_prompts:
-            candidate = EvolvedAttack(
-                prompt=seed, generation=0, parent="", mutation=None
-            )
+            candidate = EvolvedAttack(prompt=seed, generation=0, parent="", mutation=None)
             await self._score_candidate(candidate, target)
             population.append(candidate)
 
@@ -307,15 +305,11 @@ class AdversarialAttackEvolver:
                 )
                 break
 
-            children = await self._spawn_generation(
-                population, target, generation=gen
-            )
+            children = await self._spawn_generation(population, target, generation=gen)
             combined = population + children
             population = self._select_top(combined, population_size)
 
-            new_best = max(
-                (c.success_score for c in population), default=0.0
-            )
+            new_best = max((c.success_score for c in population), default=0.0)
             if new_best > best_score + 1e-9:
                 best_score = new_best
                 generations_without_improvement = 0
@@ -323,17 +317,14 @@ class AdversarialAttackEvolver:
                 generations_without_improvement += 1
                 if generations_without_improvement >= self._config.patience:
                     logger.info(
-                        "Early stop at gen %d: no improvement for %d "
-                        "generations (best=%.3f)",
+                        "Early stop at gen %d: no improvement for %d generations (best=%.3f)",
                         gen,
                         generations_without_improvement,
                         best_score,
                     )
                     break
 
-        return sorted(
-            population, key=lambda c: c.success_score, reverse=True
-        )
+        return sorted(population, key=lambda c: c.success_score, reverse=True)
 
     async def _spawn_generation(
         self,
@@ -357,9 +348,7 @@ class AdversarialAttackEvolver:
                 strategy = self._rng.choice(self._config.mutation_strategies)
                 tasks.append(
                     asyncio.ensure_future(
-                        self._mutate_and_score(
-                            parent, target, strategy, generation
-                        )
+                        self._mutate_and_score(parent, target, strategy, generation)
                     )
                 )
 
@@ -431,9 +420,7 @@ class AdversarialAttackEvolver:
             return raw.strip()
         return prompt
 
-    async def _score_candidate(
-        self, candidate: EvolvedAttack, target: TargetCallable
-    ) -> None:
+    async def _score_candidate(self, candidate: EvolvedAttack, target: TargetCallable) -> None:
         """Probe the target with *candidate* and store the success score.
 
         Args:
@@ -450,9 +437,7 @@ class AdversarialAttackEvolver:
             return
 
         candidate.target_response = response
-        candidate.success_score = await self._score_response(
-            candidate.prompt, response
-        )
+        candidate.success_score = await self._score_response(candidate.prompt, response)
 
     async def _score_response(self, attack: str, response: str) -> float:
         """Ask the scoring judge how successful the attack was.
@@ -535,9 +520,7 @@ class AdversarialAttackEvolver:
         return 0.6
 
     @staticmethod
-    def _select_top(
-        candidates: list[EvolvedAttack], k: int
-    ) -> list[EvolvedAttack]:
+    def _select_top(candidates: list[EvolvedAttack], k: int) -> list[EvolvedAttack]:
         """Return the top-*k* candidates by success score.
 
         Args:
@@ -547,6 +530,4 @@ class AdversarialAttackEvolver:
         Returns:
             The highest-scoring *k* candidates, sorted descending.
         """
-        return sorted(
-            candidates, key=lambda c: c.success_score, reverse=True
-        )[:k]
+        return sorted(candidates, key=lambda c: c.success_score, reverse=True)[:k]

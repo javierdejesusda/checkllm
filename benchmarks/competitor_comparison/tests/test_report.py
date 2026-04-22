@@ -25,9 +25,7 @@ def test_leaderboard_ranks_by_auc():
         _mk("deepeval", "b", 0.4),
     ]
     labels = {"a": 1.0, "b": 0.0}
-    board = build_leaderboard(
-        scores, {("halubench", MetricFamily.HALLUCINATION): labels}
-    )
+    board = build_leaderboard(scores, {("halubench", MetricFamily.HALLUCINATION): labels})
     rows = [r for r in board if r["dataset"] == "halubench"]
     rows.sort(key=lambda r: -r["auc"])
     assert rows[0]["framework"] == "checkllm"
@@ -53,10 +51,8 @@ def test_leaderboard_sorts_nan_auc_after_finite_auc():
         _mk("promptfoo", "b", 0.4),
     ]
     labels = {"a": 1.0, "b": 0.0}
-    board = build_leaderboard(
-        scores, {("halubench", MetricFamily.HALLUCINATION): labels}
-    )
-    ranked = sorted(
+    board = build_leaderboard(scores, {("halubench", MetricFamily.HALLUCINATION): labels})
+    sorted(
         [r for r in board if r["dataset"] == "halubench"],
         key=lambda r: r["rank"],
     )
@@ -81,12 +77,30 @@ def test_leaderboard_sorts_nan_auc_after_finite_auc():
 
 def test_write_markdown_emits_table(tmp_path):
     rows = [
-        {"framework": "checkllm", "dataset": "halubench", "metric_family": "hallucination",
-         "auc": 0.91, "best_f1": 0.88, "spearman": 0.85, "n": 200,
-         "mean_latency_ms": 420.0, "total_cost_usd": 0.12, "rank": 1},
-        {"framework": "deepeval", "dataset": "halubench", "metric_family": "hallucination",
-         "auc": 0.85, "best_f1": 0.80, "spearman": 0.78, "n": 200,
-         "mean_latency_ms": 510.0, "total_cost_usd": 0.18, "rank": 2},
+        {
+            "framework": "checkllm",
+            "dataset": "halubench",
+            "metric_family": "hallucination",
+            "auc": 0.91,
+            "best_f1": 0.88,
+            "spearman": 0.85,
+            "n": 200,
+            "mean_latency_ms": 420.0,
+            "total_cost_usd": 0.12,
+            "rank": 1,
+        },
+        {
+            "framework": "deepeval",
+            "dataset": "halubench",
+            "metric_family": "hallucination",
+            "auc": 0.85,
+            "best_f1": 0.80,
+            "spearman": 0.78,
+            "n": 200,
+            "mean_latency_ms": 510.0,
+            "total_cost_usd": 0.18,
+            "rank": 2,
+        },
     ]
     path = tmp_path / "report.md"
     write_markdown(rows, path)
@@ -107,9 +121,18 @@ def test_write_markdown_emits_table(tmp_path):
 
 def test_write_csv_includes_all_columns(tmp_path):
     rows = [
-        {"framework": "checkllm", "dataset": "halubench", "metric_family": "hallucination",
-         "auc": 0.91, "best_f1": 0.88, "spearman": 0.85, "n": 200,
-         "mean_latency_ms": 420.0, "total_cost_usd": 0.12, "rank": 1},
+        {
+            "framework": "checkllm",
+            "dataset": "halubench",
+            "metric_family": "hallucination",
+            "auc": 0.91,
+            "best_f1": 0.88,
+            "spearman": 0.85,
+            "n": 200,
+            "mean_latency_ms": 420.0,
+            "total_cost_usd": 0.12,
+            "rank": 1,
+        },
     ]
     path = tmp_path / "report.csv"
     write_csv(rows, path)

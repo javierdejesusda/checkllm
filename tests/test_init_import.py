@@ -9,6 +9,7 @@ class TestCheckllmInit:
     def test_import_checkllm(self):
         """Importing checkllm covers __init__.py."""
         import checkllm
+
         assert checkllm is not None
 
     def test_core_exports_available(self):
@@ -115,6 +116,7 @@ class TestCheckllmInit:
     def test_dpo_export(self):
         """Verify DPO export classes available through init."""
         from checkllm.dpo import DPOExporter, DPOPair
+
         assert DPOExporter is not None
         assert DPOPair is not None
 

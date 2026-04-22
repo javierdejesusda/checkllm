@@ -1,4 +1,5 @@
 """Tests for GitHub integration module."""
+
 from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
@@ -18,18 +19,30 @@ def _sample_results() -> dict[str, list[CheckResult]]:
     return {
         "test_foo": [
             CheckResult(
-                passed=True, score=0.9, reasoning="Good",
-                cost=0.001, latency_ms=100, metric_name="hallucination",
+                passed=True,
+                score=0.9,
+                reasoning="Good",
+                cost=0.001,
+                latency_ms=100,
+                metric_name="hallucination",
             ),
             CheckResult(
-                passed=False, score=0.3, reasoning="Bad output detected",
-                cost=0.002, latency_ms=200, metric_name="relevance",
+                passed=False,
+                score=0.3,
+                reasoning="Bad output detected",
+                cost=0.002,
+                latency_ms=200,
+                metric_name="relevance",
             ),
         ],
         "test_bar": [
             CheckResult(
-                passed=True, score=1.0, reasoning="Perfect",
-                cost=0.0, latency_ms=0, metric_name="contains",
+                passed=True,
+                score=1.0,
+                reasoning="Perfect",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="contains",
             ),
         ],
     }
@@ -40,16 +53,24 @@ def _sample_comparison() -> ComparisonReport:
         results_a={
             "test_foo": [
                 CheckResult(
-                    passed=True, score=0.8, reasoning="OK",
-                    cost=0.001, latency_ms=100, metric_name="hallucination",
+                    passed=True,
+                    score=0.8,
+                    reasoning="OK",
+                    cost=0.001,
+                    latency_ms=100,
+                    metric_name="hallucination",
                 ),
             ],
         },
         results_b={
             "test_foo": [
                 CheckResult(
-                    passed=True, score=0.95, reasoning="Great",
-                    cost=0.002, latency_ms=150, metric_name="hallucination",
+                    passed=True,
+                    score=0.95,
+                    reasoning="Great",
+                    cost=0.002,
+                    latency_ms=150,
+                    metric_name="hallucination",
                 ),
             ],
         },
@@ -103,18 +124,14 @@ class TestGeneratePrComment:
         assert "Comparison" not in comment
 
     def test_with_comparison(self):
-        comment = generate_pr_comment(
-            _sample_results(), comparison=_sample_comparison()
-        )
+        comment = generate_pr_comment(_sample_results(), comparison=_sample_comparison())
         assert "Comparison" in comment
         assert "Baseline" in comment
         assert "Current" in comment
         assert "+0.150" in comment  # 0.95 - 0.80
 
     def test_comparison_summary_stats(self):
-        comment = generate_pr_comment(
-            _sample_results(), comparison=_sample_comparison()
-        )
+        comment = generate_pr_comment(_sample_results(), comparison=_sample_comparison())
         assert "Pass rate" in comment
         assert "Avg score" in comment
         assert "Total cost" in comment
@@ -134,6 +151,7 @@ class TestPostPrComment:
     def test_raises_if_httpx_missing(self, monkeypatch):
         """Simulates httpx not being installed."""
         import builtins
+
         real_import = builtins.__import__
 
         def mock_import(name, *args, **kwargs):

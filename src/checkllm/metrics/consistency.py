@@ -36,9 +36,7 @@ class ConsistencyMetric:
         self.system_prompt: str = CONSISTENCY_SYSTEM_PROMPT
 
     async def evaluate(self, outputs: list[str]) -> CheckResult:
-        numbered = "\n\n".join(
-            f"Output {i + 1}:\n{text}" for i, text in enumerate(outputs)
-        )
+        numbered = "\n\n".join(f"Output {i + 1}:\n{text}" for i, text in enumerate(outputs))
         prompt = (
             f"The following are multiple outputs to compare for consistency:\n\n"
             f"{numbered}\n\n"
@@ -47,9 +45,7 @@ class ConsistencyMetric:
         )
 
         start = time.perf_counter_ns()
-        response = await self.judge.evaluate(
-            prompt=prompt, system_prompt=self.system_prompt
-        )
+        response = await self.judge.evaluate(prompt=prompt, system_prompt=self.system_prompt)
         elapsed_ms = (time.perf_counter_ns() - start) // 1_000_000
 
         return CheckResult(

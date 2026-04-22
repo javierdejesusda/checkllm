@@ -1,4 +1,5 @@
 """Tests for the programmatic API module."""
+
 from __future__ import annotations
 
 import pytest
@@ -204,45 +205,26 @@ class TestEvaluatorBuilder:
     def test_with_threshold(self):
         judge = MockJudge(default_score=0.85)
         # 0.85 passes at 0.8 threshold
-        evaluator = (
-            Evaluator()
-            .with_judge(judge)
-            .with_threshold(0.8)
-            .add_check("toxicity")
-        )
+        evaluator = Evaluator().with_judge(judge).with_threshold(0.8).add_check("toxicity")
         result = evaluator.run("some text")
         assert result.valid is True
 
     def test_with_threshold_too_high(self):
         judge = MockJudge(default_score=0.85)
         # 0.85 fails at 0.9 threshold
-        evaluator = (
-            Evaluator()
-            .with_judge(judge)
-            .with_threshold(0.9)
-            .add_check("toxicity")
-        )
+        evaluator = Evaluator().with_judge(judge).with_threshold(0.9).add_check("toxicity")
         result = evaluator.run("some text")
         assert result.valid is False
 
     def test_with_budget(self):
-        evaluator = (
-            Evaluator()
-            .with_budget(5.0)
-            .add_check("no_pii")
-        )
+        evaluator = Evaluator().with_budget(5.0).add_check("no_pii")
         result = evaluator.run("hello")
         assert result.valid is True
 
     def test_with_config(self):
         cfg = CheckllmConfig(default_threshold=0.5)
         judge = MockJudge(default_score=0.6)
-        evaluator = (
-            Evaluator()
-            .with_config(cfg)
-            .with_judge(judge)
-            .add_check("toxicity")
-        )
+        evaluator = Evaluator().with_config(cfg).with_judge(judge).add_check("toxicity")
         # 0.6 passes at 0.5 threshold from config
         result = evaluator.run("some text")
         assert result.valid is True
@@ -250,19 +232,13 @@ class TestEvaluatorBuilder:
     def test_with_judge_string_backend(self):
         # When using a string backend, judge is lazily initialised by Guard.
         # We only test that deterministic checks work without an API key.
-        evaluator = (
-            Evaluator()
-            .with_judge("openai", model="gpt-4o-mini")
-            .add_check("no_pii")
-        )
+        evaluator = Evaluator().with_judge("openai", model="gpt-4o-mini").add_check("no_pii")
         result = evaluator.run("hello world")
         assert result.valid is True
 
     def test_add_check_with_params(self):
         evaluator = (
-            Evaluator()
-            .add_check("contains", substring="hello")
-            .add_check("max_tokens", limit=100)
+            Evaluator().add_check("contains", substring="hello").add_check("max_tokens", limit=100)
         )
         result = evaluator.run("hello there")
         assert result.valid is True
@@ -291,22 +267,14 @@ class TestEvaluatorAsync:
     @pytest.mark.asyncio
     async def test_arun(self):
         judge = MockJudge(default_score=0.9)
-        evaluator = (
-            Evaluator()
-            .with_judge(judge)
-            .add_check("no_pii")
-            .add_check("toxicity")
-        )
+        evaluator = Evaluator().with_judge(judge).add_check("no_pii").add_check("toxicity")
         result = await evaluator.arun("hello world")
         assert result.valid is True
         assert len(result.results) == 2
 
     @pytest.mark.asyncio
     async def test_arun_failure(self):
-        evaluator = (
-            Evaluator()
-            .add_check("contains", substring="missing_word")
-        )
+        evaluator = Evaluator().add_check("contains", substring="missing_word")
         result = await evaluator.arun("hello world")
         assert result.valid is False
 
@@ -319,48 +287,39 @@ class TestEvaluatorAsync:
 class TestEvaluatorBatchRun:
     def test_batch_run(self):
         judge = MockJudge(default_score=0.9)
-        evaluator = (
-            Evaluator()
-            .with_judge(judge)
-            .add_check("no_pii")
+        evaluator = Evaluator().with_judge(judge).add_check("no_pii")
+        results = evaluator.batch_run(
+            [
+                "Hello world",
+                "Another safe output",
+                "Third output here",
+            ]
         )
-        results = evaluator.batch_run([
-            "Hello world",
-            "Another safe output",
-            "Third output here",
-        ])
         assert len(results) == 3
         assert all(r.valid for r in results)
         assert all(isinstance(r, ValidationResult) for r in results)
 
     def test_batch_run_mixed_results(self):
-        evaluator = (
-            Evaluator()
-            .add_check("no_pii")
+        evaluator = Evaluator().add_check("no_pii")
+        results = evaluator.batch_run(
+            [
+                "Hello world",
+                "Email: user@example.com",
+                "Safe text",
+            ]
         )
-        results = evaluator.batch_run([
-            "Hello world",
-            "Email: user@example.com",
-            "Safe text",
-        ])
         assert len(results) == 3
         assert results[0].valid is True
         assert results[1].valid is False
         assert results[2].valid is True
 
     def test_batch_run_empty_list(self):
-        evaluator = (
-            Evaluator()
-            .add_check("no_pii")
-        )
+        evaluator = Evaluator().add_check("no_pii")
         results = evaluator.batch_run([])
         assert results == []
 
     def test_batch_run_single_item(self):
-        evaluator = (
-            Evaluator()
-            .add_check("contains", substring="yes")
-        )
+        evaluator = Evaluator().add_check("contains", substring="yes")
         results = evaluator.batch_run(["yes indeed"])
         assert len(results) == 1
         assert results[0].valid is True

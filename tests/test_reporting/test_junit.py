@@ -11,8 +11,12 @@ class TestJunitXml:
         results = {
             "test_summarizer": [
                 CheckResult(
-                    passed=True, score=0.95, reasoning="ok",
-                    cost=0.002, latency_ms=450, metric_name="hallucination",
+                    passed=True,
+                    score=0.95,
+                    reasoning="ok",
+                    cost=0.002,
+                    latency_ms=450,
+                    metric_name="hallucination",
                 ),
             ]
         }
@@ -26,8 +30,12 @@ class TestJunitXml:
         results = {
             "test_foo": [
                 CheckResult(
-                    passed=True, score=0.9, reasoning="all good",
-                    cost=0.0, latency_ms=100, metric_name="hallucination",
+                    passed=True,
+                    score=0.9,
+                    reasoning="all good",
+                    cost=0.0,
+                    latency_ms=100,
+                    metric_name="hallucination",
                 ),
             ]
         }
@@ -42,8 +50,12 @@ class TestJunitXml:
         results = {
             "test_foo": [
                 CheckResult(
-                    passed=False, score=0.3, reasoning="hallucinated",
-                    cost=0.002, latency_ms=500, metric_name="hallucination",
+                    passed=False,
+                    score=0.3,
+                    reasoning="hallucinated",
+                    cost=0.002,
+                    latency_ms=500,
+                    metric_name="hallucination",
                 ),
             ]
         }
@@ -58,11 +70,32 @@ class TestJunitXml:
     def test_multiple_tests_and_metrics(self, tmp_path: Path):
         results = {
             "test_a": [
-                CheckResult(passed=True, score=0.9, reasoning="ok", cost=0.0, latency_ms=100, metric_name="h"),
-                CheckResult(passed=False, score=0.3, reasoning="bad", cost=0.0, latency_ms=100, metric_name="r"),
+                CheckResult(
+                    passed=True,
+                    score=0.9,
+                    reasoning="ok",
+                    cost=0.0,
+                    latency_ms=100,
+                    metric_name="h",
+                ),
+                CheckResult(
+                    passed=False,
+                    score=0.3,
+                    reasoning="bad",
+                    cost=0.0,
+                    latency_ms=100,
+                    metric_name="r",
+                ),
             ],
             "test_b": [
-                CheckResult(passed=True, score=0.8, reasoning="ok", cost=0.0, latency_ms=100, metric_name="h"),
+                CheckResult(
+                    passed=True,
+                    score=0.8,
+                    reasoning="ok",
+                    cost=0.0,
+                    latency_ms=100,
+                    metric_name="h",
+                ),
             ],
         }
         output = tmp_path / "results.xml"

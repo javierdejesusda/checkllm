@@ -1,4 +1,5 @@
 """Tests for the 17 new deterministic checks added to checkllm."""
+
 import pytest
 
 from checkllm.deterministic import DeterministicChecks
@@ -329,7 +330,9 @@ class TestNoRepetition:
 
 class TestSemanticSimilarity:
     def test_identical_texts(self, dc):
-        result = dc.semantic_similarity("the cat sat on the mat", "the cat sat on the mat", threshold=0.9)
+        result = dc.semantic_similarity(
+            "the cat sat on the mat", "the cat sat on the mat", threshold=0.9
+        )
         assert result.passed is True
         assert result.score >= 0.99
 
@@ -414,7 +417,9 @@ class TestHasStructure:
 
     def test_multiple_elements(self, dc):
         text = "# Header\n- bullet\n1. numbered\n```code```"
-        result = dc.has_structure(text, ["headers", "bullet_points", "numbered_lists", "code_blocks"])
+        result = dc.has_structure(
+            text, ["headers", "bullet_points", "numbered_lists", "code_blocks"]
+        )
         assert result.passed is True
         assert result.score == 1.0
 

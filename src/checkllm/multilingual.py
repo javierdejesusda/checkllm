@@ -214,9 +214,43 @@ def _detect_latin_language(text: str) -> str:
     lower = text.lower()
     words = set(re.findall(r"\b\w+\b", lower))
 
-    spanish_markers = {"el", "la", "los", "las", "es", "un", "una", "por", "como", "pero", "esto"}
-    french_markers = {"le", "la", "les", "des", "est", "une", "que", "dans", "avec", "pour"}
-    german_markers = {"der", "die", "das", "und", "ist", "ein", "eine", "auf", "nicht", "mit"}
+    spanish_markers = {
+        "el",
+        "la",
+        "los",
+        "las",
+        "es",
+        "un",
+        "una",
+        "por",
+        "como",
+        "pero",
+        "esto",
+    }
+    french_markers = {
+        "le",
+        "la",
+        "les",
+        "des",
+        "est",
+        "une",
+        "que",
+        "dans",
+        "avec",
+        "pour",
+    }
+    german_markers = {
+        "der",
+        "die",
+        "das",
+        "und",
+        "ist",
+        "ein",
+        "eine",
+        "auf",
+        "nicht",
+        "mit",
+    }
     portuguese_markers = {"o", "os", "uma", "das", "como", "mais", "muito", "isso"}
     italian_markers = {"il", "gli", "che", "della", "sono", "nella", "questo", "anche"}
     dutch_markers = {"de", "het", "een", "van", "dat", "niet", "met", "voor"}
@@ -354,9 +388,7 @@ class PromptAdapter:
 
         translated_instruction = template.instruction
         if adapt_instruction:
-            translated_instruction = await self._translate_text(
-                template.instruction, lang_name
-            )
+            translated_instruction = await self._translate_text(template.instruction, lang_name)
 
         translated_examples: list[dict[str, str]] = []
         if adapt_examples and template.few_shot_examples:
@@ -434,16 +466,18 @@ class PromptAdapter:
         """
         data: list[dict[str, Any]] = []
         for (name, lang, instruction, ai, ae), tp in self._cache.items():
-            data.append({
-                "name": name,
-                "target_language": lang,
-                "instruction": instruction,
-                "adapt_instruction": ai,
-                "adapt_examples": ae,
-                "original": tp.original.model_dump(),
-                "translated": tp.translated.model_dump(),
-                "translation_quality": tp.translation_quality,
-            })
+            data.append(
+                {
+                    "name": name,
+                    "target_language": lang,
+                    "instruction": instruction,
+                    "adapt_instruction": ai,
+                    "adapt_examples": ae,
+                    "original": tp.original.model_dump(),
+                    "translated": tp.translated.model_dump(),
+                    "translation_quality": tp.translation_quality,
+                }
+            )
 
         file_path = Path(path)
         file_path.parent.mkdir(parents=True, exist_ok=True)

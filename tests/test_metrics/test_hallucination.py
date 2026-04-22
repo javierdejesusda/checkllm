@@ -41,9 +41,7 @@ class TestHallucinationMetric:
 
     @pytest.mark.asyncio
     async def test_prompt_contains_output_and_context(self, mock_judge):
-        mock_judge.evaluate.return_value = JudgeResponse(
-            score=0.9, reasoning="ok", raw_output=""
-        )
+        mock_judge.evaluate.return_value = JudgeResponse(score=0.9, reasoning="ok", raw_output="")
         metric = HallucinationMetric(judge=mock_judge, threshold=0.8)
         await metric.evaluate(output="test output", context="test context")
         call_args = mock_judge.evaluate.call_args
@@ -62,9 +60,7 @@ class TestHallucinationMetric:
 
     @pytest.mark.asyncio
     async def test_query_is_injected_into_prompt_when_provided(self, mock_judge):
-        mock_judge.evaluate.return_value = JudgeResponse(
-            score=0.9, reasoning="ok", raw_output=""
-        )
+        mock_judge.evaluate.return_value = JudgeResponse(score=0.9, reasoning="ok", raw_output="")
         metric = HallucinationMetric(judge=mock_judge, threshold=0.8)
         await metric.evaluate(
             output="Paris",
@@ -84,9 +80,7 @@ class TestHallucinationMetric:
         entities, yes/no) where the correct grading is to check CONSISTENCY
         with the context, not to complain about "no claims to evaluate".
         """
-        mock_judge.evaluate.return_value = JudgeResponse(
-            score=0.95, reasoning="ok", raw_output=""
-        )
+        mock_judge.evaluate.return_value = JudgeResponse(score=0.95, reasoning="ok", raw_output="")
         metric = HallucinationMetric(judge=mock_judge, threshold=0.8)
         await metric.evaluate(
             output="no",
@@ -96,18 +90,14 @@ class TestHallucinationMetric:
         call_args = mock_judge.evaluate.call_args
         system_prompt = call_args.kwargs["system_prompt"]
         lowered = system_prompt.lower()
-        assert "short" in lowered, (
-            "system prompt must explicitly handle short direct answers"
-        )
-        assert "consistent" in lowered, (
-            "system prompt must frame grading as consistency with context"
-        )
+        assert "short" in lowered, "system prompt must explicitly handle short direct answers"
+        assert (
+            "consistent" in lowered
+        ), "system prompt must frame grading as consistency with context"
 
     @pytest.mark.asyncio
     async def test_evaluate_is_backwards_compatible_without_query(self, mock_judge):
-        mock_judge.evaluate.return_value = JudgeResponse(
-            score=0.9, reasoning="ok", raw_output=""
-        )
+        mock_judge.evaluate.return_value = JudgeResponse(score=0.9, reasoning="ok", raw_output="")
         metric = HallucinationMetric(judge=mock_judge, threshold=0.8)
         result = await metric.evaluate(
             output="The sky is blue.",

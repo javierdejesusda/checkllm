@@ -68,10 +68,7 @@ class TestInFlightDeduplicator:
         key = make_dedup_key("j", "hi")
 
         results = await asyncio.gather(
-            *[
-                dedup.run(key, lambda: counter.evaluate("hi"))
-                for _ in range(10)
-            ]
+            *[dedup.run(key, lambda: counter.evaluate("hi")) for _ in range(10)]
         )
 
         assert all(r == "result:hi" for r in results)

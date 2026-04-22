@@ -7,6 +7,7 @@ checkllm follows a staged deprecation policy:
 2. The warning is emitted for at least two minor releases.
 3. In the named major version, the feature is removed.
 """
+
 from __future__ import annotations
 
 import functools
@@ -47,7 +48,8 @@ def deprecated(
         stacklevel: How many frames to skip in the warning.
     """
     warning_cls = _REMOVAL_VERSION_MAP.get(
-        removal_version, CheckllmDeprecationWarning,
+        removal_version,
+        CheckllmDeprecationWarning,
     )
 
     def decorator(func: F) -> F:
@@ -62,11 +64,7 @@ def deprecated(
             return func(*args, **kwargs)
 
         if func.__doc__:
-            wrapper.__doc__ = (
-                f".. deprecated:: {removal_version}\n"
-                f"   {reason}\n\n"
-                f"{func.__doc__}"
-            )
+            wrapper.__doc__ = f".. deprecated:: {removal_version}\n   {reason}\n\n{func.__doc__}"
 
         return wrapper  # type: ignore[return-value]
 

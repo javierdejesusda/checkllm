@@ -1,4 +1,5 @@
 """Structured logging configuration for checkllm."""
+
 from __future__ import annotations
 
 import logging
@@ -19,10 +20,6 @@ def setup_logging(level: str | None = None) -> None:
     root_logger = logging.getLogger("checkllm")
     if not root_logger.handlers:
         handler = logging.StreamHandler()
-        handler.setFormatter(
-            logging.Formatter(
-                "[%(name)s] %(levelname)s: %(message)s"
-            )
-        )
+        handler.setFormatter(logging.Formatter("[%(name)s] %(levelname)s: %(message)s"))
         root_logger.addHandler(handler)
     root_logger.setLevel(numeric)

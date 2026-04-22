@@ -283,11 +283,9 @@ class TestJudgeStreaming:
         judge = OpenAIJudge(model="gpt-4o", api_key="k")
         chunks = [
             self._make_stream_chunk(content='{"score"'),
-            self._make_stream_chunk(content=': 0.5, '),
+            self._make_stream_chunk(content=": 0.5, "),
             self._make_stream_chunk(content='"reasoning": "fine"}'),
-            self._make_stream_chunk(
-                usage={"prompt_tokens": 10, "completion_tokens": 5}
-            ),
+            self._make_stream_chunk(usage={"prompt_tokens": 10, "completion_tokens": 5}),
         ]
 
         with patch.object(
@@ -329,9 +327,7 @@ class TestJudgeStreaming:
 
             seen: list[str] = []
             final: StreamingJudgeResult | None = None
-            async for item in judge.stream_evaluate(
-                "hi", on_token=lambda t: "STOP_NOW" in t
-            ):
+            async for item in judge.stream_evaluate("hi", on_token=lambda t: "STOP_NOW" in t):
                 if isinstance(item, str):
                     seen.append(item)
                 else:

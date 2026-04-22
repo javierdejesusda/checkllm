@@ -1,4 +1,5 @@
 """Integration tests for v3.0-alpha features."""
+
 from checkllm.check import CheckCollector
 from checkllm.config import CheckllmConfig
 from checkllm.testing import MockJudge
@@ -15,11 +16,7 @@ def test_full_fluent_chain_with_mock_judge():
 
     output = "Python is a high-level programming language created by Guido van Rossum."
 
-    collector.that(output) \
-        .contains("Python") \
-        .not_contains("JavaScript") \
-        .max_tokens(50) \
-        .has_no_pii()
+    collector.that(output).contains("Python").not_contains("JavaScript").max_tokens(50).has_no_pii()
 
     # Also use traditional API
     collector.relevance(output, query="What is Python?")

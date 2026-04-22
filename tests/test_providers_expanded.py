@@ -25,9 +25,7 @@ def _make_httpx_chat_response(
 ) -> MagicMock:
     """Build a mock httpx response mimicking an OpenAI chat/completions reply."""
     body = {
-        "choices": [
-            {"message": {"content": json.dumps({"score": score, "reasoning": reasoning})}}
-        ],
+        "choices": [{"message": {"content": json.dumps({"score": score, "reasoning": reasoning})}}],
         "usage": {
             "prompt_tokens": prompt_tokens,
             "completion_tokens": completion_tokens,
@@ -110,9 +108,7 @@ class TestOpenAICompatibleJudge:
     async def test_evaluate_without_system_prompt(self) -> None:
         from checkllm.providers import OpenAICompatibleJudge
 
-        judge = OpenAICompatibleJudge(
-            model="m", api_key="k", base_url="https://api.example.com/v1"
-        )
+        judge = OpenAICompatibleJudge(model="m", api_key="k", base_url="https://api.example.com/v1")
 
         mock_resp = _make_httpx_chat_response()
         mock_httpx = _mock_httpx_client(mock_resp)
@@ -129,9 +125,7 @@ class TestOpenAICompatibleJudge:
     async def test_evaluate_no_api_key_omits_auth_header(self) -> None:
         from checkllm.providers import OpenAICompatibleJudge
 
-        judge = OpenAICompatibleJudge(
-            model="m", api_key=None, base_url="http://localhost:8000/v1"
-        )
+        judge = OpenAICompatibleJudge(model="m", api_key=None, base_url="http://localhost:8000/v1")
 
         mock_resp = _make_httpx_chat_response()
         mock_httpx = _mock_httpx_client(mock_resp)
@@ -163,9 +157,7 @@ class TestOpenAICompatibleJudge:
     async def test_evaluate_handles_malformed_json(self) -> None:
         from checkllm.providers import OpenAICompatibleJudge
 
-        judge = OpenAICompatibleJudge(
-            model="m", api_key="k", base_url="https://api.example.com/v1"
-        )
+        judge = OpenAICompatibleJudge(model="m", api_key="k", base_url="https://api.example.com/v1")
 
         body = {
             "choices": [{"message": {"content": "not json at all"}}],
@@ -185,9 +177,7 @@ class TestOpenAICompatibleJudge:
     def test_repr_includes_class_name(self) -> None:
         from checkllm.providers import OpenAICompatibleJudge
 
-        judge = OpenAICompatibleJudge(
-            model="test", api_key="k", base_url="https://example.com/v1"
-        )
+        judge = OpenAICompatibleJudge(model="test", api_key="k", base_url="https://example.com/v1")
         r = repr(judge)
         assert "OpenAICompatibleJudge" in r
         assert "test" in r
@@ -627,9 +617,7 @@ class TestBedrockJudge:
             from checkllm.providers import BedrockJudge
 
             judge = BedrockJudge(region="eu-west-1")
-        mock_boto3.client.assert_called_once_with(
-            "bedrock-runtime", region_name="eu-west-1"
-        )
+        mock_boto3.client.assert_called_once_with("bedrock-runtime", region_name="eu-west-1")
         assert isinstance(judge, JudgeBackend)
 
     @pytest.mark.asyncio
@@ -755,9 +743,24 @@ class TestFactoryNewBackends:
     def test_all_backends_registered(self) -> None:
         """Ensure every expected backend name is accepted by the factory."""
         expected = {
-            "openai", "anthropic", "gemini", "azure", "ollama", "litellm",
-            "custom", "cohere", "mistral", "deepseek", "groq", "together",
-            "fireworks", "perplexity", "vllm", "bedrock", "openrouter", "xai",
+            "openai",
+            "anthropic",
+            "gemini",
+            "azure",
+            "ollama",
+            "litellm",
+            "custom",
+            "cohere",
+            "mistral",
+            "deepseek",
+            "groq",
+            "together",
+            "fireworks",
+            "perplexity",
+            "vllm",
+            "bedrock",
+            "openrouter",
+            "xai",
         }
         from checkllm.providers import create_judge
 
@@ -862,9 +865,7 @@ class TestDiscoveryNewProviders:
     def test_detect_bedrock_via_access_key(self) -> None:
         from checkllm.discovery import detect_judge_backend
 
-        with patch.dict(
-            "os.environ", {"AWS_ACCESS_KEY_ID": "AKIA-test"}, clear=True
-        ):
+        with patch.dict("os.environ", {"AWS_ACCESS_KEY_ID": "AKIA-test"}, clear=True):
             result = detect_judge_backend()
         assert result is not None
         assert result[0] == "bedrock"
