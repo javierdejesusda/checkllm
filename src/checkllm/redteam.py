@@ -2341,6 +2341,113 @@ class RedTeamer:
         return report
 
     # ------------------------------------------------------------------
+    # Preset + evolver integration
+    # ------------------------------------------------------------------
+
+    async def use_preset(
+        self,
+        preset_name: str,
+        target: Callable[[str], Awaitable[str]],
+        vulnerability_type: VulnerabilityType = VulnerabilityType.JAILBREAK,
+        attack_strategy: AttackStrategy = AttackStrategy.DIRECT,
+        limit: int | None = None,
+    ) -> VulnerabilityReport:
+        """Run attack prompts from a bundled jailbreak preset.
+
+        Args:
+            preset_name: Identifier of the preset to load (see
+                :func:`checkllm.redteam_datasets.available_presets`).
+            target: Async callable ``(prompt) -> response`` that runs the
+                target model under test.
+            vulnerability_type: Vulnerability label to record on every
+                resulting :class:`AttackResult`.
+            attack_strategy: Attack-strategy label for the results.
+            limit: Optional cap on the number of preset prompts used.
+
+        Returns:
+            A :class:`VulnerabilityReport` summarizing the results.
+        """
+        from checkllm.redteam_datasets import load_jailbreak_preset
+
+        prompts = load_jailbreak_preset(preset_name)
+        if limit is not None:
+            prompts = prompts[: max(0, limit)]
+
+        results: list[AttackResult] = []
+        for attack in prompts:
+            result = await self._run_single_attack(
+                target, vulnerability_type, attack_strategy, attack.prompt
+            )
+            result.metadata["preset"] = preset_name
+            result.metadata["preset_category"] = attack.category
+            result.metadata["preset_source"] = attack.source
+            results.append(result)
+
+        return self._build_report(results)
+
+    async def evolve_attacks(
+        self,
+        seed: str | list[str],
+        target: Callable[[str], Awaitable[str]],
+        evolver_judge: JudgeBackend | None = None,
+        generations: int = 3,
+        population_size: int = 10,
+        mutations_per_parent: int = 5,
+    ) -> list[Any]:
+        """Evolve adversarial attacks against *target* using a judge LLM.
+
+        Wraps :class:`checkllm.redteam_evolver.AdversarialAttackEvolver`.
+        Intended for authorized security testing only; seeds that match
+        the evolver's denylist are rejected.
+
+        Args:
+            seed: One or more seed attack prompts.
+            target: Async callable that runs the target model.
+            evolver_judge: Judge backend used to propose mutations and
+                score target compliance. Defaults to ``self._judge``.
+            generations: Maximum evolution rounds.
+            population_size: Survivors kept per generation.
+            mutations_per_parent: Children generated per surviving
+                parent each generation.
+
+        Returns:
+            A list of ``EvolvedAttack`` sorted by descending success.
+
+        Raises:
+            ValueError: If no judge is available or seeds are empty.
+        """
+        from checkllm.redteam_evolver import (
+            AdversarialAttackEvolver,
+            EvolverConfig,
+        )
+
+        judge = evolver_judge or self._judge
+        if judge is None:
+            raise ValueError(
+                "evolve_attacks requires a JudgeBackend; pass "
+                "evolver_judge=... or construct RedTeamer(judge=...)"
+            )
+
+        seeds = [seed] if isinstance(seed, str) else list(seed)
+        if not seeds:
+            raise ValueError("seed must contain at least one prompt")
+
+        config = EvolverConfig(
+            generations=generations,
+            population_size=population_size,
+            mutations_per_parent=mutations_per_parent,
+        )
+        evolver = AdversarialAttackEvolver(
+            evolver_judge=judge, scoring_judge=judge, config=config
+        )
+        return await evolver.evolve(
+            seed_prompts=seeds,
+            target=target,
+            generations=generations,
+            population_size=population_size,
+        )
+
+    # ------------------------------------------------------------------
     # Attack generation
     # ------------------------------------------------------------------
 
