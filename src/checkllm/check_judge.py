@@ -1,10 +1,37 @@
 """Mixin providing LLM-as-judge check methods for CheckCollector."""
 from __future__ import annotations
 
-from typing import Any
+import hashlib
+from typing import Any, Iterable, Mapping
 
 from checkllm.cache import _cache_key
 from checkllm.models import CheckResult
+
+
+def _image_cache_key(source: Any) -> str:
+    """Return a stable short digest for an image source (for cache keys)."""
+    if source is None:
+        return "none"
+    if isinstance(source, (bytes, bytearray)):
+        return hashlib.sha256(bytes(source)).hexdigest()[:32]
+    if isinstance(source, str):
+        return hashlib.sha256(source.encode("utf-8")).hexdigest()[:32]
+    try:
+        return hashlib.sha256(repr(source).encode("utf-8")).hexdigest()[:32]
+    except Exception:  # noqa: BLE001
+        return "unhashable"
+
+
+def _images_cache_key(images: Any) -> str:
+    """Stable cache key for a single image or iterable of images."""
+    if images is None:
+        return "none"
+    if isinstance(images, (str, bytes, bytearray)) or hasattr(images, "read"):
+        return _image_cache_key(images)
+    try:
+        return "|".join(_image_cache_key(s) for s in images)
+    except TypeError:
+        return _image_cache_key(images)
 
 
 class JudgeChecksMixin:
@@ -1273,6 +1300,351 @@ class JudgeChecksMixin:
             runs=runs,
             threshold=t,
             input_preview=output_a,
+        )
+
+    def image_text_alignment(
+        self,
+        image: Any,
+        text: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.image_text_alignment import ImageTextAlignmentMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = ImageTextAlignmentMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="image_text_alignment",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(image=image, text=text),
+            cache_kwargs={
+                "output": text,
+                "image": _images_cache_key(image),
+                "threshold": str(t),
+            },
+            runs=runs,
+            threshold=t,
+            input_preview=text,
+        )
+
+    def image_captioning_quality(
+        self,
+        image: Any,
+        caption: str,
+        reference_caption: str | None = None,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.image_captioning_quality import (
+            ImageCaptioningQualityMetric,
+        )
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = ImageCaptioningQualityMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        cache_kw = {
+            "output": caption,
+            "image": _images_cache_key(image),
+            "threshold": str(t),
+        }
+        if reference_caption:
+            cache_kw["reference_caption"] = reference_caption
+        return self._cached_judge_check(
+            metric_name="image_captioning_quality",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(
+                image=image,
+                caption=caption,
+                reference_caption=reference_caption,
+            ),
+            cache_kwargs=cache_kw,
+            runs=runs,
+            threshold=t,
+            input_preview=caption,
+        )
+
+    def ocr_accuracy(
+        self,
+        extracted_text: str,
+        image: Any = None,
+        ground_truth: str | None = None,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.ocr_accuracy import OCRAccuracyMetric
+        t = threshold if threshold is not None else 0.85
+        metric = OCRAccuracyMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        cache_kw = {
+            "output": extracted_text,
+            "image": _images_cache_key(image),
+            "threshold": str(t),
+        }
+        if ground_truth:
+            cache_kw["ground_truth"] = ground_truth
+        return self._cached_judge_check(
+            metric_name="ocr_accuracy",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(
+                image=image,
+                extracted_text=extracted_text,
+                ground_truth=ground_truth,
+            ),
+            cache_kwargs=cache_kw,
+            runs=runs,
+            threshold=t,
+            input_preview=extracted_text,
+        )
+
+    def diagram_comprehension(
+        self,
+        image: Any,
+        question: str,
+        expected_answer: str,
+        candidate_answer: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.diagram_comprehension import (
+            DiagramComprehensionMetric,
+        )
+        t = threshold if threshold is not None else 0.7
+        metric = DiagramComprehensionMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="diagram_comprehension",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(
+                image=image,
+                question=question,
+                expected_answer=expected_answer,
+                candidate_answer=candidate_answer,
+            ),
+            cache_kwargs={
+                "output": candidate_answer,
+                "image": _images_cache_key(image),
+                "question": question,
+                "expected_answer": expected_answer,
+                "threshold": str(t),
+            },
+            runs=runs,
+            threshold=t,
+            input_preview=candidate_answer,
+        )
+
+    def visual_hallucination(
+        self,
+        image: Any,
+        response: str,
+        query: str | None = None,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.visual_hallucination import VisualHallucinationMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = VisualHallucinationMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        cache_kw = {
+            "output": response,
+            "image": _images_cache_key(image),
+            "threshold": str(t),
+        }
+        if query:
+            cache_kw["query"] = query
+        return self._cached_judge_check(
+            metric_name="visual_hallucination",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(
+                image=image, response=response, query=query
+            ),
+            cache_kwargs=cache_kw,
+            runs=runs,
+            threshold=t,
+            input_preview=response,
+        )
+
+    def chart_value_extraction(
+        self,
+        expected_values: Mapping[str, float],
+        image: Any = None,
+        extracted_values: Mapping[str, float] | None = None,
+        tolerance: float = 0.05,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.chart_value_extraction import (
+            ChartValueExtractionMetric,
+        )
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = ChartValueExtractionMetric(
+            judge=self._get_judge(), threshold=t, tolerance=tolerance
+        )
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        import json as _json
+        cache_kw = {
+            "output": _json.dumps(dict(expected_values), sort_keys=True),
+            "image": _images_cache_key(image),
+            "tolerance": str(tolerance),
+            "threshold": str(t),
+        }
+        if extracted_values is not None:
+            cache_kw["extracted_values"] = _json.dumps(
+                dict(extracted_values), sort_keys=True
+            )
+        return self._cached_judge_check(
+            metric_name="chart_value_extraction",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(
+                expected_values=expected_values,
+                image=image,
+                extracted_values=extracted_values,
+            ),
+            cache_kwargs=cache_kw,
+            runs=runs,
+            threshold=t,
+            input_preview=cache_kw["output"],
+        )
+
+    def image_safety(
+        self,
+        image: Any,
+        categories: Iterable[str] | None = None,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.image_safety import ImageSafetyMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = ImageSafetyMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        cache_kw = {
+            "output": _images_cache_key(image),
+            "threshold": str(t),
+        }
+        if categories:
+            cache_kw["categories"] = ",".join(categories)
+        return self._cached_judge_check(
+            metric_name="image_safety",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(image=image, categories=categories),
+            cache_kwargs=cache_kw,
+            runs=runs,
+            threshold=t,
+            input_preview="image_safety",
+        )
+
+    def visual_faithfulness(
+        self,
+        image: Any,
+        output: str,
+        query: str | None = None,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.visual_faithfulness import VisualFaithfulnessMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = VisualFaithfulnessMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        cache_kw = {
+            "output": output,
+            "image": _images_cache_key(image),
+            "threshold": str(t),
+        }
+        if query:
+            cache_kw["query"] = query
+        return self._cached_judge_check(
+            metric_name="visual_faithfulness",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(
+                image=image, output=output, query=query
+            ),
+            cache_kwargs=cache_kw,
+            runs=runs,
+            threshold=t,
+            input_preview=output,
+        )
+
+    def image_consistency(
+        self,
+        images: Iterable[Any],
+        response: str,
+        query: str | None = None,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.image_consistency import ImageConsistencyMetric
+        t = threshold if threshold is not None else self.config.default_threshold
+        metric = ImageConsistencyMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        cache_kw = {
+            "output": response,
+            "images": _images_cache_key(images),
+            "threshold": str(t),
+        }
+        if query:
+            cache_kw["query"] = query
+        return self._cached_judge_check(
+            metric_name="image_consistency",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(
+                images=images, response=response, query=query
+            ),
+            cache_kwargs=cache_kw,
+            runs=runs,
+            threshold=t,
+            input_preview=response,
+        )
+
+    def visual_reasoning(
+        self,
+        image: Any,
+        question: str,
+        expected_answer: str,
+        candidate_answer: str,
+        threshold: float | None = None,
+        runs: int | None = None,
+        system_prompt: str | None = None,
+    ) -> CheckResult:
+        from checkllm.metrics.visual_reasoning import VisualReasoningMetric
+        t = threshold if threshold is not None else 0.7
+        metric = VisualReasoningMetric(judge=self._get_judge(), threshold=t)
+        if system_prompt is not None:
+            metric.system_prompt = system_prompt
+        return self._cached_judge_check(
+            metric_name="visual_reasoning",
+            metric_factory=lambda: metric,
+            coro_factory=lambda: metric.evaluate(
+                image=image,
+                question=question,
+                expected_answer=expected_answer,
+                candidate_answer=candidate_answer,
+            ),
+            cache_kwargs={
+                "output": candidate_answer,
+                "image": _images_cache_key(image),
+                "question": question,
+                "expected_answer": expected_answer,
+                "threshold": str(t),
+            },
+            runs=runs,
+            threshold=t,
+            input_preview=candidate_answer,
         )
 
     # --- Async LLM-as-judge checks ---
