@@ -28,7 +28,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import statistics
-from typing import Any, Awaitable, Callable, Protocol
+from typing import TYPE_CHECKING, Any, Awaitable, Callable, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -168,8 +168,7 @@ def _resolve_metrics(
     if unknown:
         supported = ", ".join(sorted(_METRIC_REGISTRY))
         raise ValueError(
-            f"Unknown retriever metric(s): {unknown}. "
-            f"Supported metrics: {supported}"
+            f"Unknown retriever metric(s): {unknown}. " f"Supported metrics: {supported}"
         )
     return {name: _METRIC_REGISTRY[name](judge) for name in names}
 
@@ -223,9 +222,7 @@ async def _score_one(
         except Exception as exc:
             logger.warning("retriever metric %s failed: %s", name, exc)
 
-    pass_rate = (
-        sum(1 for r in results.values() if r.passed) / len(results) if results else 0.0
-    )
+    pass_rate = sum(1 for r in results.values() if r.passed) / len(results) if results else 0.0
     total_cost = sum(r.cost for r in results.values())
 
     return RetrievalEvalResult(
@@ -252,7 +249,7 @@ def _run_sync(coro: Awaitable[Any]) -> Any:
     return asyncio.run(coro)  # type: ignore[arg-type]
 
 
-class CheckllmRetrieverWrapper(_LangChainBaseRetriever):  # type: ignore[misc,valid-type]
+class CheckllmRetrieverWrapper(_LangChainBaseRetriever):  # type: ignore[misc, valid-type, unused-ignore]
     """Wraps a LangChain ``BaseRetriever`` with online retrieval scoring.
 
     Every call to ``get_relevant_documents`` / ``ainvoke`` runs the configured
@@ -279,6 +276,15 @@ class CheckllmRetrieverWrapper(_LangChainBaseRetriever):  # type: ignore[misc,va
     """
 
     model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    if TYPE_CHECKING:
+        _inner_retriever: Any
+        _metric_names: list[str]
+        _metrics: dict[str, Any]
+        _on_retrieval: OnRetrievalHook | None
+        _judge: JudgeBackend | None
+        _default_expected: str | None
+        results: list[RetrievalEvalResult]
 
     def __init__(
         self,
@@ -327,18 +333,14 @@ class CheckllmRetrieverWrapper(_LangChainBaseRetriever):  # type: ignore[misc,va
                 from langchain_core.callbacks import CallbackManagerForRetrieverRun
 
                 run_manager = CallbackManagerForRetrieverRun.get_noop_manager()
-                return list(
-                    inner._get_relevant_documents(query, run_manager=run_manager)
-                )
+                return list(inner._get_relevant_documents(query, run_manager=run_manager))
             except Exception:
                 pass
         if hasattr(inner, "invoke"):
             return list(inner.invoke(query))
         if hasattr(inner, "get_relevant_documents"):
             return list(inner.get_relevant_documents(query))
-        raise TypeError(
-            "Underlying retriever does not expose a known retrieval method"
-        )
+        raise TypeError("Underlying retriever does not expose a known retrieval method")
 
     async def _call_inner_async(self, query: str) -> list[Any]:
         inner = self._inner_retriever
@@ -349,9 +351,7 @@ class CheckllmRetrieverWrapper(_LangChainBaseRetriever):  # type: ignore[misc,va
                 )
 
                 run_manager = AsyncCallbackManagerForRetrieverRun.get_noop_manager()
-                return list(
-                    await inner._aget_relevant_documents(query, run_manager=run_manager)
-                )
+                return list(await inner._aget_relevant_documents(query, run_manager=run_manager))
             except Exception:
                 pass
         if hasattr(inner, "ainvoke"):
@@ -360,9 +360,7 @@ class CheckllmRetrieverWrapper(_LangChainBaseRetriever):  # type: ignore[misc,va
             return list(await inner.aget_relevant_documents(query))
         return await asyncio.to_thread(self._call_inner_sync, query)
 
-    def _get_relevant_documents(
-        self, query: str, *, run_manager: Any = None
-    ) -> list[Any]:
+    def _get_relevant_documents(self, query: str, *, run_manager: Any = None) -> list[Any]:
         """Synchronously retrieve docs, score metrics, return docs unchanged."""
         docs = self._call_inner_sync(query)
         docs_text = [_extract_doc_text(d) for d in docs]
@@ -382,9 +380,7 @@ class CheckllmRetrieverWrapper(_LangChainBaseRetriever):  # type: ignore[misc,va
                 logger.debug("on_retrieval hook raised: %s", exc)
         return docs
 
-    async def _aget_relevant_documents(
-        self, query: str, *, run_manager: Any = None
-    ) -> list[Any]:
+    async def _aget_relevant_documents(self, query: str, *, run_manager: Any = None) -> list[Any]:
         """Asynchronously retrieve docs, score metrics, return docs unchanged."""
         docs = await self._call_inner_async(query)
         docs_text = [_extract_doc_text(d) for d in docs]
@@ -479,9 +475,7 @@ async def evaluate_retriever(
         elif hasattr(retriever, "get_relevant_documents"):
             docs = list(retriever.get_relevant_documents(query))
         else:
-            raise TypeError(
-                "retriever must expose invoke / ainvoke or (a)get_relevant_documents"
-            )
+            raise TypeError("retriever must expose invoke / ainvoke or (a)get_relevant_documents")
 
         docs_text = [_extract_doc_text(d) for d in docs]
         record = await _score_one(

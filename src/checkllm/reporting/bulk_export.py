@@ -87,8 +87,7 @@ def _write_json(
     path.parent.mkdir(parents=True, exist_ok=True)
     payload: dict[str, Any] = {
         "results": {
-            test_name: [c.model_dump() for c in checks]
-            for test_name, checks in results.items()
+            test_name: [c.model_dump() for c in checks] for test_name, checks in results.items()
         },
     }
     if extra_fields:

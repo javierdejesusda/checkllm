@@ -172,9 +172,7 @@ class DAGMetric:
 
         for node in self.nodes.values():
             if not 0.0 <= node.threshold <= 1.0:
-                raise ValueError(
-                    f"Node {node.name!r} threshold {node.threshold} outside [0, 1]"
-                )
+                raise ValueError(f"Node {node.name!r} threshold {node.threshold} outside [0, 1]")
             refs: list[str] = []
             refs.extend(node.children_on_pass)
             refs.extend(node.children_on_fail)
@@ -182,9 +180,7 @@ class DAGMetric:
                 refs.extend(children)
             for child in refs:
                 if child not in self.nodes:
-                    raise ValueError(
-                        f"Node {node.name!r} references unknown child {child!r}"
-                    )
+                    raise ValueError(f"Node {node.name!r} references unknown child {child!r}")
 
         if self._has_cycle():
             raise ValueError("DAG contains a cycle")
@@ -425,7 +421,7 @@ class DAGMetric:
         lines: list[str] = ["flowchart TD"]
         for name, node in self.nodes.items():
             label = name if not node.is_leaf else f"{name} (leaf)"
-            lines.append(f"    {name}[\"{label}\"]")
+            lines.append(f'    {name}["{label}"]')
         for name, node in self.nodes.items():
             for child in node.children_on_pass:
                 lines.append(f"    {name} -- pass --> {child}")
@@ -434,7 +430,7 @@ class DAGMetric:
             for (lo, hi), kids in node.children_on_score_ranges.items():
                 label = f"[{lo:.2f},{hi:.2f})"
                 for child in kids:
-                    lines.append(f"    {name} -- \"{label}\" --> {child}")
+                    lines.append(f'    {name} -- "{label}" --> {child}')
         leaves = [name for name, node in self.nodes.items() if node.is_leaf]
         if leaves:
             lines.append("    classDef leaf fill:#e0f7e9,stroke:#2e7d32;")

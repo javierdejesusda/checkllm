@@ -83,7 +83,7 @@ def _coerce_query(query_or_bundle: Any) -> str:
     return str(query_or_bundle)
 
 
-class CheckllmRetrieverWrapper(_LlamaBaseRetriever):  # type: ignore[misc,valid-type]
+class CheckllmRetrieverWrapper(_LlamaBaseRetriever):  # type: ignore[misc, valid-type, unused-ignore]
     """Wraps a LlamaIndex ``BaseRetriever`` with online retrieval scoring.
 
     Every call to ``retrieve`` / ``aretrieve`` runs the configured metrics
@@ -155,9 +155,7 @@ class CheckllmRetrieverWrapper(_LlamaBaseRetriever):  # type: ignore[misc,valid-
                 bundle = _LlamaQueryBundle(query_str=query_str)
                 return list(inner._retrieve(bundle))
             return list(inner._retrieve(query_str))
-        raise TypeError(
-            "Underlying retriever does not expose retrieve / _retrieve"
-        )
+        raise TypeError("Underlying retriever does not expose retrieve / _retrieve")
 
     async def _call_inner_async(self, query_str: str) -> list[Any]:
         inner = self._inner_retriever

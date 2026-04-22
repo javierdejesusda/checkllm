@@ -160,13 +160,12 @@ Where Ragas returns its own `Testset` object, CheckLLM returns a plain
 ## API reference
 
 - `RAGDatasetGenerator` — main entry point. See
-  [`src/checkllm/rag_dataset.py`](../../src/checkllm/rag_dataset.py).
+  `src/checkllm/rag_dataset.py`.
 - `QueryDistribution` — Pydantic model validating proportions.
 - `DocumentChunk` — single chunk emitted by `chunk_document`.
 - `chunk_document(text, chunk_size, overlap, source=None)` —
   standalone chunker helper.
 - `KGTestGenerator` — underlying knowledge-graph engine, see
-  [`src/checkllm/knowledge_graph.py`](../../src/checkllm/knowledge_graph.py).
+  `src/checkllm/knowledge_graph.py`.
 
-Run the working end-to-end demo at
-[`examples/rag_evaluation.py`](../../examples/rag_evaluation.py).
+Run the working end-to-end demo at `examples/rag_evaluation.py`.

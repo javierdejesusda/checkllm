@@ -104,8 +104,7 @@ The fields most users edit most often:
 | `engine` | enum | `"auto"` | One of `auto`, `sync`, `async`, `thread`. |
 | `budget` | number or null | `null` | Hard USD cap for judge calls. |
 
-Open [src/checkllm/schemas/checkllm.schema.json](../../src/checkllm/schemas/checkllm.schema.json)
-for the full schema source of truth.
+Open `src/checkllm/schemas/checkllm.schema.json` for the full schema source of truth.
 
 ## Regenerating the schema in CI
 

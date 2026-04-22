@@ -160,13 +160,9 @@ def parse_assertions(raw: list[dict[str, Any]]) -> list[Assertion]:
         if atype == "similarity" and assertion.reference is None and assertion.value is None:
             raise ValueError(f"Assertion #{idx} 'similarity' requires 'reference' or 'value'")
         if atype == "model-graded-relevance" and not assertion.query:
-            raise ValueError(
-                f"Assertion #{idx} 'model-graded-relevance' requires a 'query'"
-            )
+            raise ValueError(f"Assertion #{idx} 'model-graded-relevance' requires a 'query'")
         if atype == "model-graded-faithfulness" and not assertion.context:
-            raise ValueError(
-                f"Assertion #{idx} 'model-graded-faithfulness' requires a 'context'"
-            )
+            raise ValueError(f"Assertion #{idx} 'model-graded-faithfulness' requires a 'context'")
         if atype in {"cost", "latency"} and assertion.value is None:
             raise ValueError(
                 f"Assertion #{idx} '{atype}' requires a numeric 'value' (maximum allowed)"
@@ -324,25 +320,29 @@ async def _run_single(
 
         threshold = assertion.threshold if assertion.threshold is not None else 0.8
         rubric = _render(assertion.rubric, vars_ctx)
-        metric = RubricMetric(judge=judge)
-        return await metric.evaluate(output=output, criteria=rubric, threshold=threshold)
+        rubric_metric = RubricMetric(judge=judge)
+        return await rubric_metric.evaluate(output=output, criteria=rubric, threshold=threshold)
 
     if atype == "model-graded-relevance":
         from checkllm.metrics.relevance import RelevanceMetric
 
         threshold = assertion.threshold if assertion.threshold is not None else 0.8
         query = _render(assertion.query, vars_ctx)
-        metric = RelevanceMetric(judge=judge, threshold=threshold)
-        return await metric.evaluate(output=output, query=query)
+        relevance_metric = RelevanceMetric(judge=judge, threshold=threshold)
+        return await relevance_metric.evaluate(output=output, query=query)
 
     if atype == "model-graded-faithfulness":
         from checkllm.metrics.faithfulness import FaithfulnessMetric
 
         threshold = assertion.threshold if assertion.threshold is not None else 0.8
         ctx_text = _render(assertion.context, vars_ctx)
-        query = _render(assertion.query, vars_ctx) if assertion.query else None
-        metric = FaithfulnessMetric(judge=judge, threshold=threshold)
-        return await metric.evaluate(output=output, context=ctx_text, query=query)
+        query_opt: str | None = (
+            _render(assertion.query, vars_ctx) if assertion.query else None
+        )
+        faithfulness_metric = FaithfulnessMetric(judge=judge, threshold=threshold)
+        return await faithfulness_metric.evaluate(
+            output=output, context=ctx_text, query=query_opt
+        )
 
     # parse_assertions guards unknown types, but be defensive anyway.
     return CheckResult(

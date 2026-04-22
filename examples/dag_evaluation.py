@@ -50,8 +50,7 @@ def build_dag(judge: FakeJudge) -> DAGMetric:
             DAGNode(
                 name="safety",
                 prompt_template=(
-                    "[safety] Is this code safe (no shell injection, no eval)?\n"
-                    "Code:\n{output}"
+                    "[safety] Is this code safe (no shell injection, no eval)?\n" "Code:\n{output}"
                 ),
                 threshold=0.8,
                 children_on_pass=["correctness"],
@@ -81,8 +80,7 @@ def build_dag(judge: FakeJudge) -> DAGMetric:
             DAGNode(
                 name="style",
                 prompt_template=(
-                    "[style] Rate the readability and idiomatic style of "
-                    "this code:\n{output}"
+                    "[style] Rate the readability and idiomatic style of " "this code:\n{output}"
                 ),
                 threshold=0.7,
                 is_leaf=True,
@@ -90,8 +88,7 @@ def build_dag(judge: FakeJudge) -> DAGMetric:
             DAGNode(
                 name="safety_reject",
                 prompt_template=(
-                    "[safety_reject] Summarise the safety issue for logs.\n"
-                    "Code:\n{output}"
+                    "[safety_reject] Summarise the safety issue for logs.\n" "Code:\n{output}"
                 ),
                 is_leaf=True,
             ),
@@ -106,18 +103,14 @@ async def main() -> None:
     code_ok = "def add(a, b):\n    return a + b\n"
     code_buggy = "def add(a, b):\n    return a - b\n"
 
-    happy_judge = FakeJudge(
-        {"safety": 0.95, "correctness": 0.85, "style": 0.9}
-    )
+    happy_judge = FakeJudge({"safety": 0.95, "correctness": 0.85, "style": 0.9})
     dag = build_dag(happy_judge)
     happy = await dag.evaluate(output=code_ok, context={"spec": spec})
     print("Happy path:")
     print(f"  score={happy.score:.2f} passed={happy.passed}")
     print(f"  trace={[r.node_name for r in dag.get_last_path()]}")
 
-    buggy_judge = FakeJudge(
-        {"safety": 0.9, "correctness": 0.3, "remediation_analysis": 0.4}
-    )
+    buggy_judge = FakeJudge({"safety": 0.9, "correctness": 0.3, "remediation_analysis": 0.4})
     dag = build_dag(buggy_judge)
     buggy = await dag.evaluate(output=code_buggy, context={"spec": spec})
     print("Buggy path:")

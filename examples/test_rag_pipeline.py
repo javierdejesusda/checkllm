@@ -214,9 +214,7 @@ def test_full_rag_suite_composed(rag_collector) -> None:
         expected=case.expected,
         threshold=0.75,
     )
-    rag_collector.faithfulness(
-        output=answer, context=context, query=case.input, threshold=0.85
-    )
+    rag_collector.faithfulness(output=answer, context=context, query=case.input, threshold=0.85)
     rag_collector.relevance(output=answer, query=case.input, threshold=0.8)
 
     assert all(r.passed for r in rag_collector.results), rag_collector.results

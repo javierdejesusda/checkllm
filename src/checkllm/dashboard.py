@@ -1230,9 +1230,7 @@ def build_comparison(
     rec_a = history.get_run(a_id)
     rec_b = history.get_run(b_id)
     if rec_a is None or rec_b is None:
-        raise ValueError(
-            f"snapshot not found: a={snapshot_a_id} b={snapshot_b_id}"
-        )
+        raise ValueError(f"snapshot not found: a={snapshot_a_id} b={snapshot_b_id}")
     view = build_comparison_view(
         _records_to_result_map(rec_a.results),
         _records_to_result_map(rec_b.results),
@@ -1366,9 +1364,7 @@ def render_comparison_html(view: ComparisonView) -> str:
         "<table><thead><tr>"
         "<th>Metric</th><th>Run A score</th><th>Run B score</th>"
         "<th>Delta</th><th>Direction</th>"
-        "</tr></thead><tbody>"
-        + "".join(rows_html)
-        + "</tbody></table></body></html>"
+        "</tr></thead><tbody>" + "".join(rows_html) + "</tbody></table></body></html>"
     )
     return body
 
@@ -1414,8 +1410,7 @@ def _serve_compare_html(
         except ValueError as exc:
             msg = _html_escape(str(exc))
             body = (
-                f"<!DOCTYPE html><html><body><h1>Compare</h1><p>{msg}</p>"
-                "</body></html>"
+                f"<!DOCTYPE html><html><body><h1>Compare</h1><p>{msg}</p>" "</body></html>"
             ).encode("utf-8")
             handler.send_response(404)
             handler.send_header("Content-Type", "text/html; charset=utf-8")
@@ -1460,9 +1455,7 @@ def _serve_compare_json(
             pass
 
     if not a or not b:
-        body = json.dumps({"error": "missing snapshot ids a and b"}).encode(
-            "utf-8"
-        )
+        body = json.dumps({"error": "missing snapshot ids a and b"}).encode("utf-8")
         handler.send_response(400)
         handler.send_header("Content-Type", "application/json; charset=utf-8")
         handler.send_header("Content-Length", str(len(body)))
@@ -1477,9 +1470,7 @@ def _serve_compare_json(
         except ValueError as exc:
             body = json.dumps({"error": str(exc)}).encode("utf-8")
             handler.send_response(404)
-            handler.send_header(
-                "Content-Type", "application/json; charset=utf-8"
-            )
+            handler.send_header("Content-Type", "application/json; charset=utf-8")
             handler.send_header("Content-Length", str(len(body)))
             handler.end_headers()
             handler.wfile.write(body)

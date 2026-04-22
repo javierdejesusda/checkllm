@@ -207,16 +207,16 @@ def __getattr__(name: str) -> Any:
 
     if name == "LlamaIndexRetrieverWrapper":
         from checkllm.integrations.llamaindex_retriever import (
-            CheckllmRetrieverWrapper as _Wrapper,
+            CheckllmRetrieverWrapper as _LlamaWrapper,
         )
 
-        return _Wrapper
+        return _LlamaWrapper
 
     if name == "evaluate_llamaindex_retriever":
         from checkllm.integrations.llamaindex_retriever import (
-            evaluate_retriever as _evaluate,
+            evaluate_retriever as _evaluate_llama,
         )
 
-        return _evaluate
+        return _evaluate_llama
 
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

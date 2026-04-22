@@ -85,9 +85,9 @@ async def main() -> None:
     print(f"Generated {len(cases)} test cases")
     assert cases, "expected at least one generated case"
     assert all(c.input for c in cases), "every case must have an input query"
-    assert all("query_type" in c.metadata for c in cases), (
-        "every case should be tagged with a query_type"
-    )
+    assert all(
+        "query_type" in c.metadata for c in cases
+    ), "every case should be tagged with a query_type"
 
     # A real system would call a retriever + LLM here. We use the reference
     # answer as a stand-in so the example runs end-to-end without a deployed

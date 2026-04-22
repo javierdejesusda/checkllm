@@ -1741,9 +1741,7 @@ def generate_dataset(
     output: Path = typer.Option(
         Path("dataset.yaml"), "--output", "-o", help="Where to write the generated dataset."
     ),
-    glob: str = typer.Option(
-        "**/*.md", "--glob", help="Glob pattern when SOURCE is a directory."
-    ),
+    glob: str = typer.Option("**/*.md", "--glob", help="Glob pattern when SOURCE is a directory."),
     simple: float = typer.Option(0.4, "--simple", help="Fraction of single-hop queries."),
     reasoning: float = typer.Option(
         0.3, "--reasoning", help="Fraction of multi-hop reasoning queries."
@@ -1914,9 +1912,7 @@ def export_cmd(
         summary_fmt = summary.format
         rows = summary.row_count
 
-    console.print(
-        f"[bold green]Exported[/] {rows} rows to {output} ({summary_fmt})"
-    )
+    console.print(f"[bold green]Exported[/] {rows} rows to {output} ({summary_fmt})")
     raise typer.Exit(code=0)
 
 

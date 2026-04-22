@@ -46,9 +46,10 @@ def load_schema() -> dict[str, Any]:
     if not _SCHEMA_PATH.exists():
         raise FileNotFoundError(f"Bundled schema missing at {_SCHEMA_PATH}")
     try:
-        return json.loads(_SCHEMA_PATH.read_text(encoding="utf-8"))
+        schema: dict[str, Any] = json.loads(_SCHEMA_PATH.read_text(encoding="utf-8"))
     except json.JSONDecodeError as exc:
         raise ValueError(f"Bundled schema is not valid JSON: {exc}") from exc
+    return schema
 
 
 def _format_path(path_parts: list[Any]) -> str:
@@ -72,7 +73,6 @@ def validate_config(data: dict[str, Any]) -> list[ValidationError]:
         with installation instructions.
     """
     try:
-        import jsonschema
         from jsonschema import Draft7Validator
     except ImportError:
         return [

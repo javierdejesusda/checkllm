@@ -8,7 +8,7 @@ metric takes and how much each judge call costs. It is intended for:
 2. Catching regressions when a metric starts issuing unexpectedly
    many judge calls.
 3. Producing the markdown table we publish in
-   [`benchmarks/cost_latency/README.md`](../../benchmarks/cost_latency/README.md).
+   `benchmarks/cost_latency/README.md` in the repository.
 
 ## Methodology
 

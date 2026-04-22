@@ -87,9 +87,7 @@ def _build_column_arrays(
             cols["metric_name"].append(c.metric_name)
             cols["passed"].append(bool(c.passed))
             cols["score"].append(float(c.score))
-            cols["threshold"].append(
-                None if c.threshold is None else float(c.threshold)
-            )
+            cols["threshold"].append(None if c.threshold is None else float(c.threshold))
             cols["reasoning"].append(c.reasoning)
             cols["cost"].append(float(c.cost))
             cols["latency_ms"].append(int(c.latency_ms))
