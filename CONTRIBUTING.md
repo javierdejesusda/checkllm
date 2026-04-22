@@ -82,6 +82,28 @@ def my_custom_metric(output: str, **kwargs) -> CheckResult:
 my_custom_metric = "my_checkllm_plugin.metric:my_custom_metric"
 ```
 
+## Pre-commit hooks
+
+We use [pre-commit](https://pre-commit.com/) to keep the tree tidy. After
+cloning, install the hooks once:
+
+```bash
+pip install pre-commit
+pre-commit install
+```
+
+Run the full suite manually at any time:
+
+```bash
+pre-commit run --all-files
+```
+
+The hooks cover trailing whitespace, YAML/TOML validity, large-file and
+private-key detection, `ruff` lint + format, `mypy` (loose mode),
+`bandit` on `src/`, `codespell`, and a local guard that blocks
+disallowed author-attribution references from being committed (see
+the project style rules for the exact list).
+
 ## Code Style
 
 - Type hints on all public APIs

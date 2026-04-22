@@ -1,0 +1,68 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-added-large-files
+        args: ["--maxkb=500"]
+      - id: detect-private-key
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff
+        args: ["--fix"]
+      - id: ruff-format
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.11.2
+    hooks:
+      - id: mypy
+        files: ^src/checkllm/
+        args:
+          - "--ignore-missing-imports"
+          - "--no-error-summary"
+        additional_dependencies:
+          - "types-PyYAML"
+          - "types-Jinja2"
+
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.9
+    hooks:
+      - id: bandit
+        args: ["-r", "-q", "--skip", "B101"]
+        files: ^src/checkllm/
+
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.3.0
+    hooks:
+      - id: codespell
+        args:
+          - "--ignore-words-list=iff,nd,te,hist,ot"
+        exclude: |
+          (?x)^(
+            CHANGELOG\.md|
+            requirements\.lock|
+            .*\.lock|
+            site/.*
+          )$
+
+  - repo: local
+    hooks:
+      - id: check-no-ai-mentions
+        name: Block AI/Claude/Anthropic mentions in staged files
+        entry: scripts/check_no_ai_mentions.sh
+        language: script
+        pass_filenames: true
+        exclude: |
+          (?x)^(
+            \.pre-commit-config\.yaml|
+            scripts/check_no_ai_mentions\.sh|
+            CLAUDE\.md|
+            .*/CLAUDE\.md|
+            \.claude/.*|
+            docs/superpowers/.*
+          )$

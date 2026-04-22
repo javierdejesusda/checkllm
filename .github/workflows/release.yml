@@ -1,0 +1,270 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Verify tag matches pyproject version
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.extract.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install tooling
+        run: python -m pip install --upgrade pip tomli
+
+      - name: Extract tag and pyproject versions
+        id: extract
+        shell: bash
+        run: |
+          tag_ref="${GITHUB_REF##*/}"
+          tag_version="${tag_ref#v}"
+          project_version="$(python -c 'import tomli, pathlib; print(tomli.loads(pathlib.Path("pyproject.toml").read_text())["project"]["version"])')"
+          echo "tag=$tag_version"
+          echo "pyproject=$project_version"
+          if [ "$tag_version" != "$project_version" ]; then
+            echo "::error::Tag v$tag_version does not match pyproject.toml version $project_version"
+            exit 1
+          fi
+          echo "version=$tag_version" >> "$GITHUB_OUTPUT"
+
+      - name: Verify internal version references
+        run: python scripts/sync_version.py
+
+  test:
+    name: Test (${{ matrix.os }} / py${{ matrix.python-version }})
+    needs: verify
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+      fail-fast: false
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: pip install -e ".[dev]"
+
+      - name: Run tests
+        run: pytest tests/ -v --tb=short --cov=checkllm --cov-report=xml --cov-fail-under=75
+
+      - name: Check CLI works
+        run: checkllm --version
+
+  build:
+    name: Build distribution
+    needs: [verify, test]
+    runs-on: ubuntu-latest
+    outputs:
+      hashes: ${{ steps.hash.outputs.hashes }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install build tools
+        run: python -m pip install --upgrade pip build twine
+
+      - name: Build sdist and wheel
+        run: python -m build
+
+      - name: Check distribution with twine
+        run: twine check --strict dist/*
+
+      - name: Compute SLSA base64 hashes
+        id: hash
+        shell: bash
+        working-directory: dist
+        run: |
+          hashes=$(sha256sum * | base64 -w0)
+          echo "hashes=$hashes" >> "$GITHUB_OUTPUT"
+
+      - name: Upload distribution artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+
+  provenance:
+    name: SLSA provenance (level 3)
+    needs: build
+    permissions:
+      actions: read
+      id-token: write
+      contents: write
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_generic_slsa3.yml@v2.0.0
+    with:
+      base64-subjects: ${{ needs.build.outputs.hashes }}
+      upload-assets: false
+      provenance-name: checkllm-provenance.intoto.jsonl
+
+  sign:
+    name: Sigstore sign artifacts
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Download distribution artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Sign with sigstore
+        uses: sigstore/gh-action-sigstore-python@v2.1.1
+        with:
+          inputs: ./dist/*.tar.gz ./dist/*.whl
+          release-signing-artifacts: false
+          upload-signing-artifacts: false
+
+      - name: Upload signed artifacts bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: signatures
+          path: |
+            dist/*.sigstore
+            dist/*.sigstore.json
+          if-no-files-found: warn
+
+  publish:
+    name: Publish to PyPI (trusted publishing)
+    needs: [build, sign, provenance]
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/checkllm
+    permissions:
+      id-token: write
+    steps:
+      - name: Download distribution artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish via PyPI trusted publisher
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          attestations: true
+          print-hash: true
+
+  github-release:
+    name: Create GitHub Release
+    needs: [verify, build, sign, provenance, publish]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download distribution artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - name: Download signatures
+        uses: actions/download-artifact@v4
+        with:
+          name: signatures
+          path: signatures/
+        continue-on-error: true
+
+      - name: Download provenance
+        uses: actions/download-artifact@v4
+        with:
+          name: checkllm-provenance.intoto.jsonl
+          path: provenance/
+        continue-on-error: true
+
+      - name: Create release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ needs.verify.outputs.version }}
+          name: v${{ needs.verify.outputs.version }}
+          generate_release_notes: true
+          fail_on_unmatched_files: false
+          files: |
+            dist/*
+            signatures/*
+            provenance/*
+
+  post-release-bump:
+    name: Open post-release version bump PR
+    needs: [verify, github-release]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: main
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install tooling
+        run: python -m pip install --upgrade pip tomli
+
+      - name: Compute next dev version
+        id: next
+        shell: bash
+        run: |
+          current="${{ needs.verify.outputs.version }}"
+          IFS='.' read -r major minor patch <<< "$current"
+          next_patch=$((patch + 1))
+          next="${major}.${minor}.${next_patch}-dev"
+          echo "version=$next" >> "$GITHUB_OUTPUT"
+
+      - name: Bump version
+        run: python scripts/bump_version.py --set "${{ steps.next.outputs.version }}"
+
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: chore/post-release-${{ needs.verify.outputs.version }}
+          base: main
+          title: "chore: bump to ${{ steps.next.outputs.version }} after v${{ needs.verify.outputs.version }}"
+          commit-message: "chore: bump to ${{ steps.next.outputs.version }} after v${{ needs.verify.outputs.version }}"
+          body: |
+            Automated post-release version bump following v${{ needs.verify.outputs.version }}.
+
+            This PR moves the in-repo version to `${{ steps.next.outputs.version }}` so that
+            main always tracks an unreleased development version.
+          labels: |
+            maintenance
+            automated

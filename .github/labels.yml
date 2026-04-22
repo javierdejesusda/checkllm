@@ -1,0 +1,51 @@
+- name: feature
+  color: "1d76db"
+  description: New user-facing functionality
+- name: enhancement
+  color: "a2eeef"
+  description: Improvement to existing functionality
+- name: fix
+  color: "d73a4a"
+  description: Bug fix
+- name: bug
+  color: "d73a4a"
+  description: Confirmed bug
+- name: docs
+  color: "0075ca"
+  description: Documentation changes
+- name: dependencies
+  color: "0366d6"
+  description: Dependency updates
+- name: maintenance
+  color: "cfd3d7"
+  description: Internal maintenance and chores
+- name: ci
+  color: "cfd3d7"
+  description: Continuous integration changes
+- name: build
+  color: "cfd3d7"
+  description: Build system and packaging changes
+- name: refactor
+  color: "c5def5"
+  description: Code restructuring without behavior changes
+- name: breaking
+  color: "b60205"
+  description: Backwards-incompatible change
+- name: major
+  color: "b60205"
+  description: Triggers a major version bump
+- name: minor
+  color: "1d76db"
+  description: Triggers a minor version bump
+- name: patch
+  color: "0e8a16"
+  description: Triggers a patch version bump
+- name: automated
+  color: "ededed"
+  description: Opened by automation
+- name: skip-changelog
+  color: "ededed"
+  description: Exclude from release notes
+- name: release
+  color: "5319e7"
+  description: Release-related PR

@@ -45,10 +45,13 @@ nav:
     - Troubleshooting: guides/troubleshooting.md
     - Migration: guides/migration.md
     - Advanced Patterns: guides/advanced-patterns.md
+  - Observability: observability.md
+  - Red Teaming: red-teaming.md
   - Comparison: comparison.md
   - Benchmarks:
     - Competitor leaderboard: benchmarks/competitor-comparison.md
     - Methodology: benchmarks/methodology.md
+  - Release process: release-process.md
 
 markdown_extensions:
   - pymdownx.highlight:
