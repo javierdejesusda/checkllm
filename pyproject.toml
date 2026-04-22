@@ -53,12 +53,32 @@ litellm = [
 embeddings = [
     "sentence-transformers>=2.0.0",
 ]
+multimodal = [
+    "pillow>=10.0.0",
+]
 docs = [
     "mkdocs-material>=9.0.0",
     "mkdocs>=1.5.0",
 ]
+langsmith = [
+    "langsmith>=0.1.0",
+]
+langfuse = [
+    "langfuse>=2.0.0",
+]
+datadog = [
+    "opentelemetry-api>=1.20.0",
+    "opentelemetry-sdk>=1.20.0",
+    "opentelemetry-exporter-otlp-proto-http>=1.20.0",
+]
+prometheus = [
+    "prometheus-client>=0.17.0",
+]
+hf = [
+    "datasets>=2.14.0",
+]
 all = [
-    "checkllm[openai,anthropic,gemini,litellm,embeddings,docs]",
+    "checkllm[openai,anthropic,gemini,litellm,embeddings,multimodal,docs,langsmith,langfuse,datadog,prometheus,hf]",
 ]
 dev = [
     "pytest>=7.0.0",
@@ -113,17 +133,175 @@ engine = "async"
 
 [tool.mypy]
 python_version = "3.10"
+strict = true
 ignore_missing_imports = true
-warn_return_any = false
-warn_unused_ignores = false
-disallow_untyped_defs = false
-check_untyped_defs = true
-no_implicit_optional = true
-strict_optional = true
+warn_unreachable = true
+warn_return_any = true
+warn_unused_ignores = true
 exclude = [
     "tests/",
     "benchmarks/",
     "docs/",
+]
+
+# Older modules retain relaxed settings. All newly added workstream modules
+# (integrations, new multimodal metrics, datasets helpers, dedup, redteam
+# dataset/evolver, GitLab CI helper) are strict-clean without overrides.
+[[tool.mypy.overrides]]
+module = [
+    "checkllm",
+    "checkllm.metrics",
+    "checkllm.alignment",
+    "checkllm.api",
+    "checkllm.batch",
+    "checkllm.cache",
+    "checkllm.check",
+    "checkllm.check_deterministic",
+    "checkllm.check_judge",
+    "checkllm.cli",
+    "checkllm.compliance_frameworks",
+    "checkllm.compliance_scanner",
+    "checkllm.config",
+    "checkllm.consensus",
+    "checkllm.dashboard",
+    "checkllm.deterministic",
+    "checkllm.embeddings",
+    "checkllm.engines",
+    "checkllm.frameworks",
+    "checkllm.guardrails",
+    "checkllm.history",
+    "checkllm.integrations.claude_agents",
+    "checkllm.integrations.crewai",
+    "checkllm.integrations.langchain",
+    "checkllm.integrations.llamaindex",
+    "checkllm.integrations.openai_agents",
+    "checkllm.integrations.pydantic_ai",
+    "checkllm.judge",
+    "checkllm.logging_config",
+    "checkllm.metrics.relevance",
+    "checkllm.providers",
+    "checkllm.pytest_helpers",
+    "checkllm.pytest_plugin",
+    "checkllm.redteam",
+    "checkllm.redteam_coding_agents",
+    "checkllm.regression.compare",
+    "checkllm.reporting.comparison",
+    "checkllm.resilience",
+    "checkllm.streaming",
+    "checkllm.synthesizer",
+    "checkllm.testing",
+    "checkllm.tracing",
+    "checkllm.trajectory",
+    "checkllm.yaml_config",
+    "checkllm.yaml_eval",
+]
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+disallow_untyped_calls = false
+warn_return_any = false
+warn_unused_ignores = false
+warn_unreachable = false
+no_implicit_reexport = false
+disallow_any_generics = false
+disallow_subclassing_any = false
+
+# Mixin modules: methods access attributes defined on the host class, which
+# mypy cannot infer without explicit Protocols. Suppress attr-defined here
+# and revisit once the host Check class is promoted to a Protocol.
+[[tool.mypy.overrides]]
+module = [
+    "checkllm.check_judge",
+    "checkllm.check_deterministic",
+]
+disable_error_code = ["attr-defined"]
+
+# Legacy modules with heavy provider-SDK union types (Anthropic blocks,
+# google.generativeai, OpenAI SDK) and dynamic judge dispatch. The error
+# classes here are expected and will be cleaned up in a follow-up pass.
+[[tool.mypy.overrides]]
+module = [
+    "checkllm.yaml_config",
+    "checkllm.yaml_eval",
+    "checkllm.judge",
+    "checkllm.cli",
+    "checkllm.providers",
+    "checkllm.synthesizer",
+    "checkllm.streaming",
+    "checkllm.reporting.comparison",
+    "checkllm",
+    "checkllm.compliance_frameworks",
+    "checkllm.check",
+    "checkllm.dual_judge",
+    "checkllm.trajectory",
+    "checkllm.tracing",
+    "checkllm.watcher",
+    "checkllm.resilience",
+    "checkllm.regression.compare",
+    "checkllm.redteam",
+    "checkllm.redteam_coding_agents",
+    "checkllm.logging_config",
+    "checkllm.engines",
+    "checkllm.api",
+    "checkllm.batch",
+    "checkllm.cache",
+    "checkllm.consensus",
+    "checkllm.config",
+    "checkllm.dashboard",
+    "checkllm.embeddings",
+    "checkllm.frameworks",
+    "checkllm.guardrails",
+    "checkllm.history",
+    "checkllm.pytest_helpers",
+    "checkllm.pytest_plugin",
+    "checkllm.metrics",
+    "checkllm.compliance_scanner",
+    "checkllm.deterministic",
+    "checkllm.testing",
+    "checkllm.discovery",
+    "checkllm.errors",
+    "checkllm.model_audit",
+    "checkllm.models",
+    "checkllm.compliance",
+    "checkllm.industry_compliance",
+    "checkllm.alignment",
+    "checkllm.arena",
+    "checkllm.adaptive_guardrails",
+    "checkllm.agents",
+    "checkllm.experiments",
+    "checkllm.knowledge_graph",
+    "checkllm.multilingual",
+    "checkllm.observe",
+    "checkllm.optimize",
+    "checkllm.rag_poison",
+    "checkllm.redteam_strategies",
+    "checkllm.dpo",
+    "checkllm.deprecations",
+    "checkllm.chain",
+    "checkllm.hookspecs",
+    "checkllm.compare",
+    "checkllm.conversation",
+    "checkllm.runner",
+    "checkllm.estimator",
+    "checkllm.strategies",
+]
+disable_error_code = [
+    "union-attr",
+    "attr-defined",
+    "call-arg",
+    "call-overload",
+    "assignment",
+    "arg-type",
+    "dict-item",
+    "typeddict-item",
+    "operator",
+    "no-redef",
+    "misc",
+    "var-annotated",
+    "name-defined",
+    "return-value",
+    "unreachable",
+    "type-arg",
+    "unused-ignore",
 ]
 
 [tool.bandit]

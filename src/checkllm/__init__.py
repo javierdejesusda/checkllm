@@ -88,7 +88,13 @@ try:
     from checkllm.estimator import CostEstimate, estimate_check_cost, estimate_from_test_file
     from checkllm.experiments import ExperimentComparison, ExperimentRun, ExperimentTracker
     from checkllm.history import RunHistory
-    from checkllm.judge import AnthropicJudge, OpenAIJudge
+    from checkllm.dedup import InFlightDeduplicator, make_dedup_key
+    from checkllm.judge import (
+        AnthropicJudge,
+        DeepSeekJudge,
+        OpenAIJudge,
+        StreamingJudgeResult,
+    )
     from checkllm.providers import (
         AzureOpenAIJudge,
         BedrockJudge,
@@ -141,6 +147,18 @@ try:
         StrategyType,
         apply_strategies,
         get_strategy,
+    )
+    from checkllm.redteam_datasets import (
+        AttackPrompt,
+        available_presets,
+        load_jailbreak_preset,
+    )
+    from checkllm.redteam_evolver import (
+        AdversarialAttackEvolver,
+        EvolvedAttack,
+        EvolverConfig,
+        MutationStrategy,
+        SeedCategoryError,
     )
     from checkllm.redteam_coding_agents import (
         CodingAgentPlugin,
@@ -413,7 +431,11 @@ __all__ = [
     "TogetherJudge",
     "VLLMJudge",
     "XAIJudge",
+    "StreamingJudgeResult",
     "create_judge",
+    # Dedup
+    "InFlightDeduplicator",
+    "make_dedup_key",
     # Programmatic API
     "Evaluator",
     "check_output",
@@ -442,6 +464,15 @@ __all__ = [
     "get_compliance_vulnerabilities",
     "get_owasp_mapping",
     "get_vulnerabilities_by_owasp",
+    # Red-team datasets and evolver
+    "AttackPrompt",
+    "available_presets",
+    "load_jailbreak_preset",
+    "AdversarialAttackEvolver",
+    "EvolvedAttack",
+    "EvolverConfig",
+    "MutationStrategy",
+    "SeedCategoryError",
     # Compliance reporting
     "ComplianceFramework",
     "ComplianceReport",
