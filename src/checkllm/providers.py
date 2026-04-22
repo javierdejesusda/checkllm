@@ -10,7 +10,10 @@ from __future__ import annotations
 
 import json
 import os
-from typing import Any, Callable
+from typing import TYPE_CHECKING, Any, Callable, Sequence
+
+if TYPE_CHECKING:
+    from checkllm.multimodal import ImagePayload
 
 from tenacity import (
     retry,
@@ -124,6 +127,60 @@ class GeminiJudge:
 
         response = await self._gmodel.generate_content_async(
             full_prompt,
+            generation_config={"temperature": 0.0},
+        )
+
+        raw_output = response.text or ""
+
+        cost = 0.0
+        usage = getattr(response, "usage_metadata", None)
+        if usage is not None:
+            prompt_tokens = getattr(usage, "prompt_token_count", 0) or 0
+            completion_tokens = getattr(usage, "candidates_token_count", 0) or 0
+            cost = _gemini_estimate_cost(self.model, prompt_tokens, completion_tokens)
+        self.last_cost = cost
+        self.total_cost += cost
+
+        score, reasoning = _parse_judge_json(raw_output)
+
+        return JudgeResponse(
+            score=score,
+            reasoning=reasoning,
+            raw_output=raw_output,
+            cost=cost,
+        )
+
+    async def evaluate_with_images(
+        self,
+        prompt: str,
+        images: Sequence["ImagePayload"],
+        system_prompt: str | None = None,
+    ) -> JudgeResponse:
+        """Call the Gemini vision model with images alongside ``prompt``.
+
+        Args:
+            prompt: The text portion of the user turn.
+            images: Normalized image payloads to send as inline parts.
+            system_prompt: Optional preamble prepended to ``prompt``.
+
+        Returns:
+            A ``JudgeResponse`` parsed from the model's JSON output.
+        """
+        from checkllm.multimodal import to_gemini_part
+
+        full_prompt = ""
+        if system_prompt:
+            full_prompt += f"{system_prompt}\n\n"
+        full_prompt += (
+            f"{prompt}\n\n"
+            'Respond with JSON only: {"score": <float 0-1>, "reasoning": "<explanation>"}'
+        )
+
+        parts: list[Any] = [to_gemini_part(img) for img in images]
+        parts.append({"text": full_prompt})
+
+        response = await self._gmodel.generate_content_async(
+            parts,
             generation_config={"temperature": 0.0},
         )
 
@@ -648,27 +705,12 @@ class OpenAICompatibleJudge:
         )
 
 
-class DeepSeekJudge(OpenAICompatibleJudge):
-    """DeepSeek judge using their OpenAI-compatible API."""
-
-    def __init__(
-        self,
-        model: str = "deepseek-chat",
-        api_key: str | None = None,
-        **kwargs: Any,
-    ) -> None:
-        resolved_key = api_key or os.environ.get("DEEPSEEK_API_KEY")
-        if not resolved_key:
-            raise JudgeConfigError(
-                "DeepSeek API key not found. Set DEEPSEEK_API_KEY or "
-                "pass api_key= to DeepSeekJudge()."
-            )
-        super().__init__(
-            model=model,
-            api_key=resolved_key,
-            base_url="https://api.deepseek.com/v1",
-            **kwargs,
-        )
+# DeepSeekJudge has moved to :mod:`checkllm.judge`.  It now uses the native
+# OpenAI SDK (pointed at DeepSeek's endpoint) with DeepSeek-specific pricing
+# and ``reasoning_content`` support for ``deepseek-reasoner``.  It is
+# re-exported here for backward compatibility so ``from checkllm.providers
+# import DeepSeekJudge`` keeps working.
+from checkllm.judge import DeepSeekJudge  # noqa: E402,F401
 
 
 class GroqJudge(OpenAICompatibleJudge):
@@ -1114,6 +1156,10 @@ def create_judge(backend: str, **kwargs: Any) -> JudgeBackend:
         "litellm", "custom", "cohere", "mistral", "deepseek", "groq",
         "together", "fireworks", "perplexity", "vllm", "bedrock",
         "openrouter", or "xai".
+
+        Model-style aliases are also recognized — e.g. ``"deepseek-chat"``
+        or ``"deepseek-reasoner"`` resolve to ``DeepSeekJudge`` with
+        ``model=<alias>``.
     **kwargs:
         Forwarded to the backend constructor.
 
@@ -1143,6 +1189,12 @@ def create_judge(backend: str, **kwargs: Any) -> JudgeBackend:
         "openrouter": OpenRouterJudge,
         "xai": XAIJudge,
     }
+
+    # Model-style aliases — e.g. "deepseek-chat" / "deepseek-reasoner"
+    # route to the deepseek backend with the model baked in.
+    if backend in {"deepseek-chat", "deepseek-reasoner"}:
+        kwargs.setdefault("model", backend)
+        return DeepSeekJudge(**kwargs)  # type: ignore[return-value]
 
     cls = _backends.get(backend)
     if cls is None:

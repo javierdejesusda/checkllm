@@ -238,3 +238,136 @@ class TestStreamingEvaluator:
         # Each checkpoint should have run both checks
         for cp in checkpoints:
             assert cp.checks_run >= 2
+
+
+# ---------------------------------------------------------------------------
+# Judge-level streaming (OpenAI / DeepSeek stream_evaluate)
+# ---------------------------------------------------------------------------
+
+
+class TestJudgeStreaming:
+    """Verify ``stream_evaluate`` on judge backends yields chunks + final."""
+
+    def _make_stream_chunk(
+        self,
+        content: str | None = None,
+        usage: dict[str, int] | None = None,
+    ):
+        from unittest.mock import MagicMock
+
+        delta = MagicMock()
+        delta.content = content
+        delta.reasoning_content = None
+        choice = MagicMock()
+        choice.delta = delta
+        chunk = MagicMock()
+        chunk.choices = [choice]
+        if usage is not None:
+            chunk.usage = MagicMock()
+            chunk.usage.prompt_tokens = usage.get("prompt_tokens", 0)
+            chunk.usage.completion_tokens = usage.get("completion_tokens", 0)
+        else:
+            chunk.usage = None
+        return chunk
+
+    async def _async_chunks(self, chunks):
+        for c in chunks:
+            yield c
+
+    @pytest.mark.asyncio
+    async def test_openai_judge_stream_yields_text_then_final(self) -> None:
+        from unittest.mock import AsyncMock, patch
+
+        from checkllm.judge import OpenAIJudge, StreamingJudgeResult
+
+        judge = OpenAIJudge(model="gpt-4o", api_key="k")
+        chunks = [
+            self._make_stream_chunk(content='{"score"'),
+            self._make_stream_chunk(content=': 0.5, '),
+            self._make_stream_chunk(content='"reasoning": "fine"}'),
+            self._make_stream_chunk(
+                usage={"prompt_tokens": 10, "completion_tokens": 5}
+            ),
+        ]
+
+        with patch.object(
+            judge._client.chat.completions, "create", new_callable=AsyncMock
+        ) as mock_create:
+            mock_create.return_value = self._async_chunks(chunks)
+
+            pieces: list[str] = []
+            final: StreamingJudgeResult | None = None
+            async for item in judge.stream_evaluate("hi"):
+                if isinstance(item, str):
+                    pieces.append(item)
+                else:
+                    final = item
+
+        assert "".join(pieces) == '{"score": 0.5, "reasoning": "fine"}'
+        assert final is not None
+        assert final.response.score == pytest.approx(0.5)
+        assert final.response.reasoning == "fine"
+        assert final.response.cost > 0.0
+
+    @pytest.mark.asyncio
+    async def test_openai_judge_stream_early_stop_callback(self) -> None:
+        from unittest.mock import AsyncMock, patch
+
+        from checkllm.judge import OpenAIJudge, StreamingJudgeResult
+
+        judge = OpenAIJudge(model="gpt-4o", api_key="k")
+        chunks = [
+            self._make_stream_chunk(content="hello "),
+            self._make_stream_chunk(content="STOP_NOW "),
+            self._make_stream_chunk(content="never arrives"),
+        ]
+
+        with patch.object(
+            judge._client.chat.completions, "create", new_callable=AsyncMock
+        ) as mock_create:
+            mock_create.return_value = self._async_chunks(chunks)
+
+            seen: list[str] = []
+            final: StreamingJudgeResult | None = None
+            async for item in judge.stream_evaluate(
+                "hi", on_token=lambda t: "STOP_NOW" in t
+            ):
+                if isinstance(item, str):
+                    seen.append(item)
+                else:
+                    final = item
+
+        assert "never arrives" not in seen
+        assert final is not None
+        assert final.stopped_early is True
+
+    @pytest.mark.asyncio
+    async def test_openai_judge_stream_final_consistent_with_accumulated(
+        self,
+    ) -> None:
+        from unittest.mock import AsyncMock, patch
+
+        from checkllm.judge import OpenAIJudge, StreamingJudgeResult
+
+        judge = OpenAIJudge(model="gpt-4o", api_key="k")
+        chunks = [
+            self._make_stream_chunk(content='{"score": 1.0, '),
+            self._make_stream_chunk(content='"reasoning": "great"}'),
+        ]
+
+        with patch.object(
+            judge._client.chat.completions, "create", new_callable=AsyncMock
+        ) as mock_create:
+            mock_create.return_value = self._async_chunks(chunks)
+
+            collected: list[str] = []
+            final: StreamingJudgeResult | None = None
+            async for item in judge.stream_evaluate("hi"):
+                if isinstance(item, str):
+                    collected.append(item)
+                else:
+                    final = item
+
+        assert final is not None
+        assert final.aggregated_text == "".join(collected)
+        assert final.response.raw_output == final.aggregated_text

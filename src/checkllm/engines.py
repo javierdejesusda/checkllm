@@ -139,12 +139,19 @@ class AsyncEngine(BaseEngine):
         Maximum pending-task queue depth.  When the queue is full,
         :meth:`submit` will block (await) until a slot opens, providing
         natural backpressure to the caller.
+    dedup:
+        If ``True`` (default), enable in-flight request deduplication.
+        Concurrent calls to :meth:`submit_dedup` with the same key will
+        share a single underlying coroutine invocation — useful when
+        parallel test runs issue identical judge calls.  This does not
+        affect :meth:`submit`, which always runs the given coroutine.
     """
 
     def __init__(
         self,
         max_concurrency: int = 10,
         max_queue_size: int = 100,
+        dedup: bool = True,
     ) -> None:
         super().__init__()
         self._max_concurrency = max_concurrency
@@ -153,6 +160,12 @@ class AsyncEngine(BaseEngine):
         self._queue_semaphore = asyncio.Semaphore(max_queue_size)
         self._running_tasks: set[asyncio.Task[Any]] = set()
         self._shutdown_event = asyncio.Event()
+
+        # Lazy import to avoid a cycle during module init.
+        from checkllm.dedup import InFlightDeduplicator
+
+        self._dedup_enabled = dedup
+        self._deduplicator = InFlightDeduplicator() if dedup else None
 
     # -- internal wrapper ---------------------------------------------------
 
@@ -188,6 +201,62 @@ class AsyncEngine(BaseEngine):
         self._running_tasks.add(task)
         task.add_done_callback(self._running_tasks.discard)
         return task
+
+    async def submit_dedup(
+        self,
+        key: str,
+        factory: Callable[[], Coroutine[Any, Any, T]],
+    ) -> asyncio.Task[T]:
+        """Submit a coroutine factory that will be deduplicated by ``key``.
+
+        Concurrent ``submit_dedup`` calls that share the same ``key`` are
+        coalesced: only the first call invokes ``factory()``.  All other
+        callers await the same underlying result.  Dedup is a no-op when
+        the engine was constructed with ``dedup=False`` — each call still
+        invokes ``factory()`` independently.
+
+        Args:
+            key: Deduplication key.  Callers should use
+                :func:`checkllm.dedup.make_dedup_key` to build one.
+            factory: Zero-arg callable returning an awaitable.  It will
+                be invoked at most once per (concurrent) key.
+
+        Returns:
+            An :class:`asyncio.Task` resolving to the coroutine's result.
+        """
+        if self._shutdown_event.is_set():
+            raise RuntimeError("Cannot submit to a shut-down engine")
+
+        await self._queue_semaphore.acquire()
+
+        self._stats.tasks_submitted += 1
+        self._stats.current_queue_depth += 1
+
+        async def _runner() -> T:
+            start = time.monotonic()
+            try:
+                async with self._semaphore:
+                    if self._deduplicator is not None:
+                        return await self._deduplicator.run(key, factory)
+                    return await factory()
+            finally:
+                elapsed = time.monotonic() - start
+                self._stats.tasks_completed += 1
+                self._stats.total_execution_time += elapsed
+                self._stats.current_queue_depth = max(
+                    0, self._stats.current_queue_depth - 1
+                )
+                self._queue_semaphore.release()
+
+        task: asyncio.Task[T] = asyncio.create_task(_runner())
+        self._running_tasks.add(task)
+        task.add_done_callback(self._running_tasks.discard)
+        return task
+
+    @property
+    def deduplicator(self) -> Any:
+        """Expose the internal :class:`InFlightDeduplicator` (or ``None``)."""
+        return self._deduplicator
 
     async def gather(self, tasks: list[asyncio.Task[T]]) -> list[T]:
         return list(await asyncio.gather(*tasks))

@@ -224,10 +224,21 @@ class TestDeepSeekJudge:
         from checkllm.providers import DeepSeekJudge
 
         judge = DeepSeekJudge()
-        mock_resp = _make_httpx_chat_response(0.8, "Solid")
-        mock_httpx = _mock_httpx_client(mock_resp)
 
-        with patch.dict("sys.modules", {"httpx": mock_httpx}):
+        mock_message = MagicMock()
+        mock_message.content = json.dumps({"score": 0.8, "reasoning": "Solid"})
+        mock_message.reasoning_content = None
+        mock_choice = MagicMock()
+        mock_choice.message = mock_message
+        mock_response = MagicMock()
+        mock_response.choices = [mock_choice]
+        mock_response.usage.prompt_tokens = 10
+        mock_response.usage.completion_tokens = 5
+
+        with patch.object(
+            judge._client.chat.completions, "create", new_callable=AsyncMock
+        ) as mock_create:
+            mock_create.return_value = mock_response
             result = await judge.evaluate("test")
 
         assert result.score == 0.8
