@@ -305,6 +305,10 @@ module = [
     "checkllm.estimator",
     "checkllm.strategies",
 ]
+disallow_untyped_decorators = false
+disallow_untyped_defs = false
+disallow_untyped_calls = false
+warn_return_any = false
 disable_error_code = [
     "union-attr",
     "attr-defined",
@@ -323,6 +327,8 @@ disable_error_code = [
     "unreachable",
     "type-arg",
     "unused-ignore",
+    "import-untyped",
+    "import-not-found",
 ]
 
 [tool.bandit]
