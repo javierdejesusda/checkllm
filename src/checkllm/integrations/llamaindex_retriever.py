@@ -46,9 +46,9 @@ try:
 
     _HAS_LLAMAINDEX = True
 except ImportError:  # pragma: no cover - exercised only when dep is missing
-    _LlamaBaseRetriever = object  # type: ignore[assignment,misc]
-    _LlamaNodeWithScore = object  # type: ignore[assignment,misc]
-    _LlamaQueryBundle = object  # type: ignore[assignment,misc]
+    _LlamaBaseRetriever = object  # type: ignore[assignment, misc, unused-ignore]
+    _LlamaNodeWithScore = object  # type: ignore[assignment, misc, unused-ignore]
+    _LlamaQueryBundle = object  # type: ignore[assignment, misc, unused-ignore]
     _HAS_LLAMAINDEX = False
 
 

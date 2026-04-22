@@ -23,9 +23,7 @@ class _StubJudge:
         self.total_cost = 0.0
         self._fixed_cost = cost
 
-    async def evaluate(
-        self, prompt: str, system_prompt: str | None = None
-    ) -> JudgeResponse:
+    async def evaluate(self, prompt: str, system_prompt: str | None = None) -> JudgeResponse:
         self.last_cost = self._fixed_cost
         self.total_cost += self._fixed_cost
         return JudgeResponse(
@@ -138,9 +136,7 @@ async def test_evaluate_regex_invalid_pattern_does_not_raise() -> None:
 
 async def test_evaluate_llm_rubric_uses_judge_score() -> None:
     judge = _StubJudge(score=0.95)
-    assertions = parse_assertions(
-        [{"type": "llm-rubric", "rubric": "Good?", "threshold": 0.7}]
-    )
+    assertions = parse_assertions([{"type": "llm-rubric", "rubric": "Good?", "threshold": 0.7}])
     res = await evaluate_assertions("candidate output", assertions, judge=judge)
     assert res.passed is True
     assert res.individual[0].score == pytest.approx(0.95)
@@ -148,9 +144,7 @@ async def test_evaluate_llm_rubric_uses_judge_score() -> None:
 
 async def test_evaluate_llm_rubric_below_threshold_fails() -> None:
     judge = _StubJudge(score=0.2)
-    assertions = parse_assertions(
-        [{"type": "llm-rubric", "rubric": "Good?", "threshold": 0.7}]
-    )
+    assertions = parse_assertions([{"type": "llm-rubric", "rubric": "Good?", "threshold": 0.7}])
     res = await evaluate_assertions("candidate output", assertions, judge=judge)
     assert res.passed is False
 
@@ -183,30 +177,22 @@ async def test_evaluate_cost_assertion_fails_when_over_budget() -> None:
 async def test_evaluate_latency_assertion_reads_context() -> None:
     judge = _StubJudge()
     [a] = parse_assertions([{"type": "latency", "value": 1000}])
-    res_ok = await evaluate_assertions(
-        "x", [a], judge=judge, context={"latency_ms": 500}
-    )
+    res_ok = await evaluate_assertions("x", [a], judge=judge, context={"latency_ms": 500})
     assert res_ok.passed is True
-    res_bad = await evaluate_assertions(
-        "x", [a], judge=judge, context={"latency_ms": 5000}
-    )
+    res_bad = await evaluate_assertions("x", [a], judge=judge, context={"latency_ms": 5000})
     assert res_bad.passed is False
 
 
 async def test_evaluate_model_uses_bare_prompt() -> None:
     judge = _StubJudge(score=0.85)
-    [a] = parse_assertions(
-        [{"type": "model", "prompt": "Is this polite?", "threshold": 0.8}]
-    )
+    [a] = parse_assertions([{"type": "model", "prompt": "Is this polite?", "threshold": 0.8}])
     res = await evaluate_assertions("pls and ty", [a], judge=judge)
     assert res.passed is True
 
 
 async def test_evaluate_similarity_uses_reference() -> None:
     judge = _StubJudge()
-    [a] = parse_assertions(
-        [{"type": "similarity", "reference": "hello world", "threshold": 0.5}]
-    )
+    [a] = parse_assertions([{"type": "similarity", "reference": "hello world", "threshold": 0.5}])
     res = await evaluate_assertions("hello world!", [a], judge=judge)
     assert res.passed is True
 

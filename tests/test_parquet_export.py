@@ -109,9 +109,7 @@ def test_compression_options_accepted(tmp_path):
 def test_run_id_and_timestamp_are_stamped(tmp_path):
     results = {"t": [_make_result()]}
     path = tmp_path / "out.parquet"
-    write_parquet(
-        results, path, run_id=42, timestamp_utc="2026-04-22T00:00:00+00:00"
-    )
+    write_parquet(results, path, run_id=42, timestamp_utc="2026-04-22T00:00:00+00:00")
     import pyarrow.parquet as pq
 
     table = pq.read_table(str(path))

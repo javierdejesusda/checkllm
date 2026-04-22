@@ -44,8 +44,8 @@ try:
 
     _HAS_LANGCHAIN = True
 except ImportError:  # pragma: no cover - exercised only when dep is missing
-    _LangChainBaseRetriever = object  # type: ignore[assignment,misc]
-    _LangChainDocument = object  # type: ignore[assignment,misc]
+    _LangChainBaseRetriever = object  # type: ignore[assignment, misc, unused-ignore]
+    _LangChainDocument = object  # type: ignore[assignment, misc, unused-ignore]
     _HAS_LANGCHAIN = False
 
 

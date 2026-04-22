@@ -79,16 +79,16 @@ class TestChunkDocument:
             # At least one overlapping word should survive the split
             tail_words = set(tail.split())
             head_words = set(head.split())
-            assert tail_words & head_words, (
-                f"Expected overlap between chunk {i} and {i + 1}"
-            )
+            assert tail_words & head_words, f"Expected overlap between chunk {i} and {i + 1}"
 
     def test_preserves_word_boundaries(self):
         text = "Supercalifragilisticexpialidocious is a very long invented word."
         chunks = chunk_document(text, chunk_size=40, overlap=0)
         # No chunk should cut the famous word mid-way
         for c in chunks:
-            assert "Supercalifragilisticexpialidocious" in c.text or "Super" not in c.text.split()[0]
+            assert (
+                "Supercalifragilisticexpialidocious" in c.text or "Super" not in c.text.split()[0]
+            )
 
     def test_source_label_propagated(self):
         chunks = chunk_document("some text here", chunk_size=100, overlap=0, source="docA.md")

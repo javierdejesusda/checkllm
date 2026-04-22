@@ -206,9 +206,7 @@ async def test_parent_score_and_reasoning_injected_into_child_prompt():
             ),
             DAGNode(
                 name="child",
-                prompt_template=_tagged(
-                    "child", "parent={parent_score} reason={parent_reasoning}"
-                ),
+                prompt_template=_tagged("child", "parent={parent_score} reason={parent_reasoning}"),
             ),
         ],
         root="root",

@@ -17,11 +17,7 @@ from checkllm.config_schema import (
 
 def test_schema_parses_as_valid_json() -> None:
     schema_path = (
-        Path(__file__).parent.parent
-        / "src"
-        / "checkllm"
-        / "schemas"
-        / "checkllm.schema.json"
+        Path(__file__).parent.parent / "src" / "checkllm" / "schemas" / "checkllm.schema.json"
     )
     raw = schema_path.read_text(encoding="utf-8")
     data = json.loads(raw)

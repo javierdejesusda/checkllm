@@ -185,7 +185,7 @@ def write_parquet(
     table = results_to_arrow_table(results, run_id=run_id, timestamp_utc=timestamp_utc)
     path.parent.mkdir(parents=True, exist_ok=True)
     normalized = None if compression in {"none", "uncompressed"} else compression
-    pq.write_table(table, str(path), compression=normalized)
+    pq.write_table(table, str(path), compression=normalized)  # type: ignore[no-untyped-call, unused-ignore]
 
 
 def read_parquet(path: Path) -> dict[str, list[CheckResult]]:
@@ -209,7 +209,7 @@ def read_parquet(path: Path) -> dict[str, list[CheckResult]]:
     _require_pyarrow()
     import pyarrow.parquet as pq  # noqa: PLC0415 -- lazy import
 
-    table = pq.read_table(str(path))
+    table = pq.read_table(str(path))  # type: ignore[no-untyped-call, unused-ignore]
     rows = table.to_pylist()
     out: dict[str, list[CheckResult]] = {}
     for row in rows:

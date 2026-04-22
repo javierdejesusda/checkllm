@@ -31,9 +31,7 @@ class StubJudge:
         self.total_cost = 0.0
         self.last_cost = 0.0
 
-    async def evaluate(
-        self, prompt: str, system_prompt: str | None = None
-    ) -> JudgeResponse:
+    async def evaluate(self, prompt: str, system_prompt: str | None = None) -> JudgeResponse:
         self.calls.append((prompt, system_prompt))
         return JudgeResponse(score=self.score, reasoning="stubbed", cost=0.0)
 
@@ -60,9 +58,7 @@ def test_retrieval_eval_result_mean_score():
             passed=False, score=0.5, reasoning="", cost=0.0, latency_ms=0, metric_name="b"
         ),
     }
-    result = RetrievalEvalResult(
-        query="q", retrieved_docs=[], metrics=metrics, pass_rate=0.5
-    )
+    result = RetrievalEvalResult(query="q", retrieved_docs=[], metrics=metrics, pass_rate=0.5)
     assert result.mean_score() == pytest.approx(0.7)
 
 
@@ -77,9 +73,7 @@ def test_resolve_metrics_unknown_name_raises():
 
 def test_resolve_metrics_non_llm_no_judge_ok():
     """Non-LLM metrics should resolve without a judge."""
-    metrics = _resolve_metrics(
-        ["nonllm_context_precision", "nonllm_context_recall"], judge=None
-    )
+    metrics = _resolve_metrics(["nonllm_context_precision", "nonllm_context_recall"], judge=None)
     assert set(metrics.keys()) == {
         "nonllm_context_precision",
         "nonllm_context_recall",
@@ -113,9 +107,7 @@ class _FakeLangChainRetriever(BaseRetriever):
     def _get_relevant_documents(self, query: str, *, run_manager: Any) -> list[Document]:
         return list(self.docs)
 
-    async def _aget_relevant_documents(
-        self, query: str, *, run_manager: Any
-    ) -> list[Document]:
+    async def _aget_relevant_documents(self, query: str, *, run_manager: Any) -> list[Document]:
         return list(self.docs)
 
 
@@ -244,9 +236,7 @@ def test_langchain_evaluate_retriever_one_shot():
     ]
 
     async def _go() -> list[RetrievalEvalResult]:
-        return await lc_run_eval(
-            inner, cases=cases, metrics=["nonllm_context_precision"]
-        )
+        return await lc_run_eval(inner, cases=cases, metrics=["nonllm_context_precision"])
 
     out = asyncio.run(_go())
     assert len(out) == 2
