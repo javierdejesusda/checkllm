@@ -1,0 +1,51 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "checkllm-yaml",
+  "scopeName": "source.checkllm.yaml",
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#checkllm-keywords" },
+    { "include": "#metric-names" },
+    { "include": "#yaml-basics" }
+  ],
+  "repository": {
+    "comments": {
+      "match": "#.*$",
+      "name": "comment.line.number-sign.checkllm"
+    },
+    "checkllm-keywords": {
+      "patterns": [
+        {
+          "match": "^(\\s*)(tests|suite|name|input|output|context|expected|query|metrics|threshold|judge|model|budget|provider|rubric|references|dataset|prompt|checks)\\s*:",
+          "captures": {
+            "2": { "name": "keyword.control.checkllm" }
+          }
+        }
+      ]
+    },
+    "metric-names": {
+      "match": "\\b(hallucination|relevance|toxicity|faithfulness|context_relevance|answer_completeness|bias|coherence|fluency|correctness|g_eval|contextual_precision|contextual_recall|groundedness|pii_detection|misuse_detection|role_violation|image_coherence|image_relevance|multimodal_faithfulness|contains|not_contains|exact_match|regex|json_schema|max_tokens|min_tokens|similarity|is_json|is_refusal|no_pii)\\b",
+      "name": "support.function.metric.checkllm"
+    },
+    "yaml-basics": {
+      "patterns": [
+        {
+          "match": "\"[^\"]*\"",
+          "name": "string.quoted.double.checkllm"
+        },
+        {
+          "match": "'[^']*'",
+          "name": "string.quoted.single.checkllm"
+        },
+        {
+          "match": "\\b(true|false|null)\\b",
+          "name": "constant.language.checkllm"
+        },
+        {
+          "match": "\\b-?[0-9]+(\\.[0-9]+)?\\b",
+          "name": "constant.numeric.checkllm"
+        }
+      ]
+    }
+  }
+}

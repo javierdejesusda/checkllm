@@ -26,3 +26,7 @@ node_modules/
 *.tsbuildinfo
 
 site/
+
+editor/vscode/out/
+editor/vscode/node_modules/
+editor/vscode/*.vsix

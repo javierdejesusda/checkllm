@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 import functools
+import inspect
+import re
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any, Callable, Iterable
 
 import pytest
 
@@ -153,10 +155,15 @@ def _format_check_failures(node_id, failed, all_results):
 
 
 def pytest_configure(config: pytest.Config) -> None:
-    """Reset session store and register markers."""
+    """Reset session store and register checkllm markers.
+
+    Args:
+        config: The active pytest configuration.
+    """
     global _store
     _store = _SessionStore()
 
+    # Legacy short-name markers (kept for backward compatibility).
     config.addinivalue_line(
         "markers",
         "llm: mark test as requiring an LLM API key (deselect with '-m \"not llm\"')",
@@ -177,6 +184,162 @@ def pytest_configure(config: pytest.Config) -> None:
         "markers",
         "safety: mark test as evaluating safety/toxicity/bias",
     )
+
+    # Namespaced markers (preferred).
+    for name, description in _CHECKLLM_MARKERS.items():
+        config.addinivalue_line("markers", f"{name}: {description}")
+
+
+# Markers registered by the plugin. Kept as a module constant so that
+# ``pytest_configure`` and ``apply_checkllm_markers`` agree on names.
+_CHECKLLM_MARKERS: dict[str, str] = {
+    "checkllm_rag": "tests exercising RAG metrics (faithfulness, context relevance, etc.)",
+    "checkllm_deterministic": "tests using only deterministic checks (no LLM calls)",
+    "checkllm_llm": "tests using LLM judges (may cost money / hit network)",
+    "checkllm_redteam": "security / red-team tests (prompt injection, jailbreak, PII)",
+    "checkllm_multimodal": "vision / image / multimodal tests",
+    "checkllm_slow": "tests taking >5s to execute",
+    "checkllm_expensive": "tests costing >$0.10 estimated per run",
+}
+
+
+# Metric names that hit an LLM judge. Best-effort list — the auto
+# detector is intentionally permissive.
+_LLM_METRICS: frozenset[str] = frozenset({
+    "hallucination", "relevance", "toxicity", "rubric", "fluency",
+    "coherence", "sentiment", "correctness", "faithfulness",
+    "context_relevance", "answer_completeness", "instruction_following",
+    "summarization", "bias", "consistency", "groundedness", "g_eval",
+    "contextual_precision", "contextual_recall", "task_completion",
+    "role_adherence", "tool_accuracy", "knowledge_retention",
+    "conversation_completeness", "plan_quality", "goal_accuracy",
+    "step_efficiency", "argument_correctness", "plan_adherence",
+    "pii_detection", "misuse_detection", "role_violation", "non_advice",
+    "image_coherence", "image_helpfulness", "image_relevance",
+    "multimodal_faithfulness", "text_to_image", "mcp_task_completion",
+    "mcp_use",
+})
+
+_RAG_METRICS: frozenset[str] = frozenset({
+    "hallucination", "faithfulness", "context_relevance",
+    "answer_completeness", "groundedness", "contextual_precision",
+    "contextual_recall",
+})
+
+_REDTEAM_METRICS: frozenset[str] = frozenset({
+    "toxicity", "bias", "pii_detection", "misuse_detection",
+    "role_violation", "non_advice", "no_pii", "is_refusal",
+})
+
+_MULTIMODAL_METRICS: frozenset[str] = frozenset({
+    "image_coherence", "image_helpfulness", "image_relevance",
+    "multimodal_faithfulness", "text_to_image",
+})
+
+_CHECK_CALL_RE = re.compile(r"\bcheck(?:\.expect|\.that\([^)]*\))?\s*\.\s*(a?\w+)\s*\(")
+
+
+def _metric_names_in_source(source: str) -> set[str]:
+    """Extract metric method names referenced via ``check.<name>(``.
+
+    Async variants (``check.ahallucination``) and soft checks
+    (``check.expect.rubric``) are normalised back to the base name.
+
+    Args:
+        source: Raw function source, possibly empty.
+
+    Returns:
+        Set of metric names discovered in ``source``.
+    """
+    if not source:
+        return set()
+    found: set[str] = set()
+    for match in _CHECK_CALL_RE.finditer(source):
+        name = match.group(1)
+        if name.startswith("a") and name[1:] in _LLM_METRICS:
+            name = name[1:]
+        found.add(name)
+    return found
+
+
+def _existing_marker_names(item: pytest.Item) -> set[str]:
+    """Return marker names already set on ``item``."""
+    return {m.name for m in item.iter_markers()}
+
+
+def apply_checkllm_markers(item: pytest.Item) -> Iterable[str]:
+    """Auto-apply namespaced checkllm markers based on test source.
+
+    The function reads the test's source (when available) and looks
+    for ``check.<metric>()`` calls. Markers are added in-place via
+    ``item.add_marker``; the function also returns the marker names
+    that were added so callers can introspect or log.
+
+    User-provided markers are never overwritten: if the test already
+    carries a ``checkllm_*`` marker, no automatic marker is added.
+
+    Args:
+        item: The pytest item to annotate.
+
+    Returns:
+        Iterable of marker names that were added.
+    """
+    existing = _existing_marker_names(item)
+    if any(name.startswith("checkllm_") for name in existing):
+        return ()
+
+    source = ""
+    try:
+        func = getattr(item, "function", None)
+        if func is not None:
+            source = inspect.getsource(func)
+    except (OSError, TypeError):
+        source = ""
+
+    metrics = _metric_names_in_source(source)
+    if not metrics:
+        return ()
+
+    added: list[str] = []
+    hits_llm = bool(metrics & _LLM_METRICS)
+    hits_rag = bool(metrics & _RAG_METRICS)
+    hits_redteam = bool(metrics & _REDTEAM_METRICS)
+    hits_multimodal = bool(metrics & _MULTIMODAL_METRICS)
+
+    if hits_multimodal:
+        item.add_marker("checkllm_multimodal")
+        added.append("checkllm_multimodal")
+    if hits_redteam:
+        item.add_marker("checkllm_redteam")
+        added.append("checkllm_redteam")
+    if hits_rag:
+        item.add_marker("checkllm_rag")
+        added.append("checkllm_rag")
+    if hits_llm:
+        item.add_marker("checkllm_llm")
+        added.append("checkllm_llm")
+    elif metrics:
+        # Only deterministic metrics detected.
+        item.add_marker("checkllm_deterministic")
+        added.append("checkllm_deterministic")
+    return tuple(added)
+
+
+def pytest_collection_modifyitems(
+    config: pytest.Config, items: list[pytest.Item]
+) -> None:
+    """Auto-apply checkllm markers to every collected test item.
+
+    Failures are swallowed so test collection can never be broken by
+    the heuristic.
+    """
+    del config  # unused
+    for item in items:
+        try:
+            apply_checkllm_markers(item)
+        except Exception:
+            # Best-effort, silent: never break collection.
+            continue
 
 
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:

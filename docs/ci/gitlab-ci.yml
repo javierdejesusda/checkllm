@@ -1,0 +1,35 @@
+# Sample GitLab CI pipeline for checkllm.
+#
+# Copy this snippet into your project's `.gitlab-ci.yml` (or include it
+# from a shared pipeline). It runs the checkllm evaluation suite on
+# merge requests and on commits to the default branch, uploads the
+# JSON snapshot as a pipeline artifact, and posts a summary note on
+# the merge request.
+#
+# Required CI/CD variables:
+#   - OPENAI_API_KEY / ANTHROPIC_API_KEY (whatever judge you use)
+#   - GITLAB_TOKEN         personal or project access token with
+#                          `api` scope. CI_JOB_TOKEN is used as a
+#                          fallback but cannot post MR notes on most
+#                          GitLab instances.
+
+stages:
+  - test
+
+checkllm:
+  image: python:3.11-slim
+  stage: test
+  before_script:
+    - python -m pip install --upgrade pip
+    - pip install checkllm
+    - if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+  script:
+    - checkllm ci tests/ --budget 5.00
+  artifacts:
+    when: always
+    paths:
+      - .checkllm/ci_snapshot.json
+    expire_in: 30 days
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH

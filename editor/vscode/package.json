@@ -1,0 +1,105 @@
+{
+  "name": "checkllm-vscode",
+  "displayName": "checkllm",
+  "description": "Run checkllm tests, browse suites, and track results from VS Code.",
+  "version": "0.1.0",
+  "publisher": "checkllm",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/checkllm/checkllm"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Testing", "Linters"],
+  "activationEvents": [
+    "onCommand:checkllm.runTest",
+    "onCommand:checkllm.runSuite",
+    "onCommand:checkllm.dashboard",
+    "onView:checkllmTests",
+    "workspaceContains:**/*.checkllm.yaml"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "checkllm.runTest",
+        "title": "Run Current Test",
+        "category": "checkllm"
+      },
+      {
+        "command": "checkllm.runSuite",
+        "title": "Run Test Suite",
+        "category": "checkllm"
+      },
+      {
+        "command": "checkllm.dashboard",
+        "title": "Open Dashboard",
+        "category": "checkllm"
+      },
+      {
+        "command": "checkllm.refreshTree",
+        "title": "Refresh Test Tree",
+        "category": "checkllm",
+        "icon": "$(refresh)"
+      }
+    ],
+    "languages": [
+      {
+        "id": "checkllm-yaml",
+        "aliases": ["checkllm YAML", "checkllm"],
+        "extensions": [".checkllm.yaml", ".checkllm.yml"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "checkllm-yaml",
+        "scopeName": "source.checkllm.yaml",
+        "path": "./syntaxes/checkllm.tmLanguage.json"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "checkllm",
+          "title": "checkllm",
+          "icon": "$(beaker)"
+        }
+      ]
+    },
+    "views": {
+      "checkllm": [
+        {
+          "id": "checkllmTests",
+          "name": "Test Files",
+          "icon": "$(beaker)"
+        }
+      ]
+    },
+    "menus": {
+      "view/title": [
+        {
+          "command": "checkllm.refreshTree",
+          "when": "view == checkllmTests",
+          "group": "navigation"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "test": "node ./out/test/runTest.js",
+    "package": "vsce package",
+    "publish": "vsce publish"
+  },
+  "devDependencies": {
+    "@types/mocha": "^10.0.6",
+    "@types/node": "^20.0.0",
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.3.0"
+  }
+}

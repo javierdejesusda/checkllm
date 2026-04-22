@@ -19,6 +19,13 @@ app = typer.Typer(
 )
 console = Console()
 
+dataset_app = typer.Typer(
+    name="dataset",
+    help="Load, split, and version evaluation datasets.",
+    no_args_is_help=True,
+)
+app.add_typer(dataset_app, name="dataset")
+
 
 def version_callback(value: bool):
     if value:
@@ -1213,6 +1220,41 @@ def experiments(
     console.print(table)
 
 
+@app.command("ci-gitlab-template")
+def ci_gitlab_template(
+    eval_command: str = typer.Option(
+        "checkllm ci tests/",
+        "--eval-command",
+        help="Shell command executed by the job.",
+    ),
+    python_version: str = typer.Option(
+        "3.11",
+        "--python-version",
+        help="Python version tag for the Docker image.",
+    ),
+    budget: Optional[float] = typer.Option(
+        None, "--budget", help="Maximum USD spend appended to the command."
+    ),
+    output: Optional[str] = typer.Option(
+        None, "--output", "-o",
+        help="Write YAML to this path instead of stdout.",
+    ),
+):
+    """Print a ready-to-paste ``.gitlab-ci.yml`` job for checkllm."""
+    from checkllm.ci.gitlab import gitlab_template
+
+    yaml = gitlab_template(
+        eval_command=eval_command,
+        python_version=python_version,
+        budget=budget,
+    )
+    if output:
+        Path(output).write_text(yaml, encoding="utf-8")
+        console.print(f"[green]Wrote GitLab CI template to {output}[/]")
+    else:
+        print(yaml, end="")
+
+
 @app.command()
 def ci(
     test_path: str = typer.Argument("tests/", help="Path to test directory or file"),
@@ -1230,6 +1272,8 @@ def ci(
     import os
     import json
 
+    from checkllm.ci import gitlab as gitlab_ci
+
     # Detect GitHub Actions environment
     github_token = os.environ.get("GITHUB_TOKEN")
     github_event_path = os.environ.get("GITHUB_EVENT_PATH")
@@ -1245,11 +1289,19 @@ def ci(
 
     is_github_ci = bool(github_token and github_repository)
 
+    gitlab_context = gitlab_ci.context_from_env()
+    is_gitlab_ci = gitlab_context is not None
+
     if is_github_ci:
         console.print("[bold]checkllm CI[/] — detected GitHub Actions")
         console.print(f"[dim]Repository: {github_repository}[/]")
         if pr_number:
             console.print(f"[dim]PR: #{pr_number}[/]")
+    elif gitlab_context is not None:
+        console.print("[bold]checkllm CI[/] — detected GitLab CI")
+        console.print(f"[dim]Project: {gitlab_context.project_id}[/]")
+        if gitlab_context.mr_iid:
+            console.print(f"[dim]MR: !{gitlab_context.mr_iid}[/]")
     else:
         console.print("[bold]checkllm CI[/] — running locally (no GitHub Actions detected)")
 
@@ -1271,7 +1323,7 @@ def ci(
     result = subprocess.run(cmd, env=env)
 
     # Post PR comment if in GitHub Actions
-    if is_github_ci and pr_number and not no_comment:
+    if is_github_ci and pr_number and github_repository and not no_comment:
         try:
             from checkllm.pytest_plugin import get_session_results
             from checkllm.reporting.github import generate_pr_comment, post_pr_comment
@@ -1315,6 +1367,58 @@ def ci(
         except Exception as exc:
             console.print(f"[yellow]Failed to post PR comment: {exc}[/]")
 
+    # Post MR comment if in GitLab CI
+    if (
+        is_gitlab_ci
+        and gitlab_context is not None
+        and gitlab_context.mr_iid
+        and not no_comment
+    ):
+        try:
+            snapshot_file = Path(snapshot_path)
+            if snapshot_file.exists():
+                from checkllm.regression.snapshot import load_snapshot
+
+                snap = load_snapshot(snapshot_file)
+                from checkllm.models import CheckResult
+
+                mr_results: dict[str, list[CheckResult]] = {}
+                for test_name, runs in snap.tests.items():
+                    mr_checks: list[CheckResult] = []
+                    for run in runs:
+                        for metric_name, metric in run.metrics.items():
+                            mr_checks.append(CheckResult(
+                                passed=metric.passed,
+                                score=metric.score,
+                                reasoning="",
+                                cost=0.0,
+                                latency_ms=0,
+                                metric_name=metric_name,
+                            ))
+                    mr_results[test_name] = mr_checks
+
+                body = gitlab_ci.format_mr_comment(mr_results)
+                if gitlab_ci.post_mr_comment(body, ctx=gitlab_context):
+                    console.print(
+                        f"[green]Posted results to MR !{gitlab_context.mr_iid}[/]"
+                    )
+                else:
+                    if gitlab_context.token_is_job_token:
+                        console.print(
+                            "[yellow]Could not post MR note with CI_JOB_TOKEN; "
+                            "set GITLAB_TOKEN or CHECKLLM_GITLAB_TOKEN[/]"
+                        )
+                    else:
+                        console.print(
+                            "[yellow]Failed to post MR comment (check token/scopes)[/]"
+                        )
+            else:
+                console.print(
+                    "[yellow]No snapshot generated — skipping MR comment[/]"
+                )
+        except Exception as exc:
+            console.print(f"[yellow]Failed to post MR comment: {exc}[/]")
+
     # Regression comparison
     if compare:
         baseline_path = f".checkllm/snapshots/{compare}.json"
@@ -1332,3 +1436,169 @@ def ci(
             console.print(f"[yellow]Baseline not found at {baseline_path} — skipping comparison[/]")
 
     raise typer.Exit(code=result.returncode)
+
+
+def _write_cases(cases, output: Path) -> None:
+    """Serialise ``cases`` to YAML or JSON based on ``output`` extension."""
+    import json as _json
+
+    import yaml as _yaml
+
+    records = [c.model_dump() for c in cases]
+    output.parent.mkdir(parents=True, exist_ok=True)
+    suffix = output.suffix.lower()
+    if suffix in (".yaml", ".yml"):
+        with open(output, "w", encoding="utf-8") as f:
+            _yaml.safe_dump(records, f, sort_keys=False, allow_unicode=True)
+    elif suffix == ".json":
+        with open(output, "w", encoding="utf-8") as f:
+            _json.dump(records, f, indent=2, default=str)
+    else:
+        raise typer.BadParameter(
+            f"Unsupported output format: {output.suffix}. Use .yaml or .json."
+        )
+
+
+@dataset_app.command("load")
+def dataset_load(
+    name: str = typer.Argument(help="Hugging Face dataset identifier, e.g. 'squad'"),
+    split: str = typer.Option("test", "--split", help="Dataset split to load"),
+    config: Optional[str] = typer.Option(None, "--config", help="Dataset config/subset"),
+    limit: Optional[int] = typer.Option(None, "--limit", help="Maximum number of rows"),
+    streaming: bool = typer.Option(False, "--streaming", help="Use streaming mode"),
+    output: str = typer.Option("dataset.yaml", "--output", "-o", help="Output file (.yaml or .json)"),
+    field_map: Optional[str] = typer.Option(
+        None,
+        "--field-map",
+        help="JSON mapping HF columns to Case fields, e.g. '{\"question\": \"input\"}'",
+    ),
+    dataset_id: Optional[str] = typer.Option(
+        None, "--dataset-id", help="Register the load under this lineage id"
+    ),
+):
+    """Load a Hugging Face dataset and save it as YAML/JSON cases."""
+    import json as _json
+
+    from checkllm.datasets.huggingface import load_hf_dataset
+
+    parsed_map: Optional[dict[str, str]] = None
+    if field_map:
+        try:
+            parsed_map = _json.loads(field_map)
+        except _json.JSONDecodeError as exc:
+            console.print(f"[bold red]Invalid --field-map JSON: {exc}[/]")
+            raise typer.Exit(code=1)
+
+    try:
+        cases = load_hf_dataset(
+            name,
+            split=split,
+            config=config,
+            streaming=streaming,
+            limit=limit,
+            field_map=parsed_map,
+        )
+    except ImportError as exc:
+        console.print(f"[bold red]{exc}[/]")
+        raise typer.Exit(code=1)
+    except Exception as exc:  # pragma: no cover - surfaces HF errors
+        console.print(f"[bold red]Failed to load dataset: {exc}[/]")
+        raise typer.Exit(code=1)
+
+    output_path = Path(output)
+    _write_cases(cases, output_path)
+    console.print(f"[bold green]Wrote {len(cases)} cases to {output_path}[/]")
+
+    if dataset_id:
+        from checkllm.datasets.lineage import LineageStore
+
+        store = LineageStore()
+        version = store.register(cases, dataset_id=dataset_id, source=f"hf:{name}")
+        console.print(f"[dim]Registered lineage {dataset_id}:{version.version}[/]")
+
+    raise typer.Exit(code=0)
+
+
+@dataset_app.command("split")
+def dataset_split(
+    input: str = typer.Argument(help="Path to dataset file (YAML, JSON, CSV)"),
+    test_size: float = typer.Option(0.2, "--test-size", help="Fraction of cases for the test split"),
+    seed: int = typer.Option(42, "--seed", help="Random seed for reproducibility"),
+    stratify_by: Optional[str] = typer.Option(None, "--stratify-by", help="Field to stratify on"),
+    train: str = typer.Option("train.yaml", "--train", help="Train split output path"),
+    test: str = typer.Option("test.yaml", "--test", help="Test split output path"),
+):
+    """Split a dataset into reproducible train/test files."""
+    from checkllm.datasets.loader import load_dataset
+    from checkllm.datasets.splits import train_test_split as _split
+
+    cases = load_dataset(Path(input))
+    train_cases, test_cases = _split(
+        cases, test_size=test_size, seed=seed, stratify_by=stratify_by
+    )
+    _write_cases(train_cases, Path(train))
+    _write_cases(test_cases, Path(test))
+    console.print(
+        f"[bold green]Split {len(cases)} cases → {len(train_cases)} train / "
+        f"{len(test_cases)} test[/]"
+    )
+    raise typer.Exit(code=0)
+
+
+@dataset_app.command("versions")
+def dataset_versions(
+    dataset_id: str = typer.Argument(help="Dataset lineage id to inspect"),
+):
+    """List tracked versions for a dataset."""
+    from rich.table import Table
+
+    from checkllm.datasets.lineage import LineageStore
+
+    store = LineageStore()
+    versions = store.list_versions(dataset_id)
+    if not versions:
+        console.print(f"[dim]No versions recorded for {dataset_id}[/]")
+        raise typer.Exit(code=0)
+
+    table = Table(title=f"Versions: {dataset_id}")
+    table.add_column("Version")
+    table.add_column("Created")
+    table.add_column("Cases", justify="right")
+    table.add_column("Hash")
+    table.add_column("Source")
+    for v in versions:
+        table.add_row(
+            v.version,
+            v.created_at,
+            str(v.num_cases),
+            v.content_hash[:12],
+            v.source or "",
+        )
+    console.print(table)
+    raise typer.Exit(code=0)
+
+
+@dataset_app.command("diff")
+def dataset_diff(
+    v1: str = typer.Argument(help="Baseline version ('dataset_id:vN' or 'vN' with --dataset-id)"),
+    v2: str = typer.Argument(help="Target version"),
+    dataset_id: Optional[str] = typer.Option(
+        None, "--dataset-id", help="Dataset id (required when v1/v2 are bare)"
+    ),
+):
+    """Show added/removed/modified cases between two versions."""
+    from checkllm.datasets.lineage import LineageStore
+
+    store = LineageStore()
+    try:
+        result = store.diff(v1, v2, dataset_id=dataset_id)
+    except ValueError as exc:
+        console.print(f"[bold red]{exc}[/]")
+        raise typer.Exit(code=1)
+
+    console.print(f"[bold]Diff {result.v1} -> {result.v2}[/]")
+    console.print(f"  Added:    {result.added}")
+    console.print(f"  Removed:  {result.removed}")
+    console.print(f"  Modified: {result.modified}")
+    console.print(f"  Hash:     {result.v1_hash[:12]} -> {result.v2_hash[:12]}")
+    raise typer.Exit(code=0)
