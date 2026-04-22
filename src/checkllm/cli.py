@@ -1730,3 +1730,243 @@ def dataset_diff(
     console.print(f"  Modified: {result.modified}")
     console.print(f"  Hash:     {result.v1_hash[:12]} -> {result.v2_hash[:12]}")
     raise typer.Exit(code=0)
+
+
+@app.command("generate-dataset")
+def generate_dataset(
+    source: str = typer.Argument(
+        help="File, directory, or glob pointing at source documents (.md, .txt, .pdf)."
+    ),
+    num_cases: int = typer.Option(20, "--num-cases", "-n", help="How many cases to generate."),
+    output: Path = typer.Option(
+        Path("dataset.yaml"), "--output", "-o", help="Where to write the generated dataset."
+    ),
+    glob: str = typer.Option(
+        "**/*.md", "--glob", help="Glob pattern when SOURCE is a directory."
+    ),
+    simple: float = typer.Option(0.4, "--simple", help="Fraction of single-hop queries."),
+    reasoning: float = typer.Option(
+        0.3, "--reasoning", help="Fraction of multi-hop reasoning queries."
+    ),
+    multi_context: float = typer.Option(
+        0.2, "--multi-context", help="Fraction of multi-context synthesis queries."
+    ),
+    conditional: float = typer.Option(
+        0.1, "--conditional", help="Fraction of conditional / hypothetical queries."
+    ),
+    personas: Optional[str] = typer.Option(
+        None, "--personas", help="Comma-separated persona labels (e.g. novice,expert,skeptic)."
+    ),
+    chunk_size: int = typer.Option(1000, "--chunk-size", help="Chunk size in characters."),
+    chunk_overlap: int = typer.Option(100, "--chunk-overlap", help="Chunk overlap in characters."),
+    judge_backend: Optional[str] = typer.Option(
+        None,
+        "--judge",
+        help="Judge backend name. Defaults to auto-detection from env.",
+    ),
+):
+    """Generate a RAG evaluation dataset from documents (Ragas-parity)."""
+    import asyncio
+    import json
+
+    import yaml
+
+    from checkllm.discovery import detect_judge_backend
+    from checkllm.providers import create_judge
+    from checkllm.rag_dataset import QueryDistribution, RAGDatasetGenerator
+
+    distribution = QueryDistribution(
+        simple=simple,
+        reasoning=reasoning,
+        multi_context=multi_context,
+        conditional=conditional,
+    )
+
+    if judge_backend:
+        backend_name = judge_backend
+        model = None
+    else:
+        detected = detect_judge_backend()
+        if detected is None:
+            console.print(
+                "[bold red]No judge backend available.[/] Install an optional dep "
+                "(e.g. `pip install checkllm[openai]`) and set the matching API key, "
+                "or pass --judge <backend>."
+            )
+            raise typer.Exit(code=1)
+        backend_name, model = detected
+
+    judge_kwargs: dict = {}
+    if model is not None:
+        judge_kwargs["model"] = model
+    judge = create_judge(backend_name, **judge_kwargs)
+
+    gen = RAGDatasetGenerator(judge=judge)
+
+    source_path = Path(source)
+    persona_list = [p.strip() for p in personas.split(",")] if personas else None
+
+    async def _run():
+        if source_path.is_dir():
+            return await gen.from_directory(
+                source_path,
+                glob=glob,
+                num_cases=num_cases,
+                query_distribution=distribution,
+                personas=persona_list,
+                chunk_size=chunk_size,
+                chunk_overlap=chunk_overlap,
+            )
+        suffix = source_path.suffix.lower()
+        if suffix == ".pdf":
+            return await gen.from_pdf(
+                source_path,
+                num_cases=num_cases,
+                query_distribution=distribution,
+                personas=persona_list,
+                chunk_size=chunk_size,
+                chunk_overlap=chunk_overlap,
+            )
+        if suffix == ".md":
+            return await gen.from_markdown_files(
+                [source_path],
+                num_cases=num_cases,
+                query_distribution=distribution,
+                personas=persona_list,
+                chunk_size=chunk_size,
+                chunk_overlap=chunk_overlap,
+            )
+        return await gen.from_text_files(
+            [source_path],
+            num_cases=num_cases,
+            query_distribution=distribution,
+            personas=persona_list,
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap,
+        )
+
+    cases = asyncio.run(_run())
+
+    output.parent.mkdir(parents=True, exist_ok=True)
+    payload = {"cases": [c.model_dump(exclude_none=True) for c in cases]}
+    if output.suffix.lower() in {".json", ".jsonl"}:
+        if output.suffix.lower() == ".jsonl":
+            with output.open("w", encoding="utf-8") as fh:
+                for case in payload["cases"]:
+                    fh.write(json.dumps(case, ensure_ascii=False) + "\n")
+        else:
+            output.write_text(json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
+    else:
+        output.write_text(yaml.safe_dump(payload, sort_keys=False), encoding="utf-8")
+
+    console.print(f"[bold green]Generated {len(cases)} cases[/] -> {output}")
+    raise typer.Exit(code=0)
+
+
+@app.command("export")
+def export_cmd(
+    input_path: Path = typer.Argument(
+        help="Path to a JSONL results file produced by `checkllm run` / `eval`."
+    ),
+    output: Path = typer.Option(
+        ..., "--output", "-o", help="Output path. Format inferred from suffix if --format omitted."
+    ),
+    format: Optional[str] = typer.Option(
+        None,
+        "--format",
+        "-f",
+        help="Output format: csv, parquet, json, jsonl. Inferred from --output suffix if absent.",
+    ),
+    compression: str = typer.Option(
+        "snappy",
+        "--compression",
+        help="Parquet compression codec: snappy, gzip, zstd, or none.",
+    ),
+):
+    """Export results from a JSONL results file to CSV, Parquet, JSON, or JSONL."""
+    import json as _json
+
+    from checkllm.models import CheckResult
+    from checkllm.reporting.bulk_export import export_results as bulk_export
+
+    if not input_path.exists():
+        console.print(f"[bold red]No such file:[/] {input_path}")
+        raise typer.Exit(code=1)
+
+    results: dict[str, list[CheckResult]] = {}
+    with input_path.open("r", encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line:
+                continue
+            rec = _json.loads(line)
+            test_name = rec.pop("test_name", "unknown")
+            results.setdefault(test_name, []).append(CheckResult(**rec))
+
+    if format == "parquet" or (format is None and output.suffix.lower() == ".parquet"):
+        from checkllm.reporting.parquet_export import write_parquet
+
+        write_parquet(results, output, compression=compression)
+        summary_fmt = "parquet"
+        rows = sum(len(v) for v in results.values())
+    else:
+        summary = bulk_export(results, output, format=format)
+        summary_fmt = summary.format
+        rows = summary.row_count
+
+    console.print(
+        f"[bold green]Exported[/] {rows} rows to {output} ({summary_fmt})"
+    )
+    raise typer.Exit(code=0)
+
+
+@app.command("validate-config")
+def validate_config_cmd(
+    config_path: Path = typer.Argument(
+        Path("pyproject.toml"),
+        help="Path to pyproject.toml or checkllm.yaml. Defaults to pyproject.toml in cwd.",
+    ),
+    write_schema: Optional[Path] = typer.Option(
+        None,
+        "--write-schema",
+        help="Also write the JSON schema to this path (useful for editor IntelliSense).",
+    ),
+):
+    """Validate checkllm configuration against the JSON Schema."""
+    import tomllib as _toml
+
+    import yaml as _yaml
+
+    from checkllm.config_schema import (
+        generate_schema_to_file,
+        validate_config as _validate_config,
+    )
+
+    if not config_path.exists():
+        console.print(f"[bold red]No such file:[/] {config_path}")
+        raise typer.Exit(code=1)
+
+    data: dict
+    if config_path.name == "pyproject.toml" or config_path.suffix.lower() == ".toml":
+        with config_path.open("rb") as fh:
+            parsed = _toml.load(fh)
+        data = parsed.get("tool", {}).get("checkllm", {}) or {}
+    else:
+        with config_path.open("r", encoding="utf-8") as fh:
+            data = _yaml.safe_load(fh) or {}
+
+    errors = _validate_config(data)
+
+    if write_schema is not None:
+        generate_schema_to_file(write_schema)
+        console.print(f"Wrote schema to {write_schema}")
+
+    if not errors:
+        console.print(f"[bold green]OK[/] — {config_path} is valid.")
+        raise typer.Exit(code=0)
+
+    console.print(f"[bold red]{len(errors)} validation error(s)[/]:")
+    for err in errors:
+        location = err.path or "<root>"
+        console.print(f"  [{err.severity}] {location}: {err.message}")
+    raise typer.Exit(code=1)

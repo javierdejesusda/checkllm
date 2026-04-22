@@ -1,3 +1,9 @@
+from checkllm.reporting.bulk_export import (
+    ExportSummary,
+    export_results,
+    stream_csv,
+    stream_jsonl,
+)
 from checkllm.reporting.comparison import (
     ComparisonReport,
     generate_comparison_html,
@@ -7,6 +13,7 @@ from checkllm.reporting.comparison import (
 from checkllm.reporting.csv_export import (
     results_to_dataframe,
     write_csv,
+    write_csv_streaming,
     write_csv_string,
 )
 from checkllm.reporting.github import generate_pr_comment, post_pr_comment
@@ -14,6 +21,11 @@ from checkllm.reporting.html import generate_html_report
 from checkllm.reporting.jsonl import export_jsonl
 from checkllm.reporting.junit import generate_junit_xml
 from checkllm.reporting.markdown import generate_markdown_report
+from checkllm.reporting.parquet_export import (
+    read_parquet,
+    results_to_arrow_table,
+    write_parquet,
+)
 from checkllm.reporting.terminal import render_regression_report, render_results
 from checkllm.reporting.trends import (
     TrendData,
@@ -23,8 +35,10 @@ from checkllm.reporting.trends import (
 
 __all__ = [
     "ComparisonReport",
+    "ExportSummary",
     "TrendData",
     "export_jsonl",
+    "export_results",
     "generate_comparison_html",
     "generate_comparison_markdown",
     "generate_html_report",
@@ -33,11 +47,17 @@ __all__ = [
     "generate_pr_comment",
     "generate_trend_html",
     "post_pr_comment",
+    "read_parquet",
     "render_comparison_terminal",
     "render_regression_report",
     "render_results",
     "render_trend_terminal",
+    "results_to_arrow_table",
     "results_to_dataframe",
+    "stream_csv",
+    "stream_jsonl",
     "write_csv",
+    "write_csv_streaming",
     "write_csv_string",
+    "write_parquet",
 ]

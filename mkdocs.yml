@@ -32,9 +32,17 @@ nav:
   - Home: index.md
   - Quickstart: quickstart.md
   - Guides:
+    - Choosing metrics: guides/choosing-metrics.md
+    - Metrics reference: guides/metrics-reference.md
     - Deterministic Checks: guides/deterministic-checks.md
     - LLM Metrics: guides/llm-metrics.md
+    - DAG metric: guides/dag-metric.md
+    - RAG dataset generation: guides/rag-dataset-generation.md
+    - Retriever validation: guides/retriever-validation.md
     - Guardrails: guides/guardrails.md
+    - Exporting results: guides/exporting-results.md
+    - Model-graded assertions: guides/model-graded-assertions.md
+    - YAML config validation: guides/yaml-config-validation.md
     - CI/CD: guides/ci-cd.md
     - Custom Metrics: guides/custom-metrics.md
     - Plugins: guides/plugins.md
@@ -50,6 +58,7 @@ nav:
   - Comparison: comparison.md
   - Benchmarks:
     - Competitor leaderboard: benchmarks/competitor-comparison.md
+    - Cost and latency: benchmarks/cost-latency.md
     - Methodology: benchmarks/methodology.md
   - Release process: release-process.md
 

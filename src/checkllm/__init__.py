@@ -345,6 +345,30 @@ try:
         YAMLEvaluator,
         load_yaml_eval_config,
     )
+
+    # RAG dataset generator (Ragas-parity)
+    from checkllm.rag_dataset import (
+        DocumentChunk,
+        QueryDistribution,
+        RAGDatasetGenerator,
+        chunk_document,
+    )
+
+    # Promptfoo-style model-graded assertions
+    from checkllm.yaml_assertions import (
+        Assertion,
+        AssertionResults,
+        evaluate_assertions,
+        parse_assertions,
+    )
+
+    # JSON Schema validation for checkllm.yaml / [tool.checkllm]
+    from checkllm.config_schema import (
+        ValidationError as ConfigValidationError,
+        generate_schema_to_file,
+        load_schema,
+        validate_config,
+    )
 except ImportError:
     pass  # Optional dependencies not installed
 
@@ -672,6 +696,21 @@ __all__ = [
     "YAMLJudgeConfig",
     "YAMLTestConfig",
     "load_yaml_eval_config",
+    # RAG dataset generator
+    "DocumentChunk",
+    "QueryDistribution",
+    "RAGDatasetGenerator",
+    "chunk_document",
+    # Model-graded assertions
+    "Assertion",
+    "AssertionResults",
+    "evaluate_assertions",
+    "parse_assertions",
+    # Config schema validation
+    "ConfigValidationError",
+    "generate_schema_to_file",
+    "load_schema",
+    "validate_config",
     # Version
     "__version__",
 ]

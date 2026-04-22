@@ -250,45 +250,39 @@ class TestDAGMetric:
         assert abs(result.score - 2.0 / 3.0) < 1e-6
 
     @pytest.mark.asyncio
-    async def test_no_cycles_visited_twice(self, mock_judge):
-        """A node already visited should not be evaluated again."""
-        mock_judge.evaluate.return_value = JudgeResponse(score=0.8, reasoning="ok", raw_output=None)
-        dag = DAGMetric(
-            judge=mock_judge,
-            nodes=[
-                DAGNode(
-                    name="a",
-                    prompt_template="A? {output}",
-                    threshold=0.5,
-                    children_on_pass=["b"],
-                ),
-                DAGNode(
-                    name="b",
-                    prompt_template="B? {output}",
-                    threshold=0.5,
-                    children_on_pass=["a"],  # would form a cycle — should be skipped
-                ),
-            ],
-            root="a",
-        )
-        result = await dag.evaluate(output="test")
-        # Should only evaluate a and b once each
-        assert mock_judge.evaluate.call_count == 2
+    async def test_cycles_rejected_at_construction(self, mock_judge):
+        """Cyclic graphs must be rejected at DAGMetric.__init__."""
+        with pytest.raises(ValueError, match="cycle"):
+            DAGMetric(
+                judge=mock_judge,
+                nodes=[
+                    DAGNode(
+                        name="a",
+                        prompt_template="A? {output}",
+                        threshold=0.5,
+                        children_on_pass=["b"],
+                    ),
+                    DAGNode(
+                        name="b",
+                        prompt_template="B? {output}",
+                        threshold=0.5,
+                        children_on_pass=["a"],
+                    ),
+                ],
+                root="a",
+            )
 
     @pytest.mark.asyncio
-    async def test_missing_root_returns_no_evaluated(self, mock_judge):
-        dag = DAGMetric(
-            judge=mock_judge,
-            nodes=[
-                DAGNode(name="quality", prompt_template="Quality? {output}", threshold=0.5),
-            ],
-            root="nonexistent",
-        )
-        result = await dag.evaluate(output="test")
-        assert result.passed is False
-        assert result.score == 0.0
-        assert "No nodes evaluated" in result.reasoning
-        mock_judge.evaluate.assert_not_called()
+    async def test_missing_root_rejected_at_construction(self, mock_judge):
+        """A root that doesn't exist in nodes must raise at construction."""
+        with pytest.raises(ValueError, match="[Rr]oot"):
+            DAGMetric(
+                judge=mock_judge,
+                nodes=[
+                    DAGNode(name="quality", prompt_template="Quality? {output}", threshold=0.5),
+                ],
+                root="nonexistent",
+            )
 
     @pytest.mark.asyncio
     async def test_output_placeholder_substituted(self, mock_judge):

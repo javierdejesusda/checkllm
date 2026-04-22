@@ -42,10 +42,19 @@ if TYPE_CHECKING:
     from checkllm.integrations.langchain import (
         CheckllmCallbackHandler as LangChainHandler,
     )
+    from checkllm.integrations.langchain_retriever import (
+        CheckllmRetrieverWrapper as LangChainRetrieverWrapper,
+        RetrievalEvalResult,
+        evaluate_retriever as evaluate_langchain_retriever,
+    )
     from checkllm.integrations.langfuse import LangFuseTracer
     from checkllm.integrations.langsmith import LangSmithTracer
     from checkllm.integrations.llamaindex import (
         CheckllmCallbackHandler as LlamaIndexHandler,
+    )
+    from checkllm.integrations.llamaindex_retriever import (
+        CheckllmRetrieverWrapper as LlamaIndexRetrieverWrapper,
+        evaluate_retriever as evaluate_llamaindex_retriever,
     )
     from checkllm.integrations.openai_agents import (
         CheckllmRunHandler as OpenAIAgentsHandler,
@@ -60,13 +69,18 @@ __all__ = [
     "CrewAICallback",
     "DatadogTracer",
     "LangChainHandler",
+    "LangChainRetrieverWrapper",
     "LangFuseTracer",
     "LangSmithTracer",
     "LlamaIndexHandler",
+    "LlamaIndexRetrieverWrapper",
     "OpenAIAgentsHandler",
     "PrometheusExporter",
     "PydanticAIValidator",
+    "RetrievalEvalResult",
     "SyncResult",
+    "evaluate_langchain_retriever",
+    "evaluate_llamaindex_retriever",
     "get_tracer",
     "push_to_remote",
 ]
@@ -171,5 +185,38 @@ def __getattr__(name: str) -> Any:
         from checkllm.integrations.cloud_sync import SyncResult
 
         return SyncResult
+
+    if name == "LangChainRetrieverWrapper":
+        from checkllm.integrations.langchain_retriever import (
+            CheckllmRetrieverWrapper as _Wrapper,
+        )
+
+        return _Wrapper
+
+    if name == "evaluate_langchain_retriever":
+        from checkllm.integrations.langchain_retriever import (
+            evaluate_retriever as _evaluate,
+        )
+
+        return _evaluate
+
+    if name == "RetrievalEvalResult":
+        from checkllm.integrations.langchain_retriever import RetrievalEvalResult
+
+        return RetrievalEvalResult
+
+    if name == "LlamaIndexRetrieverWrapper":
+        from checkllm.integrations.llamaindex_retriever import (
+            CheckllmRetrieverWrapper as _Wrapper,
+        )
+
+        return _Wrapper
+
+    if name == "evaluate_llamaindex_retriever":
+        from checkllm.integrations.llamaindex_retriever import (
+            evaluate_retriever as _evaluate,
+        )
+
+        return _evaluate
 
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")

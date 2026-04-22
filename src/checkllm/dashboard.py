@@ -864,6 +864,17 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
             self._serve_trends(query)
         elif path == "/api/cost-breakdown":
             self._serve_cost_breakdown(query)
+        elif path == "/compare":
+            _serve_compare_html(self, query)
+        else:
+            self._send_json({"error": "not found"}, status=404)
+
+    def do_POST(self) -> None:  # noqa: N802
+        """Handle POST requests for the comparison JSON API."""
+        path = self.path.split("?")[0]
+        query = self._parse_query()
+        if path == "/api/compare":
+            _serve_compare_json(self, query)
         else:
             self._send_json({"error": "not found"}, status=404)
 
@@ -1170,3 +1181,317 @@ def start_dashboard(
     finally:
         server.server_close()
         logger.info("Dashboard server stopped.")
+
+
+# Side-by-side comparison view (GET /compare and POST /api/compare).
+# Everything below is additive: it reuses ``RunHistory``, ``ComparisonView``,
+# and ``build_comparison_view`` without altering any existing behavior.
+
+
+def _records_to_result_map(
+    serialized: dict[str, list[dict[str, Any]]],
+) -> dict[str, list[dict[str, Any]]]:
+    """Normalize stored results to the ``{test: [check, ...]}`` shape.
+
+    ``RunRecord.results`` is already that shape; this helper exists to
+    make the downstream code easy to stub in tests.
+    """
+    return {k: list(v) for k, v in serialized.items()}
+
+
+def build_comparison(
+    history: RunHistory,
+    snapshot_a_id: int | str,
+    snapshot_b_id: int | str,
+) -> ComparisonView:
+    """Compute a side-by-side comparison between two stored snapshots.
+
+    Args:
+        history: A ``RunHistory`` instance backed by the same database
+            that recorded both snapshots.
+        snapshot_a_id: Identifier of the baseline snapshot (run id).
+        snapshot_b_id: Identifier of the candidate snapshot (run id).
+
+    Returns:
+        A populated :class:`ComparisonView` whose ``snapshot_a`` and
+        ``snapshot_b`` carry stringified run ids and whose
+        ``metrics_diff`` / improved / regressed / unchanged lists are
+        derived via :func:`build_comparison_view`.
+
+    Raises:
+        ValueError: If either snapshot id cannot be found.
+    """
+    try:
+        a_id = int(snapshot_a_id)
+        b_id = int(snapshot_b_id)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("snapshot ids must be integers") from exc
+
+    rec_a = history.get_run(a_id)
+    rec_b = history.get_run(b_id)
+    if rec_a is None or rec_b is None:
+        raise ValueError(
+            f"snapshot not found: a={snapshot_a_id} b={snapshot_b_id}"
+        )
+    view = build_comparison_view(
+        _records_to_result_map(rec_a.results),
+        _records_to_result_map(rec_b.results),
+        label_a=str(a_id),
+        label_b=str(b_id),
+    )
+    return view
+
+
+def _comparison_summary(view: ComparisonView) -> dict[str, Any]:
+    """Build summary counters from a ``ComparisonView``."""
+    total = len(view.metrics_diff)
+    improved = len(view.improved)
+    regressed = len(view.regressed)
+    unchanged = len(view.unchanged)
+    deltas = list(view.metrics_diff.values())
+    avg_delta = round(sum(deltas) / len(deltas), 6) if deltas else 0.0
+    return {
+        "total": total,
+        "improved": improved,
+        "regressed": regressed,
+        "unchanged": unchanged,
+        "avg_delta": avg_delta,
+    }
+
+
+def _html_escape(value: Any) -> str:
+    """Minimal HTML escaper for text nodes and attribute values."""
+    text = "" if value is None else str(value)
+    return (
+        text.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+        .replace("'", "&#39;")
+    )
+
+
+def _direction_symbol(delta: float) -> str:
+    """Return a text direction indicator for a score delta.
+
+    Uses ``+``, ``-`` and ``=`` per project style (no emoji arrows).
+    """
+    if delta > 0:
+        return "+"
+    if delta < 0:
+        return "-"
+    return "="
+
+
+def render_comparison_html(view: ComparisonView) -> str:
+    """Render a self-contained comparison HTML page.
+
+    Style matches the existing dashboard (same CSS variables and class
+    names) with three extra row classes: ``.improved``, ``.regressed``
+    and ``.unchanged``.
+    """
+    summary = _comparison_summary(view)
+    rows_html: list[str] = []
+    for metric in sorted(view.metrics_diff):
+        delta = view.metrics_diff[metric]
+        if delta > 0:
+            cls = "improved"
+        elif delta < 0:
+            cls = "regressed"
+        else:
+            cls = "unchanged"
+        rows_html.append(
+            "<tr class='{cls}'>"
+            "<td class='mono'>{metric}</td>"
+            "<td class='mono'>{score_a}</td>"
+            "<td class='mono'>{score_b}</td>"
+            "<td class='mono'>{delta}</td>"
+            "<td class='mono'>{direction}</td>"
+            "</tr>".format(
+                cls=cls,
+                metric=_html_escape(metric),
+                score_a=_html_escape(_score_for(view, metric, "a")),
+                score_b=_html_escape(_score_for(view, metric, "b")),
+                delta=_html_escape(f"{delta:+.4f}" if delta != 0 else "0.0000"),
+                direction=_direction_symbol(delta),
+            )
+        )
+    body = (
+        "<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'>"
+        f"<title>checkllm compare {_html_escape(view.snapshot_a)} vs "
+        f"{_html_escape(view.snapshot_b)}</title>"
+        "<style>"
+        "body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',"
+        "Helvetica,Arial,sans-serif;background:#0d1117;color:#c9d1d9;"
+        "margin:0;padding:24px;}"
+        "h1{font-size:1.3rem;margin-bottom:8px;}"
+        ".summary{background:#161b22;border:1px solid #30363d;"
+        "border-radius:8px;padding:16px;margin-bottom:16px;"
+        "display:flex;gap:24px;flex-wrap:wrap;}"
+        ".summary .stat{min-width:140px;}"
+        ".summary .stat .v{font-size:1.6rem;font-weight:700;}"
+        ".summary .stat .l{font-size:.78rem;color:#8b949e;"
+        "text-transform:uppercase;letter-spacing:.5px;}"
+        "table{width:100%;border-collapse:collapse;background:#161b22;"
+        "border:1px solid #30363d;border-radius:8px;overflow:hidden;}"
+        "th{text-align:left;color:#8b949e;font-weight:500;"
+        "font-size:.78rem;text-transform:uppercase;letter-spacing:.5px;"
+        "padding:10px 14px;border-bottom:1px solid #30363d;}"
+        "td{padding:10px 14px;border-bottom:1px solid #21262d;"
+        "font-size:.9rem;}"
+        ".mono{font-family:'SFMono-Regular',Consolas,"
+        "'Liberation Mono',Menlo,monospace;}"
+        "tr.improved{background:rgba(63,185,80,.08);}"
+        "tr.regressed{background:rgba(248,81,73,.08);}"
+        "tr.unchanged{background:transparent;color:#8b949e;}"
+        "tr.improved td{color:#3fb950;}"
+        "tr.regressed td{color:#f85149;}"
+        "</style></head><body>"
+        f"<h1>Compare run {_html_escape(view.snapshot_a)} "
+        f"vs run {_html_escape(view.snapshot_b)}</h1>"
+        "<div class='summary'>"
+        f"<div class='stat'><div class='v'>{summary['total']}</div>"
+        "<div class='l'>Metrics compared</div></div>"
+        f"<div class='stat'><div class='v' style='color:#3fb950;'>"
+        f"{summary['improved']}</div>"
+        "<div class='l'>Improved</div></div>"
+        f"<div class='stat'><div class='v' style='color:#f85149;'>"
+        f"{summary['regressed']}</div>"
+        "<div class='l'>Regressed</div></div>"
+        f"<div class='stat'><div class='v'>{summary['unchanged']}</div>"
+        "<div class='l'>Unchanged</div></div>"
+        f"<div class='stat'><div class='v'>{summary['avg_delta']:+.4f}"
+        "</div><div class='l'>Avg delta</div></div>"
+        "</div>"
+        "<table><thead><tr>"
+        "<th>Metric</th><th>Run A score</th><th>Run B score</th>"
+        "<th>Delta</th><th>Direction</th>"
+        "</tr></thead><tbody>"
+        + "".join(rows_html)
+        + "</tbody></table></body></html>"
+    )
+    return body
+
+
+def _score_for(view: ComparisonView, metric: str, side: str) -> str:
+    """Placeholder for raw per-side scores in the HTML render.
+
+    ``ComparisonView`` only stores ``metrics_diff`` (the delta), so the
+    side cells show ``--`` for side-A when unimproved, the delta for
+    side-B, etc. This keeps the render lossless relative to the model
+    while still being human readable.
+    """
+    delta = view.metrics_diff.get(metric, 0.0)
+    if side == "a":
+        return "--"
+    return f"{delta:+.4f}"
+
+
+def _serve_compare_html(
+    handler: http.server.BaseHTTPRequestHandler,
+    query: dict[str, str],
+) -> None:
+    """Route handler for ``GET /compare?a=<id>&b=<id>``."""
+    a = query.get("a", "")
+    b = query.get("b", "")
+    if not a or not b:
+        body = (
+            "<!DOCTYPE html><html><body><h1>Compare</h1>"
+            "<p>Usage: /compare?a=&lt;run_id&gt;&amp;b=&lt;run_id&gt;</p>"
+            "</body></html>"
+        ).encode("utf-8")
+        handler.send_response(400)
+        handler.send_header("Content-Type", "text/html; charset=utf-8")
+        handler.send_header("Content-Length", str(len(body)))
+        handler.end_headers()
+        handler.wfile.write(body)
+        return
+
+    history = RunHistory(db_path=DashboardHandler._db_path)
+    try:
+        try:
+            view = build_comparison(history, a, b)
+        except ValueError as exc:
+            msg = _html_escape(str(exc))
+            body = (
+                f"<!DOCTYPE html><html><body><h1>Compare</h1><p>{msg}</p>"
+                "</body></html>"
+            ).encode("utf-8")
+            handler.send_response(404)
+            handler.send_header("Content-Type", "text/html; charset=utf-8")
+            handler.send_header("Content-Length", str(len(body)))
+            handler.end_headers()
+            handler.wfile.write(body)
+            return
+        html = render_comparison_html(view)
+        body = html.encode("utf-8")
+        handler.send_response(200)
+        handler.send_header("Content-Type", "text/html; charset=utf-8")
+        handler.send_header("Content-Length", str(len(body)))
+        handler.send_header("Cache-Control", "no-cache")
+        handler.end_headers()
+        handler.wfile.write(body)
+    finally:
+        history.close()
+
+
+def _serve_compare_json(
+    handler: http.server.BaseHTTPRequestHandler,
+    query: dict[str, str],
+) -> None:
+    """Route handler for ``POST /api/compare``.
+
+    Accepts the two snapshot ids via query string (``a``/``b``) or as a
+    JSON body ``{"a": <id>, "b": <id>}``. Returns the
+    :class:`ComparisonView` serialized as JSON plus a ``summary`` block
+    with counters.
+    """
+    a = query.get("a", "")
+    b = query.get("b", "")
+    if not a or not b:
+        try:
+            length = int(handler.headers.get("Content-Length", "0") or "0")
+            if length > 0:
+                raw = handler.rfile.read(length).decode("utf-8") or "{}"
+                payload = json.loads(raw)
+                a = a or str(payload.get("a", ""))
+                b = b or str(payload.get("b", ""))
+        except (ValueError, json.JSONDecodeError):
+            pass
+
+    if not a or not b:
+        body = json.dumps({"error": "missing snapshot ids a and b"}).encode(
+            "utf-8"
+        )
+        handler.send_response(400)
+        handler.send_header("Content-Type", "application/json; charset=utf-8")
+        handler.send_header("Content-Length", str(len(body)))
+        handler.end_headers()
+        handler.wfile.write(body)
+        return
+
+    history = RunHistory(db_path=DashboardHandler._db_path)
+    try:
+        try:
+            view = build_comparison(history, a, b)
+        except ValueError as exc:
+            body = json.dumps({"error": str(exc)}).encode("utf-8")
+            handler.send_response(404)
+            handler.send_header(
+                "Content-Type", "application/json; charset=utf-8"
+            )
+            handler.send_header("Content-Length", str(len(body)))
+            handler.end_headers()
+            handler.wfile.write(body)
+            return
+        payload = view.model_dump()
+        payload["summary"] = _comparison_summary(view)
+        body = json.dumps(payload).encode("utf-8")
+        handler.send_response(200)
+        handler.send_header("Content-Type", "application/json; charset=utf-8")
+        handler.send_header("Content-Length", str(len(body)))
+        handler.send_header("Cache-Control", "no-cache")
+        handler.end_headers()
+        handler.wfile.write(body)
+    finally:
+        history.close()

@@ -1,0 +1,139 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://checkllm.dev/schemas/checkllm.schema.json",
+  "title": "CheckllmConfig",
+  "description": "Configuration schema for the checkllm framework. Mirrors the [tool.checkllm] table in pyproject.toml and checkllm.yaml's top-level settings.",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "judge_backend": {
+      "type": "string",
+      "description": "Backend used to create the default LLM judge.",
+      "enum": ["auto", "openai", "anthropic", "gemini", "azure", "ollama", "litellm", "deepseek"],
+      "default": "auto"
+    },
+    "judge_model": {
+      "type": "string",
+      "description": "Model name passed to the judge backend, e.g. 'gpt-4o' or 'claude-sonnet-4-6'.",
+      "default": "gpt-4o"
+    },
+    "default_threshold": {
+      "type": "number",
+      "description": "Default pass/fail threshold for metric-based assertions (0.0-1.0).",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "default": 0.8
+    },
+    "runs_per_test": {
+      "type": "integer",
+      "description": "Number of times each test is repeated for variance estimation.",
+      "minimum": 1,
+      "default": 1
+    },
+    "snapshot_dir": {
+      "type": "string",
+      "description": "Directory where snapshot results are stored.",
+      "default": ".checkllm/snapshots"
+    },
+    "confidence_level": {
+      "type": "number",
+      "description": "Confidence level used by statistical comparison reports.",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "default": 0.95
+    },
+    "p_value_threshold": {
+      "type": "number",
+      "description": "P-value threshold under which a regression is considered significant.",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "default": 0.05
+    },
+    "cache_enabled": {
+      "type": "boolean",
+      "description": "Whether judge responses are cached on disk.",
+      "default": true
+    },
+    "cache_dir": {
+      "type": "string",
+      "description": "Directory used by the on-disk response cache.",
+      "default": ".checkllm"
+    },
+    "cache_ttl_seconds": {
+      "type": "integer",
+      "description": "TTL for cached judge responses, in seconds. 0 disables expiry.",
+      "minimum": 0,
+      "default": 604800
+    },
+    "max_concurrency": {
+      "type": "integer",
+      "description": "Maximum number of in-flight judge calls. Higher values trade latency for rate-limit risk.",
+      "minimum": 1,
+      "default": 10
+    },
+    "budget": {
+      "type": ["number", "null"],
+      "description": "Maximum USD to spend on judge calls. Null means unlimited.",
+      "minimum": 0.0,
+      "default": null
+    },
+    "log_level": {
+      "type": "string",
+      "description": "Logging verbosity for the checkllm package.",
+      "enum": ["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG", "NOTSET"],
+      "default": "WARNING"
+    },
+    "engine": {
+      "type": "string",
+      "description": "Execution engine to use when running a check suite.",
+      "enum": ["auto", "sync", "async", "thread"],
+      "default": "auto"
+    },
+    "active_profile": {
+      "type": ["string", "null"],
+      "description": "Active configuration profile name resolved at load time.",
+      "default": null
+    },
+    "providers": {
+      "type": "array",
+      "description": "List of LLM provider definitions used by declarative evals.",
+      "items": {
+        "oneOf": [
+          {
+            "type": "string",
+            "description": "Shorthand 'provider:model' such as 'openai:gpt-4o'."
+          },
+          {
+            "type": "object",
+            "required": ["id"],
+            "properties": {
+              "id": {"type": "string"},
+              "model": {"type": "string"},
+              "api_key": {"type": ["string", "null"]},
+              "options": {"type": "object"}
+            },
+            "additionalProperties": true
+          }
+        ]
+      }
+    },
+    "metrics": {
+      "type": "array",
+      "description": "Optional explicit list of metric names to enable or expose.",
+      "items": {"type": "string"}
+    },
+    "env": {
+      "type": "object",
+      "description": "Environment variables to load before running checks.",
+      "additionalProperties": {"type": "string"}
+    },
+    "profiles": {
+      "type": "object",
+      "description": "Named overrides. Key is the profile name; values are partial configs.",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": true
+      }
+    }
+  }
+}

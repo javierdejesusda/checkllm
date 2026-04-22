@@ -77,8 +77,17 @@ prometheus = [
 hf = [
     "datasets>=2.14.0",
 ]
+parquet = [
+    "pyarrow>=14.0.0",
+]
+schema = [
+    "jsonschema>=4.0.0",
+]
+pdf = [
+    "pypdf>=4.0.0",
+]
 all = [
-    "checkllm[openai,anthropic,gemini,litellm,embeddings,multimodal,docs,langsmith,langfuse,datadog,prometheus,hf]",
+    "checkllm[openai,anthropic,gemini,litellm,embeddings,multimodal,docs,langsmith,langfuse,datadog,prometheus,hf,parquet,schema,pdf]",
 ]
 dev = [
     "pytest>=7.0.0",
@@ -91,6 +100,8 @@ dev = [
     "bandit>=1.7.0",
     "types-PyYAML>=6.0.0",
     "types-Jinja2>=2.11.0",
+    "jsonschema>=4.0.0",
+    "pyarrow>=14.0.0",
 ]
 
 [project.entry-points.pytest11]
@@ -103,6 +114,9 @@ checkllm = "checkllm.cli:app"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/checkllm"]
+
+[tool.hatch.build.targets.wheel.force-include]
+"src/checkllm/schemas/checkllm.schema.json" = "checkllm/schemas/checkllm.schema.json"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

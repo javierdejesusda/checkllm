@@ -57,14 +57,21 @@ class TestResultsToDataframe:
 
     def test_dict_keys(self):
         rows = results_to_dataframe(_sample_results())
+        # Extended schema: original seven columns plus threshold, input_preview,
+        # run_id, and timestamp_utc (the latter two default to None when the
+        # caller does not supply extra_fields).
         expected_keys = {
             "test_name",
             "metric_name",
             "passed",
             "score",
+            "threshold",
             "reasoning",
             "cost",
             "latency_ms",
+            "input_preview",
+            "run_id",
+            "timestamp_utc",
         }
         for row in rows:
             assert set(row.keys()) == expected_keys
@@ -108,9 +115,13 @@ class TestWriteCsv:
             "metric_name",
             "passed",
             "score",
+            "threshold",
             "reasoning",
             "cost",
             "latency_ms",
+            "input_preview",
+            "run_id",
+            "timestamp_utc",
         ]
 
     def test_creates_parent_dirs(self, tmp_path: Path):
