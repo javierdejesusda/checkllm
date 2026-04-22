@@ -336,13 +336,9 @@ async def _run_single(
 
         threshold = assertion.threshold if assertion.threshold is not None else 0.8
         ctx_text = _render(assertion.context, vars_ctx)
-        query_opt: str | None = (
-            _render(assertion.query, vars_ctx) if assertion.query else None
-        )
+        query_opt: str | None = _render(assertion.query, vars_ctx) if assertion.query else None
         faithfulness_metric = FaithfulnessMetric(judge=judge, threshold=threshold)
-        return await faithfulness_metric.evaluate(
-            output=output, context=ctx_text, query=query_opt
-        )
+        return await faithfulness_metric.evaluate(output=output, context=ctx_text, query=query_opt)
 
     # parse_assertions guards unknown types, but be defensive anyway.
     return CheckResult(

@@ -22,7 +22,7 @@ repos:
     hooks:
       - id: codespell
         args:
-          - "--ignore-words-list=iff,nd,te,hist,ot,ist,ment,worl,bu,som,covert,strat,intoto,unparseable,re-use,socio-economic"
+          - "--ignore-words-list=iff,nd,te,hist,ot,ist,ment,worl,bu,som,covert,strat,intoto,unparseable,re-use,socio-economic,rouge"
         exclude: |
           (?x)^(
             CHANGELOG\.md|
