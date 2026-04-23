@@ -95,6 +95,11 @@ def check(request):
     """Provides a CheckCollector that collects results and raises on teardown."""
     config = load_config()
     collector = CheckCollector(config=config)
+    # Bind the collector to the pytest node id so live dashboards can group
+    # every check_completed event under the originating test.
+    node_id = getattr(request.node, "nodeid", "") or ""
+    if node_id:
+        collector.bind_test(node_id)
     request.node.stash[_CHECKLLM_KEY] = collector
     return collector
 
@@ -465,6 +470,26 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int) -> None:
         import sys
 
         print(f"checkllm: failed to record history: {exc}", file=sys.stderr)
+
+    # Emit a run_completed progress event for live dashboards.
+    try:
+        from checkllm.progress import emit_run_completed
+
+        all_checks = [c for checks in results.values() for c in checks]
+        passed = sum(1 for c in all_checks if c.passed)
+        failed = sum(1 for c in all_checks if not c.passed)
+        total_cost = sum(c.cost for c in all_checks)
+        emit_run_completed(
+            total_tests=len(results),
+            total_checks=len(all_checks),
+            passed=passed,
+            failed=failed,
+            total_cost=total_cost,
+            duration_ms=0.0,
+        )
+    except Exception:
+        # Never break the session due to a telemetry failure.
+        pass
 
 
 def _save_snapshot(results: dict[str, list[CheckResult]], path: Path) -> None:
