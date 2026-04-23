@@ -656,6 +656,199 @@ class TestBedrockJudge:
         assert "claude-3-sonnet" in r
 
 
+def _install_mock_vertexai(monkeypatch: pytest.MonkeyPatch) -> tuple[MagicMock, MagicMock]:
+    """Register fake ``vertexai`` + ``vertexai.generative_models`` modules.
+
+    Returns ``(vertexai_module_mock, generative_model_class_mock)`` so
+    tests can assert against either the ``init`` call or the
+    ``GenerativeModel`` instance the judge holds.
+    """
+    import sys
+
+    mock_vertexai = MagicMock()
+    mock_vertexai.init = MagicMock()
+    mock_genmodels = MagicMock()
+    mock_generative_model_cls = MagicMock()
+    mock_genmodels.GenerativeModel = mock_generative_model_cls
+    mock_vertexai.generative_models = mock_genmodels
+
+    monkeypatch.setitem(sys.modules, "vertexai", mock_vertexai)
+    monkeypatch.setitem(sys.modules, "vertexai.generative_models", mock_genmodels)
+    return mock_vertexai, mock_generative_model_cls
+
+
+class TestVertexAIJudge:
+    @pytest.fixture(autouse=True)
+    def _clear_gcp_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.delenv("GOOGLE_CLOUD_PROJECT", raising=False)
+        monkeypatch.delenv("GCP_PROJECT", raising=False)
+        monkeypatch.delenv("GOOGLE_CLOUD_LOCATION", raising=False)
+        monkeypatch.delenv("GCP_LOCATION", raising=False)
+
+    def test_missing_project_raises(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        _install_mock_vertexai(monkeypatch)
+        from checkllm.providers import VertexAIJudge
+
+        with pytest.raises(JudgeConfigError, match="GOOGLE_CLOUD_PROJECT"):
+            VertexAIJudge(model="gemini-1.5-pro")
+
+    def test_missing_package_raises(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("GOOGLE_CLOUD_PROJECT", "my-proj")
+        import builtins
+
+        real_import = builtins.__import__
+
+        def _block_vertex(name: str, *args: Any, **kwargs: Any) -> Any:
+            if name == "vertexai" or name.startswith("vertexai."):
+                raise ImportError("no vertexai")
+            return real_import(name, *args, **kwargs)
+
+        with patch("builtins.__import__", side_effect=_block_vertex):
+            from checkllm.providers import VertexAIJudge
+
+            with pytest.raises(JudgeConfigError, match="google-cloud-aiplatform"):
+                VertexAIJudge(model="gemini-1.5-pro", project="my-proj")
+
+    def test_constructor_with_explicit_args(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        mock_vertexai, mock_model_cls = _install_mock_vertexai(monkeypatch)
+        from checkllm.providers import VertexAIJudge
+
+        judge = VertexAIJudge(
+            model="gemini-1.5-pro",
+            project="my-proj",
+            location="us-central1",
+        )
+        assert judge.model == "gemini-1.5-pro"
+        assert judge._project == "my-proj"
+        assert judge._location == "us-central1"
+        assert judge.total_cost == 0.0
+        assert isinstance(judge, JudgeBackend)
+        mock_vertexai.init.assert_called_once_with(project="my-proj", location="us-central1")
+        mock_model_cls.assert_called_once_with("gemini-1.5-pro")
+
+    def test_constructor_reads_env(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("GOOGLE_CLOUD_PROJECT", "env-proj")
+        monkeypatch.setenv("GOOGLE_CLOUD_LOCATION", "europe-west4")
+        mock_vertexai, _ = _install_mock_vertexai(monkeypatch)
+        from checkllm.providers import VertexAIJudge
+
+        judge = VertexAIJudge(model="gemini-1.5-flash")
+        assert judge._project == "env-proj"
+        assert judge._location == "europe-west4"
+        mock_vertexai.init.assert_called_once_with(project="env-proj", location="europe-west4")
+
+    def test_constructor_defaults_location(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        mock_vertexai, _ = _install_mock_vertexai(monkeypatch)
+        from checkllm.providers import VertexAIJudge
+
+        judge = VertexAIJudge(model="gemini-2.0-flash-exp", project="only-proj")
+        assert judge._location == "us-central1"
+        mock_vertexai.init.assert_called_once_with(project="only-proj", location="us-central1")
+
+    def test_constructor_forwards_credentials(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        mock_vertexai, _ = _install_mock_vertexai(monkeypatch)
+        from checkllm.providers import VertexAIJudge
+
+        fake_creds = object()
+        VertexAIJudge(
+            model="gemini-1.5-pro",
+            project="my-proj",
+            credentials=fake_creds,
+        )
+        mock_vertexai.init.assert_called_once_with(
+            project="my-proj",
+            location="us-central1",
+            credentials=fake_creds,
+        )
+
+    @pytest.mark.asyncio
+    async def test_evaluate_parses_response_and_tracks_cost(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        _install_mock_vertexai(monkeypatch)
+        from checkllm.providers import VertexAIJudge
+
+        mock_usage = MagicMock()
+        mock_usage.prompt_token_count = 1000
+        mock_usage.candidates_token_count = 200
+
+        mock_response = MagicMock()
+        mock_response.text = '{"score": 0.88, "reasoning": "Faithful and grounded"}'
+        mock_response.usage_metadata = mock_usage
+
+        judge = VertexAIJudge(model="gemini-1.5-flash", project="my-proj")
+        judge._gmodel.generate_content_async = AsyncMock(return_value=mock_response)
+
+        result = await judge.evaluate("Rate this output", system_prompt="Be strict")
+
+        assert isinstance(result, JudgeResponse)
+        assert result.score == 0.88
+        assert "Faithful" in result.reasoning
+        # gemini-1.5-flash: $0.075/M input, $0.30/M output
+        expected_cost = 1000 * (0.075 / 1_000_000) + 200 * (0.30 / 1_000_000)
+        assert result.cost == pytest.approx(expected_cost)
+        assert judge.last_cost == pytest.approx(expected_cost)
+        assert judge.total_cost == pytest.approx(expected_cost)
+
+    @pytest.mark.asyncio
+    async def test_evaluate_reads_candidate_parts_when_no_text(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        _install_mock_vertexai(monkeypatch)
+        from checkllm.providers import VertexAIJudge
+
+        mock_part = MagicMock()
+        mock_part.text = '{"score": 0.4, "reasoning": "from parts"}'
+        mock_content = MagicMock()
+        mock_content.parts = [mock_part]
+        mock_candidate = MagicMock()
+        mock_candidate.content = mock_content
+
+        mock_response = MagicMock()
+        mock_response.text = ""
+        mock_response.candidates = [mock_candidate]
+        mock_response.usage_metadata = None
+
+        judge = VertexAIJudge(model="gemini-1.5-pro", project="my-proj")
+        judge._gmodel.generate_content_async = AsyncMock(return_value=mock_response)
+
+        result = await judge.evaluate("Prompt")
+        assert result.score == 0.4
+        assert result.reasoning == "from parts"
+        assert result.cost == 0.0
+
+    @pytest.mark.asyncio
+    async def test_evaluate_malformed_json(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        _install_mock_vertexai(monkeypatch)
+        from checkllm.providers import VertexAIJudge
+
+        mock_response = MagicMock()
+        mock_response.text = "not json at all"
+        mock_response.usage_metadata = None
+
+        judge = VertexAIJudge(model="gemini-1.5-pro", project="my-proj")
+        judge._gmodel.generate_content_async = AsyncMock(return_value=mock_response)
+
+        result = await judge.evaluate("Rate this")
+        assert result.score == 0.0
+        assert "parse" in result.reasoning.lower() or "failed" in result.reasoning.lower()
+
+    def test_repr(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        _install_mock_vertexai(monkeypatch)
+        from checkllm.providers import VertexAIJudge
+
+        judge = VertexAIJudge(
+            model="gemini-1.5-pro",
+            project="my-proj",
+            location="us-central1",
+        )
+        r = repr(judge)
+        assert "VertexAIJudge" in r
+        assert "gemini-1.5-pro" in r
+        assert "my-proj" in r
+        assert "us-central1" in r
+
+
 class TestFactoryNewBackends:
     """Verify create_judge() recognizes all new backends."""
 
@@ -740,12 +933,30 @@ class TestFactoryNewBackends:
             judge = create_judge("bedrock")
         assert judge.__class__.__name__ == "BedrockJudge"
 
+    def test_vertex_backend(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("GOOGLE_CLOUD_PROJECT", "my-proj")
+        _install_mock_vertexai(monkeypatch)
+        from checkllm.providers import create_judge
+
+        judge = create_judge("vertex")
+        assert judge.__class__.__name__ == "VertexAIJudge"
+
+    def test_vertexai_alias(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("GOOGLE_CLOUD_PROJECT", "my-proj")
+        _install_mock_vertexai(monkeypatch)
+        from checkllm.providers import create_judge
+
+        judge = create_judge("vertexai")
+        assert judge.__class__.__name__ == "VertexAIJudge"
+
     def test_all_backends_registered(self) -> None:
         """Ensure every expected backend name is accepted by the factory."""
         expected = {
             "openai",
             "anthropic",
             "gemini",
+            "vertex",
+            "vertexai",
             "azure",
             "ollama",
             "litellm",

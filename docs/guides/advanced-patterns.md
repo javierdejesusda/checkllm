@@ -29,6 +29,32 @@ judges = [
 ]
 ```
 
+### GCP-native judge via Vertex AI
+
+Enterprises that run on Google Cloud and need VPC-SC, CMEK, or audit
+logging can use :class:`checkllm.VertexAIJudge` instead of the public
+Gemini API. It talks to Vertex AI directly through
+``google-cloud-aiplatform`` and honors Application Default Credentials.
+
+Install the optional dependency:
+
+```bash
+pip install checkllm[vertex]
+```
+
+```python
+from checkllm import VertexAIJudge
+
+judge = VertexAIJudge(
+    model="gemini-1.5-pro",            # or gemini-1.5-flash / gemini-2.0-flash-exp
+    project="my-gcp-project",          # falls back to GOOGLE_CLOUD_PROJECT
+    location="us-central1",            # falls back to GOOGLE_CLOUD_LOCATION
+)
+```
+
+The same judge is also reachable from the factory as
+``create_judge("vertex", project=..., location=...)``.
+
 ### majority_vote
 
 ```python

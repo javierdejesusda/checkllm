@@ -47,6 +47,9 @@ anthropic = [
 gemini = [
     "google-generativeai>=0.5.0",
 ]
+vertex = [
+    "google-cloud-aiplatform>=1.38.0",
+]
 litellm = [
     "litellm>=1.0.0",
 ]
@@ -87,7 +90,7 @@ pdf = [
     "pypdf>=4.0.0",
 ]
 all = [
-    "checkllm[openai,anthropic,gemini,litellm,embeddings,multimodal,docs,langsmith,langfuse,datadog,prometheus,hf,parquet,schema,pdf]",
+    "checkllm[openai,anthropic,gemini,vertex,litellm,embeddings,multimodal,docs,langsmith,langfuse,datadog,prometheus,hf,parquet,schema,pdf]",
 ]
 dev = [
     "pytest>=7.0.0",
