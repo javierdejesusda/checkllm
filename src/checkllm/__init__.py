@@ -409,7 +409,7 @@ from checkllm.dashboard import (
     check_alerts,
 )
 
-__version__ = "5.1.0"
+__version__ = "5.1.1-dev"
 
 __all__ = [
     # Deprecation framework
