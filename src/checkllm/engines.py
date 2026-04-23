@@ -29,6 +29,13 @@ from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import Any, Callable, Coroutine, TypeVar
 
+from checkllm.rate_limit import (
+    ProviderRateLimiter,
+    RetryConfig,
+    get_default_limiter,
+    retry_with_backoff,
+)
+
 logger = logging.getLogger("checkllm.engines")
 
 T = TypeVar("T")
@@ -156,6 +163,9 @@ class AsyncEngine(BaseEngine):
         max_concurrency: int = 10,
         max_queue_size: int = 100,
         dedup: bool = True,
+        *,
+        rate_limiter: ProviderRateLimiter | None = None,
+        retry_config: RetryConfig | None = None,
     ) -> None:
         super().__init__()
         self._max_concurrency = max_concurrency
@@ -170,6 +180,23 @@ class AsyncEngine(BaseEngine):
 
         self._dedup_enabled = dedup
         self._deduplicator = InFlightDeduplicator() if dedup else None
+
+        # Rate limiting + 429-aware retry. The limiter is created lazily so
+        # tests that never touch rate limiting don't pay any startup cost.
+        self._rate_limiter = rate_limiter
+        self._retry_config = retry_config or RetryConfig()
+
+    @property
+    def rate_limiter(self) -> ProviderRateLimiter:
+        """Return the per-provider rate limiter, creating the default lazily."""
+        if self._rate_limiter is None:
+            self._rate_limiter = get_default_limiter()
+        return self._rate_limiter
+
+    @property
+    def retry_config(self) -> RetryConfig:
+        """Return the retry config applied by :meth:`submit_judge`."""
+        return self._retry_config
 
     # -- internal wrapper ---------------------------------------------------
 
@@ -257,6 +284,81 @@ class AsyncEngine(BaseEngine):
     def deduplicator(self) -> Any:
         """Expose the internal :class:`InFlightDeduplicator` (or ``None``)."""
         return self._deduplicator
+
+    async def submit_judge(
+        self,
+        provider: str,
+        factory: Callable[[], Coroutine[Any, Any, T]],
+        *,
+        est_tokens: int = 1,
+        actual_tokens: Callable[[T], int] | None = None,
+        retry_config: RetryConfig | None = None,
+    ) -> asyncio.Task[T]:
+        """Submit a provider-aware judge call.
+
+        Each attempt first goes through the :class:`ProviderRateLimiter`
+        (RPM + TPM buckets) and is wrapped in :func:`retry_with_backoff` so
+        that HTTP 429 / 5xx responses are retried with exponential backoff
+        and ``Retry-After`` / ``x-ratelimit-reset-*`` hints honored.
+
+        Args:
+            provider: Canonical provider name (``"openai"``, ``"anthropic"``,
+                ``"bedrock"``, ...). Unknown names fall back to conservative
+                defaults.
+            factory: Zero-arg callable returning a *fresh* coroutine per
+                attempt (coroutines are single-shot).
+            est_tokens: Estimated token cost. Passed to the limiter's TPM
+                bucket. Defaults to 1.
+            actual_tokens: Optional callable that, given the successful
+                result, returns the true number of tokens consumed. When
+                supplied, the TPM bucket is reconciled post-call.
+            retry_config: Optional override for this call's retry policy.
+
+        Returns:
+            An :class:`asyncio.Task` resolving to the factory's return value.
+        """
+        if self._shutdown_event.is_set():
+            raise RuntimeError("Cannot submit to a shut-down engine")
+
+        await self._queue_semaphore.acquire()
+        self._stats.tasks_submitted += 1
+        self._stats.current_queue_depth += 1
+
+        limiter = self.rate_limiter
+        cfg = retry_config or self._retry_config
+
+        async def _attempt() -> T:
+            await limiter.acquire(provider, est_tokens=est_tokens)
+            return await factory()
+
+        async def _runner() -> T:
+            start = time.monotonic()
+            try:
+                async with self._semaphore:
+                    result = await retry_with_backoff(
+                        _attempt,
+                        config=cfg,
+                        provider=provider,
+                        limiter=limiter,
+                    )
+                if actual_tokens is not None:
+                    try:
+                        real = int(actual_tokens(result))
+                    except Exception:  # noqa: BLE001 — bookkeeping only
+                        real = est_tokens
+                    limiter.release_actual(provider, real)
+                return result
+            finally:
+                elapsed = time.monotonic() - start
+                self._stats.tasks_completed += 1
+                self._stats.total_execution_time += elapsed
+                self._stats.current_queue_depth = max(0, self._stats.current_queue_depth - 1)
+                self._queue_semaphore.release()
+
+        task: asyncio.Task[T] = asyncio.create_task(_runner())
+        self._running_tasks.add(task)
+        task.add_done_callback(self._running_tasks.discard)
+        return task
 
     async def gather(self, tasks: list[asyncio.Task[T]]) -> list[T]:
         return list(await asyncio.gather(*tasks))

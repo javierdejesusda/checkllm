@@ -31,6 +31,14 @@ from checkllm.guardrails import (
 from checkllm.judge import JudgeBackend, JudgeConfigError
 from checkllm.metrics import metric
 from checkllm.models import CheckFailedError, CheckResult, JudgeResponse
+from checkllm.rate_limit import (
+    ProviderRateLimiter,
+    RateLimit,
+    RateLimitError,
+    RetryConfig,
+    TokenBucket,
+    retry_with_backoff,
+)
 from checkllm.resilience import (
     CircuitBreaker,
     CircuitOpenError,
@@ -548,9 +556,15 @@ __all__ = [
     "CircuitBreaker",
     "CircuitOpenError",
     "PerProviderRateLimiter",
+    "ProviderRateLimiter",
+    "RateLimit",
+    "RateLimitError",
     "ResilientJudge",
+    "RetryConfig",
     "RetryPolicy",
+    "TokenBucket",
     "TokenBucketRateLimiter",
+    "retry_with_backoff",
     "with_retry",
     # Streaming
     "StreamingCheckpoint",
