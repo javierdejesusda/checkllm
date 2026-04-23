@@ -69,7 +69,14 @@ from checkllm.trajectory import (
 try:
     from checkllm.compare import ComparisonResult, MatrixResult, ProviderMatrix
     from checkllm.api import Evaluator, check_output, evaluate, parse_check_shorthand
-    from checkllm.batch import BatchEvaluator, BatchJob, BatchStatus
+    from checkllm.batch import (
+        AnthropicBatchRunner,
+        BatchEvaluator,
+        BatchJob,
+        BatchRunner,
+        BatchStatus,
+        get_batch_runner,
+    )
     from checkllm.cache import JudgeCache
     from checkllm.consensus import (
         AggregationStrategy,
@@ -405,9 +412,12 @@ __all__ = [
     "validate_tool_order",
     "validate_trajectory_length",
     # Batch API
+    "AnthropicBatchRunner",
     "BatchEvaluator",
     "BatchJob",
+    "BatchRunner",
     "BatchStatus",
+    "get_batch_runner",
     # Compare / provider matrix
     "ComparisonResult",
     "MatrixResult",
