@@ -1,9 +1,9 @@
 """Multi-provider judge backends for checkllm.
 
-Provides judge implementations for Google Gemini, Azure OpenAI, Ollama,
-LiteLLM, Cohere, Mistral, AWS Bedrock, and OpenAI-compatible endpoints
-(DeepSeek, Groq, Together, Fireworks, Perplexity, vLLM, OpenRouter, X.AI),
-plus a ``create_judge`` factory.
+Provides judge implementations for Google Gemini, Google Vertex AI,
+Azure OpenAI, Ollama, LiteLLM, Cohere, Mistral, AWS Bedrock, and
+OpenAI-compatible endpoints (DeepSeek, Groq, Together, Fireworks,
+Perplexity, vLLM, OpenRouter, X.AI), plus a ``create_judge`` factory.
 """
 
 from __future__ import annotations
@@ -1096,6 +1096,144 @@ class BedrockJudge:
         return f"BedrockJudge(model={self.model!r}, total_cost=${self.total_cost:.4f})"
 
 
+# ---------------------------------------------------------------------------
+# VertexAIJudge
+# ---------------------------------------------------------------------------
+
+
+class VertexAIJudge:
+    """Google Vertex AI judge using the ``google-cloud-aiplatform`` SDK.
+
+    Talks directly to Vertex AI's Gemini endpoints so GCP enterprises do
+    not have to proxy through LiteLLM or AI Studio. Credentials are
+    resolved in the standard Application Default Credentials (ADC) way
+    when ``credentials`` is ``None``.
+
+    Args:
+        model: A Vertex AI Gemini model ID, e.g. ``"gemini-1.5-pro"``,
+            ``"gemini-1.5-flash"``, or ``"gemini-2.0-flash-exp"``.
+        project: GCP project ID. Falls back to ``GOOGLE_CLOUD_PROJECT``
+            or ``GCP_PROJECT`` from the environment.
+        location: Vertex AI region, e.g. ``"us-central1"``. Falls back
+            to ``GOOGLE_CLOUD_LOCATION`` / ``GCP_LOCATION`` or
+            ``"us-central1"``.
+        credentials: Optional ``google.auth.credentials.Credentials``
+            instance. When ``None`` (the default) ADC is used.
+    """
+
+    def __init__(
+        self,
+        model: str = "gemini-1.5-pro",
+        project: str | None = None,
+        location: str | None = None,
+        credentials: Any | None = None,
+    ) -> None:
+        self.model = model
+        self.total_cost: float = 0.0
+        self.last_cost: float = 0.0
+
+        resolved_project = (
+            project or os.environ.get("GOOGLE_CLOUD_PROJECT") or os.environ.get("GCP_PROJECT")
+        )
+        if not resolved_project:
+            raise JudgeConfigError(
+                "Vertex AI project not found. Set the GOOGLE_CLOUD_PROJECT "
+                "environment variable or pass project= to VertexAIJudge()."
+            )
+
+        resolved_location = (
+            location
+            or os.environ.get("GOOGLE_CLOUD_LOCATION")
+            or os.environ.get("GCP_LOCATION")
+            or "us-central1"
+        )
+        self._project = resolved_project
+        self._location = resolved_location
+
+        try:
+            import vertexai  # type: ignore[import-untyped]
+            from vertexai.generative_models import (  # type: ignore[import-untyped]
+                GenerativeModel,
+            )
+        except ImportError:
+            raise JudgeConfigError(
+                "google-cloud-aiplatform package not installed. Install it with:\n"
+                "  pip install checkllm[vertex]"
+            )
+
+        init_kwargs: dict[str, Any] = {
+            "project": resolved_project,
+            "location": resolved_location,
+        }
+        if credentials is not None:
+            init_kwargs["credentials"] = credentials
+
+        vertexai.init(**init_kwargs)
+        self._vertexai = vertexai
+        self._gmodel = GenerativeModel(model)
+
+    @_transient_retry
+    async def evaluate(self, prompt: str, system_prompt: str | None = None) -> JudgeResponse:
+        """Evaluate using the Vertex AI Gemini endpoint.
+
+        Args:
+            prompt: The user turn sent to the model.
+            system_prompt: Optional preamble prepended to ``prompt``.
+
+        Returns:
+            A parsed :class:`JudgeResponse` including cost when the
+            response carries usage metadata.
+        """
+        full_prompt = ""
+        if system_prompt:
+            full_prompt += f"{system_prompt}\n\n"
+        full_prompt += (
+            f"{prompt}\n\n"
+            'Respond with JSON only: {"score": <float 0-1>, "reasoning": "<explanation>"}'
+        )
+
+        response = await self._gmodel.generate_content_async(
+            full_prompt,
+            generation_config={"temperature": 0.0},
+        )
+
+        raw_output = ""
+        text_attr = getattr(response, "text", None)
+        if text_attr:
+            raw_output = text_attr
+        else:
+            candidates = getattr(response, "candidates", None) or []
+            if candidates:
+                content = getattr(candidates[0], "content", None)
+                parts = getattr(content, "parts", None) or []
+                if parts:
+                    raw_output = getattr(parts[0], "text", "") or ""
+
+        cost = 0.0
+        usage = getattr(response, "usage_metadata", None)
+        if usage is not None:
+            prompt_tokens = getattr(usage, "prompt_token_count", 0) or 0
+            completion_tokens = getattr(usage, "candidates_token_count", 0) or 0
+            cost = _gemini_estimate_cost(self.model, prompt_tokens, completion_tokens)
+        self.last_cost = cost
+        self.total_cost += cost
+
+        score, reasoning = _parse_judge_json(raw_output)
+
+        return JudgeResponse(
+            score=score,
+            reasoning=reasoning,
+            raw_output=raw_output,
+            cost=cost,
+        )
+
+    def __repr__(self) -> str:
+        return (
+            f"VertexAIJudge(model={self.model!r}, project={self._project!r}, "
+            f"location={self._location!r}, total_cost=${self.total_cost:.4f})"
+        )
+
+
 # Factory
 # ---------------------------------------------------------------------------
 
@@ -1106,10 +1244,10 @@ def create_judge(backend: str, **kwargs: Any) -> JudgeBackend:
     Parameters
     ----------
     backend:
-        One of "openai", "anthropic", "gemini", "azure", "ollama",
-        "litellm", "custom", "cohere", "mistral", "deepseek", "groq",
-        "together", "fireworks", "perplexity", "vllm", "bedrock",
-        "openrouter", or "xai".
+        One of "openai", "anthropic", "gemini", "vertex", "azure",
+        "ollama", "litellm", "custom", "cohere", "mistral", "deepseek",
+        "groq", "together", "fireworks", "perplexity", "vllm",
+        "bedrock", "openrouter", or "xai".
 
         Model-style aliases are also recognized — e.g. ``"deepseek-chat"``
         or ``"deepseek-reasoner"`` resolve to ``DeepSeekJudge`` with
@@ -1127,6 +1265,8 @@ def create_judge(backend: str, **kwargs: Any) -> JudgeBackend:
         "openai": OpenAIJudge,
         "anthropic": AnthropicJudge,
         "gemini": GeminiJudge,
+        "vertex": VertexAIJudge,
+        "vertexai": VertexAIJudge,
         "azure": AzureOpenAIJudge,
         "ollama": OllamaJudge,
         "litellm": LiteLLMJudge,
