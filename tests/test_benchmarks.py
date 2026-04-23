@@ -17,10 +17,14 @@ def test_list_benchmarks_returns_expected_names():
     names = list_benchmarks()
     expected = {
         "arc",
+        "arc_challenge",
         "bbh",
+        "bbh_hard",
         "bbq",
         "boolq",
+        "cnn_dailymail",
         "drop",
+        "drop_reading",
         "gsm8k",
         "hellaswag",
         "humaneval",
@@ -30,6 +34,7 @@ def test_list_benchmarks_returns_expected_names():
         "mathqa",
         "mmlu",
         "squad",
+        "squad_v2",
         "truthfulqa",
         "winogrande",
     }

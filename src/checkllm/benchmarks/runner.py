@@ -51,6 +51,18 @@ _BIAS_SYSTEM_PROMPT = (
     "Respond with only the letter of your answer."
 )
 
+_SQUAD_V2_SYSTEM_PROMPT = (
+    "Read the passage and answer the question. If the passage does not "
+    "contain enough information to answer, reply with exactly the word "
+    "'unanswerable'. Otherwise provide the shortest faithful answer."
+)
+
+_SUMMARIZATION_SYSTEM_PROMPT = (
+    "Summarize the article faithfully in one or two sentences. Include the "
+    "most salient facts and avoid adding information not present in the "
+    "article."
+)
+
 
 class BenchmarkResult(BaseModel):
     """Result of running a benchmark against an LLM.
@@ -205,8 +217,14 @@ class BenchmarkRunner:
         elif benchmark == "lambada":
             system = _COMPLETION_SYSTEM_PROMPT
             prompt = sample.question
-        elif benchmark in ("squad", "drop"):
+        elif benchmark in ("squad", "drop", "drop_reading"):
             system = _READING_SYSTEM_PROMPT
+            prompt = sample.question
+        elif benchmark == "squad_v2":
+            system = _SQUAD_V2_SYSTEM_PROMPT
+            prompt = sample.question
+        elif benchmark == "cnn_dailymail":
+            system = _SUMMARIZATION_SYSTEM_PROMPT
             prompt = sample.question
         elif benchmark == "winogrande":
             system = _MC_AB_SYSTEM_PROMPT
@@ -235,6 +253,8 @@ class BenchmarkRunner:
             "mathqa",
             "winogrande",
             "bbq",
+            "arc_challenge",
+            "bbh_hard",
         }
     )
 
@@ -260,8 +280,12 @@ class BenchmarkRunner:
             return self._check_boolean(model_text, correct_answer)
         if benchmark == "ifeval":
             return self._check_instruction(model_text, correct_answer)
-        if benchmark == "drop":
+        if benchmark in ("drop", "drop_reading"):
             return self._check_drop(model_text, correct_answer)
+        if benchmark == "squad_v2":
+            return self._check_squad_v2(model_text, correct_answer)
+        if benchmark == "cnn_dailymail":
+            return self._check_summary(model_text, correct_answer)
         return self._check_text(model_text, correct_answer)
 
     @staticmethod
@@ -486,3 +510,161 @@ class BenchmarkRunner:
         model_lower = model_text.lower()
         answer_lower = correct_answer.lower()
         return answer_lower in model_lower or model_lower in answer_lower
+
+    @staticmethod
+    def _qa_token_f1(model_text: str, correct_answer: str) -> float:
+        """Compute SQuAD-style token-level F1 between prediction and reference.
+
+        Args:
+            model_text: The model's response text.
+            correct_answer: The reference answer text.
+
+        Returns:
+            F1 score in ``[0.0, 1.0]``.
+        """
+        pred_tokens = re.findall(r"\w+", model_text.lower())
+        ref_tokens = re.findall(r"\w+", correct_answer.lower())
+        if not pred_tokens or not ref_tokens:
+            return 0.0
+        pred_counts: dict[str, int] = {}
+        for token in pred_tokens:
+            pred_counts[token] = pred_counts.get(token, 0) + 1
+        ref_counts: dict[str, int] = {}
+        for token in ref_tokens:
+            ref_counts[token] = ref_counts.get(token, 0) + 1
+        overlap = 0
+        for token, count in pred_counts.items():
+            overlap += min(count, ref_counts.get(token, 0))
+        if overlap == 0:
+            return 0.0
+        precision = overlap / len(pred_tokens)
+        recall = overlap / len(ref_tokens)
+        return 2 * precision * recall / (precision + recall)
+
+    @staticmethod
+    def _check_squad_v2(model_text: str, correct_answer: str) -> bool:
+        """Check SQuAD 2.0 answers, honouring unanswerable questions.
+
+        For unanswerable samples the model must signal abstention by
+        producing the word ``unanswerable`` or an equivalent phrase. For
+        answerable samples we accept the response if exact-match holds or
+        token-level F1 exceeds 0.5.
+
+        Args:
+            model_text: The model's response text.
+            correct_answer: The expected answer (or ``"unanswerable"``).
+
+        Returns:
+            True if the response matches the reference semantics.
+        """
+        text_lower = model_text.lower().strip()
+        expected_lower = correct_answer.lower().strip()
+        abstain_tokens = (
+            "unanswerable",
+            "cannot be determined",
+            "no answer",
+            "not answerable",
+        )
+        model_abstained = any(token in text_lower for token in abstain_tokens)
+        if expected_lower == "unanswerable":
+            return model_abstained
+        if model_abstained:
+            return False
+        if expected_lower in text_lower:
+            return True
+        return BenchmarkRunner._qa_token_f1(model_text, correct_answer) >= 0.5
+
+    @staticmethod
+    def _bleu_score(model_text: str, reference: str) -> float:
+        """Compute a smoothed unigram BLEU proxy between prediction and reference.
+
+        Falls back gracefully when either text is empty. This keeps the
+        runner self-contained without taking a hard dependency on NLTK.
+
+        Args:
+            model_text: The model's summary.
+            reference: The reference summary.
+
+        Returns:
+            Unigram precision with brevity penalty in ``[0.0, 1.0]``.
+        """
+        pred_tokens = re.findall(r"\w+", model_text.lower())
+        ref_tokens = re.findall(r"\w+", reference.lower())
+        if not pred_tokens or not ref_tokens:
+            return 0.0
+        ref_counts: dict[str, int] = {}
+        for token in ref_tokens:
+            ref_counts[token] = ref_counts.get(token, 0) + 1
+        matches = 0
+        for token in pred_tokens:
+            if ref_counts.get(token, 0) > 0:
+                matches += 1
+                ref_counts[token] -= 1
+        precision = matches / len(pred_tokens)
+        if len(pred_tokens) < len(ref_tokens):
+            # Exponential brevity penalty mirroring the standard BLEU formula.
+            import math
+
+            bp = math.exp(1.0 - len(ref_tokens) / max(1, len(pred_tokens)))
+        else:
+            bp = 1.0
+        return max(0.0, min(1.0, bp * precision))
+
+    @staticmethod
+    def _rouge_l_f1(model_text: str, reference: str) -> float:
+        """Compute token-level ROUGE-L F1 between prediction and reference.
+
+        Uses a space-optimised dynamic-programming longest-common-subsequence
+        implementation so the result is consistent with the deterministic
+        ``rouge_l`` check elsewhere in the library.
+
+        Args:
+            model_text: The model's summary.
+            reference: The reference summary.
+
+        Returns:
+            ROUGE-L F1 score in ``[0.0, 1.0]``.
+        """
+        pred_tokens = re.findall(r"\w+", model_text.lower())
+        ref_tokens = re.findall(r"\w+", reference.lower())
+        if not pred_tokens or not ref_tokens:
+            return 0.0
+        m, n = len(pred_tokens), len(ref_tokens)
+        prev = [0] * (n + 1)
+        for i in range(1, m + 1):
+            curr = [0] * (n + 1)
+            for j in range(1, n + 1):
+                if pred_tokens[i - 1] == ref_tokens[j - 1]:
+                    curr[j] = prev[j - 1] + 1
+                else:
+                    curr[j] = max(curr[j - 1], prev[j])
+            prev = curr
+        lcs_len = prev[n]
+        if lcs_len == 0:
+            return 0.0
+        precision = lcs_len / m
+        recall = lcs_len / n
+        return 2 * precision * recall / (precision + recall)
+
+    @staticmethod
+    def _check_summary(model_text: str, correct_answer: str, threshold: float = 0.2) -> bool:
+        """Evaluate a generated summary against a reference using BLEU/ROUGE-L.
+
+        The sample is considered correct when the average of BLEU-1 and
+        ROUGE-L F1 meets or exceeds ``threshold``. Thresholds are kept low
+        because CNN/DailyMail references are highly extractive and paraphrased
+        summaries still share substantial content.
+
+        Args:
+            model_text: The model's summary.
+            correct_answer: The reference summary.
+            threshold: Minimum average of BLEU-1 and ROUGE-L F1 required.
+
+        Returns:
+            True if the combined summarization score is above threshold.
+        """
+        if not model_text.strip() or not correct_answer.strip():
+            return False
+        bleu = BenchmarkRunner._bleu_score(model_text, correct_answer)
+        rouge = BenchmarkRunner._rouge_l_f1(model_text, correct_answer)
+        return (bleu + rouge) / 2.0 >= threshold
