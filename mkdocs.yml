@@ -31,6 +31,8 @@ theme:
 nav:
   - Home: index.md
   - Quickstart: quickstart.md
+  - Tutorials:
+    - Overview: notebooks/index.md
   - Guides:
     - Choosing metrics: guides/choosing-metrics.md
     - Metrics reference: guides/metrics-reference.md

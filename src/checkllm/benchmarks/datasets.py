@@ -1,7 +1,16 @@
 """Built-in benchmark datasets for LLM evaluation.
 
-Provides 16 benchmarks: MMLU, TruthfulQA, GSM8K, HellaSwag, HumanEval, BBH,
-ARC, BoolQ, DROP, IFEval, LAMBADA, LogiQA, MathQA, SQuAD, WinoGrande, and BBQ.
+Provides 21 benchmarks: MMLU, TruthfulQA, GSM8K, HellaSwag, HumanEval, BBH,
+ARC, BoolQ, DROP, IFEval, LAMBADA, LogiQA, MathQA, SQuAD, WinoGrande, BBQ,
+SQuAD 2.0 (``squad_v2``), ARC-Challenge (``arc_challenge``), BIG-Bench Hard
+(``bbh_hard``), DROP-Reading (``drop_reading``), and CNN/DailyMail
+(``cnn_dailymail``).
+
+The additional five benchmarks are derived from HuggingFace datasets
+(``squad_v2``, ``ai2_arc``, ``lukaemon/bbh``, ``ucinlp/drop``, and
+``cnn_dailymail``).  Small, hand-curated fixture subsets are shipped inline
+so the evaluation runner is fully self-contained and does not require
+network access at import time.
 """
 
 from __future__ import annotations
@@ -2692,6 +2701,923 @@ _BBQ_SAMPLES: list[dict] = [
     },
 ]
 
+_SQUAD_V2_SAMPLES: list[dict] = [
+    {
+        "question": (
+            "Passage: Normans (Norman: Nourmands; French: Normands; Latin: "
+            "Normanni) were the people who in the 10th and 11th centuries gave "
+            "their name to Normandy, a region in France. They were descended "
+            "from Norse raiders and pirates from Denmark, Iceland and Norway.\n\n"
+            "Question: In what country is Normandy located?"
+        ),
+        "correct_answer": "France",
+        "category": "answerable",
+    },
+    {
+        "question": (
+            "Passage: Normans (Norman: Nourmands) gave their name to Normandy, "
+            "a region in France.\n\n"
+            "Question: When were the Normans in Normandy?"
+        ),
+        "correct_answer": "10th and 11th centuries",
+        "category": "answerable",
+    },
+    {
+        "question": (
+            "Passage: The Black Death was one of the most devastating pandemics "
+            "in human history, resulting in the deaths of an estimated 75 to 200 "
+            "million people in Eurasia, peaking in Europe from 1347 to 1351.\n\n"
+            "Question: How many people died from the Black Death in Eurasia?"
+        ),
+        "correct_answer": "75 to 200 million",
+        "category": "answerable",
+    },
+    {
+        "question": (
+            "Passage: The Black Death peaked in Europe from 1347 to 1351.\n\n"
+            "Question: What caused the Black Death?"
+        ),
+        "correct_answer": "unanswerable",
+        "category": "unanswerable",
+    },
+    {
+        "question": (
+            "Passage: Chloroplasts are organelles, specialized subunits, in "
+            "plant and algal cells. Their discovery inside plant cells is "
+            "credited to Hugo von Mohl in 1837.\n\n"
+            "Question: Who discovered chloroplasts?"
+        ),
+        "correct_answer": "Hugo von Mohl",
+        "category": "answerable",
+    },
+    {
+        "question": (
+            "Passage: Chloroplasts are organelles inside plant cells.\n\n"
+            "Question: What color are chloroplasts?"
+        ),
+        "correct_answer": "unanswerable",
+        "category": "unanswerable",
+    },
+    {
+        "question": (
+            "Passage: Apollo 11 was the spaceflight that first landed humans on "
+            "the Moon. Commander Neil Armstrong and lunar module pilot Buzz "
+            "Aldrin landed the Apollo Lunar Module Eagle on July 20, 1969.\n\n"
+            "Question: Who was the commander of Apollo 11?"
+        ),
+        "correct_answer": "Neil Armstrong",
+        "category": "answerable",
+    },
+    {
+        "question": (
+            "Passage: Apollo 11 first landed humans on the Moon on July 20, 1969.\n\n"
+            "Question: What was the name of the Apollo 11 command module?"
+        ),
+        "correct_answer": "unanswerable",
+        "category": "unanswerable",
+    },
+    {
+        "question": (
+            "Passage: The Treaty of Versailles was signed on 28 June 1919, "
+            "exactly five years after the assassination of Archduke Franz "
+            "Ferdinand, and it formally ended World War I.\n\n"
+            "Question: When was the Treaty of Versailles signed?"
+        ),
+        "correct_answer": "28 June 1919",
+        "category": "answerable",
+    },
+    {
+        "question": (
+            "Passage: The Treaty of Versailles formally ended World War I.\n\n"
+            "Question: Where was the Treaty of Versailles signed?"
+        ),
+        "correct_answer": "unanswerable",
+        "category": "unanswerable",
+    },
+    {
+        "question": (
+            "Passage: The mitochondrion is a double-membrane-bound organelle "
+            "found in most eukaryotic organisms. Mitochondria generate most of "
+            "the cell's supply of adenosine triphosphate (ATP).\n\n"
+            "Question: What do mitochondria generate?"
+        ),
+        "correct_answer": "adenosine triphosphate",
+        "category": "answerable",
+    },
+    {
+        "question": (
+            "Passage: Mitochondria are found in most eukaryotic organisms.\n\n"
+            "Question: Who discovered mitochondria?"
+        ),
+        "correct_answer": "unanswerable",
+        "category": "unanswerable",
+    },
+    {
+        "question": (
+            "Passage: The Eiffel Tower is a wrought-iron lattice tower on the "
+            "Champ de Mars in Paris, France. It is named after the engineer "
+            "Gustave Eiffel, whose company designed and built the tower.\n\n"
+            "Question: Who designed the Eiffel Tower?"
+        ),
+        "correct_answer": "Gustave Eiffel",
+        "category": "answerable",
+    },
+    {
+        "question": (
+            "Passage: The Eiffel Tower is located on the Champ de Mars in Paris.\n\n"
+            "Question: How much did the Eiffel Tower cost to build?"
+        ),
+        "correct_answer": "unanswerable",
+        "category": "unanswerable",
+    },
+    {
+        "question": (
+            "Passage: Python is a high-level, general-purpose programming "
+            "language. Its design philosophy emphasizes code readability with "
+            "the use of significant indentation.\n\n"
+            "Question: What does Python's design philosophy emphasize?"
+        ),
+        "correct_answer": "code readability",
+        "category": "answerable",
+    },
+    {
+        "question": (
+            "Passage: Python is a high-level programming language.\n\n"
+            "Question: What is Python's typical memory footprint?"
+        ),
+        "correct_answer": "unanswerable",
+        "category": "unanswerable",
+    },
+]
+
+_ARC_CHALLENGE_SAMPLES: list[dict] = [
+    {
+        "question": (
+            "Which statement best describes the relationship between the "
+            "Sun's gravitational pull and the orbits of the planets?"
+        ),
+        "choices": [
+            "A. The Sun's gravity only affects the inner planets.",
+            "B. The Sun's gravity keeps the planets in elliptical orbits.",
+            "C. The Sun's gravity repels the outer planets.",
+            "D. The Sun's gravity has no effect on planetary motion.",
+        ],
+        "correct_answer": "B",
+        "category": "physics",
+    },
+    {
+        "question": (
+            "A student places a magnet near a closed circuit containing a wire "
+            "coil and a galvanometer. Moving the magnet toward the coil causes "
+            "a current to register. Which principle best explains this?"
+        ),
+        "choices": [
+            "A. Ohm's law",
+            "B. Kirchhoff's voltage law",
+            "C. Faraday's law of electromagnetic induction",
+            "D. The Doppler effect",
+        ],
+        "correct_answer": "C",
+        "category": "physics",
+    },
+    {
+        "question": (
+            "During photosynthesis, which molecules are the raw materials that "
+            "plants combine to produce glucose?"
+        ),
+        "choices": [
+            "A. Oxygen and nitrogen",
+            "B. Carbon dioxide and water",
+            "C. Methane and ammonia",
+            "D. Glucose and oxygen",
+        ],
+        "correct_answer": "B",
+        "category": "biology",
+    },
+    {
+        "question": (
+            "A population of beetles on a dark-soiled island is mostly dark, "
+            "while a neighboring sandy-soiled island hosts mostly light beetles. "
+            "Which mechanism best accounts for this pattern?"
+        ),
+        "choices": [
+            "A. Genetic drift only",
+            "B. Natural selection by predators on visibility",
+            "C. Lamarckian inheritance",
+            "D. Random mutation alone",
+        ],
+        "correct_answer": "B",
+        "category": "biology",
+    },
+    {
+        "question": ("Two isotopes of the same element differ in which property?"),
+        "choices": [
+            "A. Number of protons",
+            "B. Number of electrons in a neutral atom",
+            "C. Number of neutrons",
+            "D. Chemical symbol",
+        ],
+        "correct_answer": "C",
+        "category": "chemistry",
+    },
+    {
+        "question": ("Adding a catalyst to a reversible reaction at equilibrium will:"),
+        "choices": [
+            "A. Shift the equilibrium toward the products",
+            "B. Shift the equilibrium toward the reactants",
+            "C. Speed up both forward and reverse reactions equally",
+            "D. Increase the concentration of products only",
+        ],
+        "correct_answer": "C",
+        "category": "chemistry",
+    },
+    {
+        "question": (
+            "Which feature of plate tectonics is most directly responsible for "
+            "the formation of the Himalayan mountain range?"
+        ),
+        "choices": [
+            "A. Divergent oceanic boundaries",
+            "B. Transform fault activity",
+            "C. Continental-continental convergent collision",
+            "D. Hotspot volcanism",
+        ],
+        "correct_answer": "C",
+        "category": "earth_science",
+    },
+    {
+        "question": (
+            "A student observes that rocks at the bottom of a stratified "
+            "sedimentary sequence are generally older than those at the top. "
+            "Which principle describes this observation?"
+        ),
+        "choices": [
+            "A. The principle of uniformitarianism",
+            "B. The principle of superposition",
+            "C. The principle of cross-cutting relationships",
+            "D. The principle of faunal succession",
+        ],
+        "correct_answer": "B",
+        "category": "earth_science",
+    },
+    {
+        "question": (
+            "Which of the following best explains why a ball rolled across a "
+            "rough surface eventually stops moving?"
+        ),
+        "choices": [
+            "A. It runs out of energy",
+            "B. Friction does negative work on the ball, dissipating kinetic energy",
+            "C. Gravity increases over time",
+            "D. The ball loses its mass",
+        ],
+        "correct_answer": "B",
+        "category": "physics",
+    },
+    {
+        "question": (
+            "Which process converts atmospheric nitrogen into ammonia that " "plants can use?"
+        ),
+        "choices": [
+            "A. Photosynthesis",
+            "B. Nitrogen fixation by bacteria",
+            "C. Cellular respiration",
+            "D. Transpiration",
+        ],
+        "correct_answer": "B",
+        "category": "biology",
+    },
+    {
+        "question": ("In a food web, removing a top predator most often results in:"),
+        "choices": [
+            "A. An immediate decrease in producer biomass",
+            "B. A cascade of population changes that can increase mid-level consumers",
+            "C. No measurable change in the ecosystem",
+            "D. A complete collapse of all trophic levels within a day",
+        ],
+        "correct_answer": "B",
+        "category": "biology",
+    },
+    {
+        "question": (
+            "The pH of a solution changes from 4 to 6. By what factor does "
+            "the hydrogen-ion concentration change?"
+        ),
+        "choices": [
+            "A. It doubles",
+            "B. It is halved",
+            "C. It decreases by a factor of 100",
+            "D. It increases by a factor of 2",
+        ],
+        "correct_answer": "C",
+        "category": "chemistry",
+    },
+    {
+        "question": (
+            "Which of the following is the strongest evidence that the universe " "is expanding?"
+        ),
+        "choices": [
+            "A. The rotation of the Milky Way",
+            "B. Cosmic microwave background blackbody spectrum",
+            "C. Observed redshift of distant galaxies proportional to distance",
+            "D. The existence of black holes",
+        ],
+        "correct_answer": "C",
+        "category": "astronomy",
+    },
+    {
+        "question": (
+            "Which property of water is most directly responsible for its "
+            "ability to moderate temperatures in coastal regions?"
+        ),
+        "choices": [
+            "A. Low density of ice",
+            "B. High specific heat capacity",
+            "C. High surface tension",
+            "D. Polarity",
+        ],
+        "correct_answer": "B",
+        "category": "earth_science",
+    },
+    {
+        "question": (
+            "A student models the water cycle. Which stage involves water "
+            "vapor losing energy and returning to liquid form?"
+        ),
+        "choices": [
+            "A. Evaporation",
+            "B. Transpiration",
+            "C. Condensation",
+            "D. Runoff",
+        ],
+        "correct_answer": "C",
+        "category": "earth_science",
+    },
+]
+
+_BBH_HARD_SAMPLES: list[dict] = [
+    {
+        "question": (
+            "On a shelf there are five books: Red, Blue, Green, Yellow, and "
+            "Black. The Red book is to the left of the Blue book. The Green "
+            "book is to the right of the Yellow book. The Black book is at "
+            "the far right. The Blue book is between the Red and Green books. "
+            "Which book is leftmost?"
+        ),
+        "choices": ["A. Red", "B. Yellow", "C. Green", "D. Blue"],
+        "correct_answer": "B",
+        "category": "logical_deduction",
+    },
+    {
+        "question": (
+            "Five runners finished a race: Alice, Bob, Carol, Dan, and Eve. "
+            "Alice finished before Bob. Carol finished after Dan. Eve finished "
+            "last. Dan finished before Alice. Who finished first?"
+        ),
+        "choices": ["A. Alice", "B. Bob", "C. Carol", "D. Dan"],
+        "correct_answer": "D",
+        "category": "logical_deduction",
+    },
+    {
+        "question": (
+            "Today is Friday, November 3rd. What day of the week will it be " "50 days from today?"
+        ),
+        "choices": [
+            "A. Monday",
+            "B. Tuesday",
+            "C. Wednesday",
+            "D. Saturday",
+        ],
+        "correct_answer": "D",
+        "category": "date_understanding",
+    },
+    {
+        "question": (
+            "A leap year has 366 days. If January 1st of a leap year is a "
+            "Thursday, what day of the week is March 1st of that same year?"
+        ),
+        "choices": [
+            "A. Thursday",
+            "B. Friday",
+            "C. Saturday",
+            "D. Sunday",
+        ],
+        "correct_answer": "B",
+        "category": "date_understanding",
+    },
+    {
+        "question": (
+            "You start at the origin facing north. You turn 90 degrees "
+            "clockwise, walk 3 steps, turn 90 degrees clockwise, walk 3 "
+            "steps, turn 90 degrees clockwise, walk 3 steps. In which "
+            "compass direction are you now facing?"
+        ),
+        "choices": [
+            "A. North",
+            "B. East",
+            "C. South",
+            "D. West",
+        ],
+        "correct_answer": "D",
+        "category": "navigate",
+    },
+    {
+        "question": (
+            "I walked 10 meters north, then 5 meters east, then 10 meters "
+            "south, then 5 meters west. How far am I from my starting point?"
+        ),
+        "choices": [
+            "A. 0 meters",
+            "B. 5 meters",
+            "C. 10 meters",
+            "D. 30 meters",
+        ],
+        "correct_answer": "A",
+        "category": "navigate",
+    },
+    {
+        "question": (
+            "Consider the sequence ( ( [ { } ] ) ) (. Which of the following "
+            "characters should replace '?' to make the full sequence "
+            "balanced? The partial sequence is ( ( [ { } ] ) ) ( ?"
+        ),
+        "choices": ["A. )", "B. ]", "C. }", "D. ("],
+        "correct_answer": "A",
+        "category": "dyck_languages",
+    },
+    {
+        "question": ("Close the following bracket sequence: [ { ( [ ] ) } "),
+        "choices": ["A. ]", "B. }", "C. ) ]", "D. ) } ]"],
+        "correct_answer": "A",
+        "category": "dyck_languages",
+    },
+    {
+        "question": ("Which of the following sentences contains a factual inconsistency?"),
+        "choices": [
+            "A. The author wrote several novels in the 19th century.",
+            "B. The author was born in 1850 and died in 1820.",
+            "C. The author lived for 72 years.",
+            "D. The author published her first book at age 24.",
+        ],
+        "correct_answer": "B",
+        "category": "causal_judgement",
+    },
+    {
+        "question": (
+            "A light on an automated conveyor belt turns on exactly when a "
+            "package arrives. The light turned on. What is the most likely "
+            "cause?"
+        ),
+        "choices": [
+            "A. A bulb malfunction",
+            "B. A package arriving at the sensor",
+            "C. A power surge",
+            "D. A manual override",
+        ],
+        "correct_answer": "B",
+        "category": "causal_judgement",
+    },
+    {
+        "question": (
+            "A store sold 120 items at $5 each and 50 items at $12 each. "
+            "If the store's operating cost was $400, what was the profit?"
+        ),
+        "choices": ["A. $600", "B. $800", "C. $1,200", "D. $1,600"],
+        "correct_answer": "B",
+        "category": "multistep_arithmetic",
+    },
+    {
+        "question": (
+            "A train travels 60 km in the first hour, 80 km in the next hour, "
+            "and 100 km in the third hour. What is the average speed over "
+            "the entire trip?"
+        ),
+        "choices": ["A. 60 km/h", "B. 75 km/h", "C. 80 km/h", "D. 100 km/h"],
+        "correct_answer": "C",
+        "category": "multistep_arithmetic",
+    },
+    {
+        "question": (
+            "A table lists animals: Cat (small, indoor), Dog (medium, outdoor), "
+            "Rabbit (small, indoor), Horse (large, outdoor). How many small, "
+            "indoor animals are listed?"
+        ),
+        "choices": ["A. 1", "B. 2", "C. 3", "D. 4"],
+        "correct_answer": "B",
+        "category": "tracking_shuffled_objects",
+    },
+    {
+        "question": (
+            "Alice, Bob, and Carol each start holding a ball of their own "
+            "colour (red, blue, and green respectively). Alice swaps with "
+            "Bob, then Bob swaps with Carol. Who holds the red ball at the "
+            "end?"
+        ),
+        "choices": ["A. Alice", "B. Bob", "C. Carol", "D. Nobody"],
+        "correct_answer": "B",
+        "category": "tracking_shuffled_objects",
+    },
+    {
+        "question": (
+            "Which of the following statements logically follows from: "
+            "'All swans I have observed are white'?"
+        ),
+        "choices": [
+            "A. All swans are white.",
+            "B. Every swan I observe in the future will also be white.",
+            "C. No swan has been observed to be any colour other than white " "by me so far.",
+            "D. Swans cannot be black.",
+        ],
+        "correct_answer": "C",
+        "category": "formal_fallacies",
+    },
+]
+
+_DROP_READING_SAMPLES: list[dict] = [
+    {
+        "question": (
+            "Passage: In the 2003 NFL season, quarterback Jake Delhomme "
+            "threw 19 touchdown passes and 16 interceptions. How many more "
+            "touchdown passes than interceptions did Delhomme throw?"
+        ),
+        "correct_answer": "3",
+        "category": "arithmetic",
+    },
+    {
+        "question": (
+            "Passage: The school library had 842 books at the start of the "
+            "year. During the year, it received a donation of 158 additional "
+            "books but had 47 books damaged beyond repair. How many books "
+            "did the library have at the end of the year?"
+        ),
+        "correct_answer": "953",
+        "category": "arithmetic",
+    },
+    {
+        "question": (
+            "Passage: The city recorded a population of 412,000 in 2010 and "
+            "498,500 in 2020. What was the population increase between 2010 "
+            "and 2020?"
+        ),
+        "correct_answer": "86500",
+        "category": "arithmetic",
+    },
+    {
+        "question": (
+            "Passage: The Super Bowl was played in January 1967, February "
+            "1972, and February 1985. Between the first and the third Super "
+            "Bowls listed, how many years passed?"
+        ),
+        "correct_answer": "18",
+        "category": "date_difference",
+    },
+    {
+        "question": (
+            "Passage: Queen Victoria reigned from 1837 until her death in "
+            "1901. For how many years did she reign?"
+        ),
+        "correct_answer": "64",
+        "category": "date_difference",
+    },
+    {
+        "question": (
+            "Passage: In the first quarter the Bears scored 7 points, in "
+            "the second quarter 14 points, in the third 3 points, and in "
+            "the fourth 10 points. The Packers scored 10, 7, 14, and 3 "
+            "points respectively. Who won the game and by how many points?"
+        ),
+        "correct_answer": "the Bears by 0; the game was tied at 34",
+        "category": "comparison",
+    },
+    {
+        "question": (
+            "Passage: The shortest touchdown pass of the game was 4 yards "
+            "by Smith, and the longest was 68 yards by Johnson. By how many "
+            "yards did Johnson's pass exceed Smith's?"
+        ),
+        "correct_answer": "64",
+        "category": "comparison",
+    },
+    {
+        "question": (
+            "Passage: The conference had 400 attendees on day 1, 350 on day "
+            "2, and 500 on day 3. What was the total attendance over the "
+            "three days?"
+        ),
+        "correct_answer": "1250",
+        "category": "arithmetic",
+    },
+    {
+        "question": (
+            "Passage: The marathon had three aid stations spaced at 8 km, "
+            "16 km, and 35 km. How far apart are the second and third aid "
+            "stations?"
+        ),
+        "correct_answer": "19",
+        "category": "arithmetic",
+    },
+    {
+        "question": (
+            "Passage: In the game, Alice scored 14 goals and Bob scored 9 "
+            "goals. Carol scored as many goals as Alice and Bob combined. "
+            "How many goals did Carol score?"
+        ),
+        "correct_answer": "23",
+        "category": "arithmetic",
+    },
+    {
+        "question": (
+            "Passage: The Apollo program had 17 numbered missions, from "
+            "Apollo 1 (1967) to Apollo 17 (1972). Over how many years did "
+            "the numbered missions span?"
+        ),
+        "correct_answer": "5",
+        "category": "date_difference",
+    },
+    {
+        "question": (
+            "Passage: The forest fire burned 18,500 acres on day 1, 22,000 "
+            "acres on day 2, and 9,500 acres on day 3. How many total acres "
+            "burned over the three days?"
+        ),
+        "correct_answer": "50000",
+        "category": "arithmetic",
+    },
+    {
+        "question": (
+            "Passage: In the championship, Team A won 3 games, lost 1, and "
+            "tied 2. Team B won 4 games, lost 2, and tied 0. Which team had "
+            "more total games played?"
+        ),
+        "correct_answer": "Team B",
+        "category": "comparison",
+    },
+    {
+        "question": (
+            "Passage: The theater sold 240 tickets for the Friday show, "
+            "320 for Saturday matinee, and 410 for Saturday evening. How "
+            "many more tickets were sold for the two Saturday shows "
+            "combined than for the Friday show?"
+        ),
+        "correct_answer": "490",
+        "category": "arithmetic",
+    },
+    {
+        "question": (
+            "Passage: A farmer planted 3 rows of 25 tomato plants and 4 "
+            "rows of 20 pepper plants. What was the total number of plants?"
+        ),
+        "correct_answer": "155",
+        "category": "arithmetic",
+    },
+]
+
+_CNN_DAILYMAIL_SAMPLES: list[dict] = [
+    {
+        "question": (
+            "Article: The city council today unanimously approved a new "
+            "ordinance that bans the use of single-use plastic bags in all "
+            "retail stores beginning next January. Shop owners will be "
+            "required to offer paper or reusable alternatives, and fines of "
+            "up to 250 dollars may be levied on repeat offenders. Supporters "
+            "of the measure cited growing concerns over marine pollution.\n\n"
+            "Summarize the article in one or two sentences."
+        ),
+        "correct_answer": (
+            "The city council approved a ban on single-use plastic bags in "
+            "retail stores starting next January, with fines for repeat "
+            "offenders."
+        ),
+        "category": "news",
+    },
+    {
+        "question": (
+            "Article: Scientists at a national laboratory announced today "
+            "that they had achieved a net energy gain in a controlled "
+            "nuclear fusion reaction for the first time. The experiment "
+            "produced more energy than was used to trigger it, a long-"
+            "sought milestone in clean energy research, though commercial "
+            "applications remain many years away.\n\n"
+            "Summarize the article in one or two sentences."
+        ),
+        "correct_answer": (
+            "Scientists achieved the first net energy gain in a controlled "
+            "nuclear fusion experiment, a milestone for clean energy though "
+            "commercial use remains distant."
+        ),
+        "category": "science",
+    },
+    {
+        "question": (
+            "Article: A powerful category four hurricane made landfall on "
+            "the Gulf Coast early Sunday, bringing sustained winds of 135 "
+            "miles per hour and a storm surge of up to 12 feet. Tens of "
+            "thousands of residents remain without power, and emergency "
+            "services are coordinating rescue operations in low-lying "
+            "neighborhoods.\n\n"
+            "Summarize the article in one or two sentences."
+        ),
+        "correct_answer": (
+            "A category four hurricane hit the Gulf Coast with 135 mph "
+            "winds and a 12-foot storm surge, leaving tens of thousands "
+            "without power and prompting rescue operations."
+        ),
+        "category": "weather",
+    },
+    {
+        "question": (
+            "Article: The technology company unveiled its latest "
+            "smartphone today, featuring a redesigned camera system, a "
+            "larger battery, and a new processor the company claims is "
+            "30 percent faster than last year's model. The device will "
+            "start at 999 dollars and ship next month.\n\n"
+            "Summarize the article in one or two sentences."
+        ),
+        "correct_answer": (
+            "The company unveiled a new smartphone with an improved camera, "
+            "larger battery, and a 30 percent faster processor, starting at "
+            "999 dollars and shipping next month."
+        ),
+        "category": "technology",
+    },
+    {
+        "question": (
+            "Article: In a closely contested final, the national football "
+            "team defeated their rivals two goals to one to win the "
+            "continental championship for the first time in 15 years. The "
+            "winning goal came in the 88th minute from a well-timed header "
+            "off a corner kick.\n\n"
+            "Summarize the article in one or two sentences."
+        ),
+        "correct_answer": (
+            "The national football team beat their rivals 2-1 to win the "
+            "continental championship for the first time in 15 years, "
+            "with the winning header coming in the 88th minute."
+        ),
+        "category": "sports",
+    },
+    {
+        "question": (
+            "Article: The central bank raised its benchmark interest rate "
+            "by a quarter of a percentage point, citing persistent "
+            "inflation and a resilient labor market. Officials signaled "
+            "that further increases could follow if prices do not cool "
+            "later this year.\n\n"
+            "Summarize the article in one or two sentences."
+        ),
+        "correct_answer": (
+            "The central bank raised interest rates by 0.25 percentage "
+            "points due to persistent inflation and a strong labor market, "
+            "hinting at further hikes if prices do not fall."
+        ),
+        "category": "business",
+    },
+    {
+        "question": (
+            "Article: The health ministry reported today that the seasonal "
+            "flu vaccination campaign had reached two million people in "
+            "its first month, a 20 percent increase over the same period "
+            "last year. Officials credited expanded pharmacy access and a "
+            "public awareness push.\n\n"
+            "Summarize the article in one or two sentences."
+        ),
+        "correct_answer": (
+            "The health ministry said two million people received flu "
+            "shots in the first month of the campaign, 20 percent more "
+            "than last year, thanks to broader pharmacy access and "
+            "awareness efforts."
+        ),
+        "category": "health",
+    },
+    {
+        "question": (
+            "Article: Archaeologists excavating a Bronze Age site on the "
+            "Mediterranean island uncovered a set of well-preserved "
+            "ceramic vessels and a small gold pendant believed to be over "
+            "3,000 years old. The finds are expected to shed new light on "
+            "trade networks of the period.\n\n"
+            "Summarize the article in one or two sentences."
+        ),
+        "correct_answer": (
+            "Archaeologists found Bronze Age ceramic vessels and a gold "
+            "pendant over 3,000 years old on a Mediterranean island, "
+            "providing new insights into ancient trade networks."
+        ),
+        "category": "science",
+    },
+    {
+        "question": (
+            "Article: The transit authority announced a fare increase of "
+            "ten percent effective next month, the first change in five "
+            "years, to help cover rising operating costs. Officials said "
+            "low-income riders would continue to receive discounted "
+            "passes.\n\n"
+            "Summarize the article in one or two sentences."
+        ),
+        "correct_answer": (
+            "The transit authority will raise fares by 10 percent next "
+            "month, its first hike in five years, while preserving "
+            "discounts for low-income riders."
+        ),
+        "category": "local",
+    },
+    {
+        "question": (
+            "Article: A cybersecurity firm reported that a widespread "
+            "ransomware campaign had affected hospitals and municipal "
+            "services across three countries over the weekend. Affected "
+            "organizations were asked to isolate systems and restore from "
+            "backups.\n\n"
+            "Summarize the article in one or two sentences."
+        ),
+        "correct_answer": (
+            "A ransomware campaign hit hospitals and municipal services "
+            "in three countries over the weekend, prompting advice to "
+            "isolate systems and restore from backups."
+        ),
+        "category": "technology",
+    },
+    {
+        "question": (
+            "Article: The environmental agency released its annual report "
+            "today, finding that air quality in the metropolitan region "
+            "had improved for the third straight year, with a notable "
+            "drop in nitrogen dioxide levels attributed to stricter "
+            "vehicle emissions rules.\n\n"
+            "Summarize the article in one or two sentences."
+        ),
+        "correct_answer": (
+            "The environmental agency's annual report shows metropolitan "
+            "air quality improved for a third year, with nitrogen dioxide "
+            "dropping thanks to tougher vehicle emissions rules."
+        ),
+        "category": "environment",
+    },
+    {
+        "question": (
+            "Article: A regional airline announced plans to add three "
+            "new routes connecting mid-sized cities previously without "
+            "direct service. The first flights are scheduled to begin in "
+            "the spring and will initially operate three times per week.\n\n"
+            "Summarize the article in one or two sentences."
+        ),
+        "correct_answer": (
+            "A regional airline will launch three new routes between "
+            "mid-sized cities starting in the spring, each flying three "
+            "times weekly."
+        ),
+        "category": "business",
+    },
+    {
+        "question": (
+            "Article: Organizers of the annual film festival unveiled "
+            "their lineup today, featuring 45 feature films from 20 "
+            "countries. The opening-night selection is a documentary "
+            "about a grassroots conservation movement in the Amazon "
+            "basin.\n\n"
+            "Summarize the article in one or two sentences."
+        ),
+        "correct_answer": (
+            "The annual film festival announced 45 feature films from 20 "
+            "countries, with a documentary about Amazon conservation "
+            "opening the event."
+        ),
+        "category": "entertainment",
+    },
+    {
+        "question": (
+            "Article: A university research team reported that a common "
+            "household spice may reduce cholesterol levels in adults when "
+            "consumed in regular amounts. The findings, based on a "
+            "six-month trial of 120 participants, were published today "
+            "in a leading medical journal.\n\n"
+            "Summarize the article in one or two sentences."
+        ),
+        "correct_answer": (
+            "A university study of 120 adults over six months found that "
+            "a common household spice can lower cholesterol, with results "
+            "published in a leading medical journal."
+        ),
+        "category": "health",
+    },
+    {
+        "question": (
+            "Article: The space agency successfully launched a probe "
+            "bound for a distant asteroid this morning, beginning a "
+            "seven-year journey. The mission aims to collect samples and "
+            "return them to Earth, offering clues to the early solar "
+            "system.\n\n"
+            "Summarize the article in one or two sentences."
+        ),
+        "correct_answer": (
+            "The space agency launched a seven-year mission to an "
+            "asteroid to collect samples and bring them back to Earth, "
+            "hoping to learn more about the early solar system."
+        ),
+        "category": "science",
+    },
+]
+
 _REGISTRY: dict[str, list[dict]] = {
     "mmlu": _MMLU_SAMPLES,
     "truthfulqa": _TRUTHFULQA_SAMPLES,
@@ -2709,6 +3635,11 @@ _REGISTRY: dict[str, list[dict]] = {
     "squad": _SQUAD_SAMPLES,
     "winogrande": _WINOGRANDE_SAMPLES,
     "bbq": _BBQ_SAMPLES,
+    "squad_v2": _SQUAD_V2_SAMPLES,
+    "arc_challenge": _ARC_CHALLENGE_SAMPLES,
+    "bbh_hard": _BBH_HARD_SAMPLES,
+    "drop_reading": _DROP_READING_SAMPLES,
+    "cnn_dailymail": _CNN_DAILYMAIL_SAMPLES,
 }
 
 

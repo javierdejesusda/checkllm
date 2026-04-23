@@ -17,10 +17,14 @@ from checkllm.benchmarks.runner import BenchmarkRunner
 
 ALL_BENCHMARKS = [
     "arc",
+    "arc_challenge",
     "bbh",
+    "bbh_hard",
     "bbq",
     "boolq",
+    "cnn_dailymail",
     "drop",
+    "drop_reading",
     "gsm8k",
     "hellaswag",
     "humaneval",
@@ -30,14 +34,15 @@ ALL_BENCHMARKS = [
     "mathqa",
     "mmlu",
     "squad",
+    "squad_v2",
     "truthfulqa",
     "winogrande",
 ]
 
 
-def test_list_benchmarks_returns_all_16():
+def test_list_benchmarks_returns_all_21():
     names = list_benchmarks()
-    assert len(names) == 16
+    assert len(names) == 21
     assert names == ALL_BENCHMARKS
 
 
@@ -79,6 +84,8 @@ MC_BENCHMARKS = [
     "mathqa",
     "winogrande",
     "bbq",
+    "arc_challenge",
+    "bbh_hard",
 ]
 
 
@@ -99,6 +106,9 @@ OPEN_BENCHMARKS = [
     "ifeval",
     "lambada",
     "squad",
+    "squad_v2",
+    "drop_reading",
+    "cnn_dailymail",
 ]
 
 
