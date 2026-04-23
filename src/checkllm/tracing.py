@@ -3,12 +3,18 @@
 Provides a ``Tracer`` that records evaluation spans and check results.
 Integrates with OpenTelemetry if the ``opentelemetry`` package is installed,
 otherwise stores spans locally for inspection and JSON export.
+
+Also provides :func:`propagate_trace_context`, which returns W3C Trace
+Context headers (``traceparent`` / ``tracestate``) for the currently active
+span so outbound judge HTTP calls can be correlated with the evaluation
+trace on downstream services.
 """
 
 from __future__ import annotations
 
 import functools
 import logging
+import secrets
 import time
 from contextlib import contextmanager
 from typing import Any, Callable, Generator, TypeVar
@@ -50,6 +56,8 @@ class Span(BaseModel):
     events: list[dict[str, Any]] = Field(default_factory=list)
     children: list[Span] = Field(default_factory=list)
     status: str = "ok"  # "ok", "error"
+    trace_id: str = ""  # 32 lowercase hex chars, populated for propagation
+    span_id: str = ""  # 16 lowercase hex chars, populated for propagation
 
     @property
     def duration_ms(self) -> float:
@@ -117,10 +125,19 @@ class Tracer:
         attributes:
             Optional key-value metadata to attach to the span.
         """
+        # Child spans inherit the trace id of their parent so all spans
+        # in a single evaluation belong to the same W3C trace.
+        if self._span_stack:
+            parent_trace_id = self._span_stack[-1].trace_id or _new_trace_id()
+        else:
+            parent_trace_id = _new_trace_id()
+
         local_span = Span(
             name=name,
             start_time_ns=time.time_ns(),
             attributes=dict(attributes) if attributes else {},
+            trace_id=parent_trace_id,
+            span_id=_new_span_id(),
         )
 
         # Nest under parent span if one exists
@@ -366,3 +383,115 @@ def trace(name: str | None = None) -> Callable[[F], F]:
         Optional span name. Defaults to the function's qualified name.
     """
     return get_tracer().trace(name)
+
+
+# ---------------------------------------------------------------------------
+# W3C Trace Context propagation
+# ---------------------------------------------------------------------------
+
+
+_INVALID_TRACE_ID = "0" * 32
+_INVALID_SPAN_ID = "0" * 16
+
+
+def _new_trace_id() -> str:
+    """Generate a random 16-byte W3C trace id as 32 lowercase hex chars."""
+    return secrets.token_hex(16)
+
+
+def _new_span_id() -> str:
+    """Generate a random 8-byte W3C span id as 16 lowercase hex chars."""
+    return secrets.token_hex(8)
+
+
+def _format_traceparent(trace_id: str, span_id: str, sampled: bool = True) -> str:
+    """Return a W3C ``traceparent`` header value.
+
+    Format: ``00-<trace_id>-<parent_id>-<trace_flags>``.
+    """
+    flags = "01" if sampled else "00"
+    return f"00-{trace_id}-{span_id}-{flags}"
+
+
+def _otel_context_headers() -> dict[str, str]:
+    """Return headers from the current OpenTelemetry context, if any.
+
+    Uses ``opentelemetry.propagate.inject`` when the package is installed
+    *and* there is a valid recording span.  Returns an empty dict otherwise
+    so callers can fall back to the local-tracer span.
+    """
+    try:
+        from opentelemetry import trace as otel_trace
+        from opentelemetry.propagate import inject
+    except ImportError:
+        return {}
+
+    current = otel_trace.get_current_span()
+    ctx = current.get_span_context() if current is not None else None
+    if ctx is None or not getattr(ctx, "is_valid", False):
+        return {}
+
+    carrier: dict[str, str] = {}
+    try:
+        inject(carrier)
+    except Exception:  # pragma: no cover — defensive
+        return {}
+    return carrier
+
+
+def propagate_trace_context(headers: dict[str, str] | None = None) -> dict[str, str]:
+    """Return a headers dict containing W3C ``traceparent`` / ``tracestate``.
+
+    The function first tries :mod:`opentelemetry.propagate` with the current
+    OpenTelemetry context.  When OpenTelemetry is not installed — or when no
+    OTel SDK has been configured and no trace context is active — it falls
+    back to synthesizing a ``traceparent`` from the currently active
+    :class:`Span` on the global :class:`Tracer`.  If neither source can
+    produce a trace context, the input headers are returned unchanged.
+
+    Args:
+        headers: Optional existing headers dict.  When provided, the
+            returned dict is a copy with propagation headers merged in
+            (existing values are *not* overwritten).
+
+    Returns:
+        A new dict containing any input headers plus the W3C trace-context
+        headers that could be produced.
+
+    Example::
+
+        import httpx
+        from checkllm.tracing import propagate_trace_context, get_tracer
+
+        with get_tracer().span("judge.call"):
+            headers = propagate_trace_context({"Authorization": "Bearer x"})
+            # headers now contains "traceparent": "00-<trace>-<span>-01"
+            httpx.post(url, headers=headers)
+    """
+    out: dict[str, str] = dict(headers) if headers else {}
+
+    # Prefer native OpenTelemetry propagation when available.
+    otel_headers = _otel_context_headers()
+    for key, value in otel_headers.items():
+        out.setdefault(key, value)
+
+    if "traceparent" in out:
+        return out
+
+    # Fall back to the local tracer's active span.
+    tracer = get_tracer()
+    active_stack = tracer._span_stack  # noqa: SLF001 — internal state
+    if not active_stack:
+        return out
+
+    span = active_stack[-1]
+    trace_id = span.trace_id or _INVALID_TRACE_ID
+    span_id = span.span_id or _INVALID_SPAN_ID
+    if trace_id == _INVALID_TRACE_ID or span_id == _INVALID_SPAN_ID:
+        return out
+
+    out["traceparent"] = _format_traceparent(trace_id, span_id, sampled=True)
+    # ``tracestate`` is optional; emit an empty vendor field only when the
+    # caller has set one previously.  Leaving it absent matches OTel behavior
+    # for contexts with no vendor-specific state.
+    return out

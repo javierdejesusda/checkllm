@@ -48,7 +48,7 @@ from checkllm.observe import (
     end_trace,
 )
 from checkllm.observe import Span as ObserveSpan, Trace as ObserveTrace
-from checkllm.tracing import Span, Tracer, get_tracer, trace
+from checkllm.tracing import Span, Tracer, get_tracer, propagate_trace_context, trace
 from checkllm.trajectory import (
     TraceSpan,
     TraceValidator,
