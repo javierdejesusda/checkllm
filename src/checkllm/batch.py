@@ -360,8 +360,7 @@ class BatchEvaluator:
         output_file_id = job.metadata.get("output_file_id")
         if not output_file_id:
             raise ValueError(
-                "No output_file_id found in job metadata. "
-                "Ensure the job was polled to completion."
+                "No output_file_id found in job metadata. Ensure the job was polled to completion."
             )
 
         loop = asyncio.get_running_loop()
@@ -862,5 +861,5 @@ def get_batch_runner(
             return AnthropicBatchRunner(api_key=api_key, **kwargs)
         return AnthropicBatchRunner(api_key=api_key, model=model, **kwargs)
     raise ValueError(
-        f"Unsupported batch provider: {provider!r}. " "Choose one of: 'openai', 'anthropic'."
+        f"Unsupported batch provider: {provider!r}. Choose one of: 'openai', 'anthropic'."
     )

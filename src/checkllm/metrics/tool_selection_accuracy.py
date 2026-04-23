@@ -122,7 +122,7 @@ class ToolSelectionAccuracyMetric:
         parts = [f"{matches}/{len(expected_sequence)} selections correct ({base_score:.0%})."]
         if extras > 0:
             parts.append(
-                f"{extras} extra trailing tool call(s): {actual_names[len(expected_sequence):]}."
+                f"{extras} extra trailing tool call(s): {actual_names[len(expected_sequence) :]}."
             )
         if misses:
             parts.append("Misses: " + "; ".join(misses[:6]))

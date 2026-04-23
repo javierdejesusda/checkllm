@@ -68,9 +68,9 @@ class TestCodingAgentPlugin:
     def test_plugin_has_prompts(self):
         for pt in CodingAgentPluginType:
             plugin = get_plugin(pt)
-            assert (
-                len(plugin.test_prompts) >= 3
-            ), f"Plugin {pt.value} should have at least 3 test prompts"
+            assert len(plugin.test_prompts) >= 3, (
+                f"Plugin {pt.value} should have at least 3 test prompts"
+            )
 
     def test_plugin_has_description(self):
         for pt in CodingAgentPluginType:

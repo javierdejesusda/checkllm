@@ -183,9 +183,7 @@ class TokenBucket:
         if tokens <= 0:
             raise ValueError("tokens must be positive")
         if tokens > self.capacity:
-            raise ValueError(
-                f"requested {tokens} tokens exceeds bucket capacity {self.capacity}"
-            )
+            raise ValueError(f"requested {tokens} tokens exceeds bucket capacity {self.capacity}")
 
         while True:
             async with self._lock:
@@ -293,9 +291,7 @@ class ProviderRateLimiter:
         self._limits[provider] = limit
         rpm = TokenBucket(capacity=limit.rpm, refill_period=60.0)
         tpm = TokenBucket(capacity=limit.tpm, refill_period=60.0)
-        self._providers[provider] = _ProviderState(
-            limit=limit, rpm_bucket=rpm, tpm_bucket=tpm
-        )
+        self._providers[provider] = _ProviderState(limit=limit, rpm_bucket=rpm, tpm_bucket=tpm)
 
     def get_state(self, provider: str) -> _ProviderState:
         """Return the internal state for ``provider`` (mostly for tests)."""

@@ -79,10 +79,10 @@ class MRRMetric:
 
         k_label = str(self.k) if self.k is not None else "all"
         if hit_rank:
-            reasoning = f"MRR@{k_label}: {score:.4f} " f"(first relevant id at rank {hit_rank})"
+            reasoning = f"MRR@{k_label}: {score:.4f} (first relevant id at rank {hit_rank})"
         else:
             reasoning = (
-                f"MRR@{k_label}: 0.0000 " f"(no relevant id in first {len(retrieved_at_k)} results)"
+                f"MRR@{k_label}: 0.0000 (no relevant id in first {len(retrieved_at_k)} results)"
             )
 
         return CheckResult(

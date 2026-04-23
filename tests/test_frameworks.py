@@ -140,9 +140,9 @@ class TestFrameworkRequirements:
         valid_severities = {"critical", "high", "medium", "low"}
         defn = get_framework_definition(framework)
         for req in defn.requirements:
-            assert (
-                req.severity in valid_severities
-            ), f"Invalid severity '{req.severity}' for {req.id} in {framework.value}"
+            assert req.severity in valid_severities, (
+                f"Invalid severity '{req.severity}' for {req.id} in {framework.value}"
+            )
 
     @pytest.mark.parametrize("framework", list(ComplianceFramework))
     def test_all_requirements_have_category(self, framework):

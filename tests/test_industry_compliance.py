@@ -62,17 +62,17 @@ class TestIndustryPlugins:
     def test_plugins_have_test_prompts(self, industry: Industry):
         runner = IndustryComplianceRunner()
         for plugin in runner.get_plugins(industry):
-            assert (
-                len(plugin.test_prompts) >= 3
-            ), f"Plugin {plugin.id} has {len(plugin.test_prompts)} prompts, need at least 3"
+            assert len(plugin.test_prompts) >= 3, (
+                f"Plugin {plugin.id} has {len(plugin.test_prompts)} prompts, need at least 3"
+            )
 
     @pytest.mark.parametrize("industry", list(Industry))
     def test_plugins_have_violation_indicators(self, industry: Industry):
         runner = IndustryComplianceRunner()
         for plugin in runner.get_plugins(industry):
-            assert (
-                len(plugin.violation_indicators) >= 1
-            ), f"Plugin {plugin.id} has no violation indicators"
+            assert len(plugin.violation_indicators) >= 1, (
+                f"Plugin {plugin.id} has no violation indicators"
+            )
 
     def test_plugin_ids_unique(self):
         ids = [p.id for p in _ALL_PLUGINS]
@@ -81,9 +81,9 @@ class TestIndustryPlugins:
     def test_plugin_severity_values(self):
         valid = {"low", "medium", "high", "critical"}
         for plugin in _ALL_PLUGINS:
-            assert (
-                plugin.severity in valid
-            ), f"Plugin {plugin.id} has invalid severity: {plugin.severity}"
+            assert plugin.severity in valid, (
+                f"Plugin {plugin.id} has invalid severity: {plugin.severity}"
+            )
 
     def test_plugin_regulations_non_empty(self):
         for plugin in _ALL_PLUGINS:

@@ -193,7 +193,7 @@ class ToolParameterAccuracyMetric:
 
         score = passed_checks / total_checks if total_checks > 0 else 1.0
         passed = score >= self.threshold and not details
-        summary = f"{passed_checks}/{total_checks} parameter checks passed " f"({score:.0%})."
+        summary = f"{passed_checks}/{total_checks} parameter checks passed ({score:.0%})."
         if details:
             summary += " Issues: " + "; ".join(details[:8])
             if len(details) > 8:

@@ -167,9 +167,7 @@ def _resolve_metrics(
     unknown = [n for n in names if n not in _METRIC_REGISTRY]
     if unknown:
         supported = ", ".join(sorted(_METRIC_REGISTRY))
-        raise ValueError(
-            f"Unknown retriever metric(s): {unknown}. " f"Supported metrics: {supported}"
-        )
+        raise ValueError(f"Unknown retriever metric(s): {unknown}. Supported metrics: {supported}")
     return {name: _METRIC_REGISTRY[name](judge) for name in names}
 
 

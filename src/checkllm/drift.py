@@ -236,7 +236,7 @@ class JudgeBaseline:
         missing = [k for k in required if k not in data]
         if missing:
             raise ValueError(
-                f"JudgeBaseline JSON missing required keys: {missing}. " "Re-record the baseline."
+                f"JudgeBaseline JSON missing required keys: {missing}. Re-record the baseline."
             )
         return cls(
             model=str(data["model"]),

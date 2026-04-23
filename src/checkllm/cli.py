@@ -2172,7 +2172,7 @@ def batch_cmd(
     responses = asyncio.run(_run())
     total_cost = sum(r.cost for r in responses)
     console.print(
-        f"[bold green]Retrieved {len(responses)} responses " f"(total cost: ${total_cost:.4f})[/]"
+        f"[bold green]Retrieved {len(responses)} responses (total cost: ${total_cost:.4f})[/]"
     )
 
     if output is not None:
@@ -2314,7 +2314,7 @@ def drift_check_cmd(
         console.print(f"[yellow]Drifted probes ({len(report.drifted_probes)}):[/]")
         for delta in report.drifted_probes[:10]:
             console.print(
-                f"  [{delta.index:>2}] sim={delta.similarity:.3f}  " f"prompt={delta.prompt[:80]!r}"
+                f"  [{delta.index:>2}] sim={delta.similarity:.3f}  prompt={delta.prompt[:80]!r}"
             )
         if len(report.drifted_probes) > 10:
             console.print(f"  ... and {len(report.drifted_probes) - 10} more")

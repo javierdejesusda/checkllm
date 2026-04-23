@@ -179,9 +179,9 @@ class TestEvolverMechanics:
 
         assert len(result) <= 2
         assert result[0].success_score >= result[-1].success_score
-        assert (
-            result[0].success_score >= 0.5
-        ), "top candidate should have found a compliant response"
+        assert result[0].success_score >= 0.5, (
+            "top candidate should have found a compliant response"
+        )
 
     @pytest.mark.asyncio
     async def test_early_stop_when_threshold_reached(self):
@@ -227,9 +227,9 @@ class TestEvolverMechanics:
         )
 
         max_gen = max(r.generation for r in result)
-        assert (
-            max_gen <= 2
-        ), f"patience=1 with flat scores should cut evolution short (saw max_gen={max_gen})"
+        assert max_gen <= 2, (
+            f"patience=1 with flat scores should cut evolution short (saw max_gen={max_gen})"
+        )
 
     @pytest.mark.asyncio
     async def test_results_sorted_descending(self):

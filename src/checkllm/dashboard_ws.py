@@ -332,7 +332,7 @@ def run(
         import uvicorn
     except ImportError as exc:
         raise ImportError(
-            "checkllm.dashboard_ws.run requires uvicorn. " "Install with 'pip install uvicorn'."
+            "checkllm.dashboard_ws.run requires uvicorn. Install with 'pip install uvicorn'."
         ) from exc
     app = create_app(broker=broker)
     uvicorn.run(app, host=host, port=port)

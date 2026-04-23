@@ -2976,7 +2976,7 @@ _ARC_CHALLENGE_SAMPLES: list[dict] = [
     },
     {
         "question": (
-            "Which process converts atmospheric nitrogen into ammonia that " "plants can use?"
+            "Which process converts atmospheric nitrogen into ammonia that plants can use?"
         ),
         "choices": [
             "A. Photosynthesis",
@@ -3014,7 +3014,7 @@ _ARC_CHALLENGE_SAMPLES: list[dict] = [
     },
     {
         "question": (
-            "Which of the following is the strongest evidence that the universe " "is expanding?"
+            "Which of the following is the strongest evidence that the universe is expanding?"
         ),
         "choices": [
             "A. The rotation of the Milky Way",
@@ -3080,7 +3080,7 @@ _BBH_HARD_SAMPLES: list[dict] = [
     },
     {
         "question": (
-            "Today is Friday, November 3rd. What day of the week will it be " "50 days from today?"
+            "Today is Friday, November 3rd. What day of the week will it be 50 days from today?"
         ),
         "choices": [
             "A. Monday",
@@ -3225,7 +3225,7 @@ _BBH_HARD_SAMPLES: list[dict] = [
         "choices": [
             "A. All swans are white.",
             "B. Every swan I observe in the future will also be white.",
-            "C. No swan has been observed to be any colour other than white " "by me so far.",
+            "C. No swan has been observed to be any colour other than white by me so far.",
             "D. Swans cannot be black.",
         ],
         "correct_answer": "C",

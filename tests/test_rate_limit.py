@@ -369,9 +369,7 @@ class TestRetryWithBackoff:
 
         await retry_with_backoff(
             fn,
-            config=RetryConfig(
-                max_attempts=3, base_delay=100.0, max_delay=100.0, jitter=0.0
-            ),
+            config=RetryConfig(max_attempts=3, base_delay=100.0, max_delay=100.0, jitter=0.0),
             sleep=fake_sleep,
         )
         # Server said 3s; backoff would have been 100s — so we must have used ~3.

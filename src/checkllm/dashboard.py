@@ -1574,7 +1574,7 @@ def _serve_compare_html(
         except ValueError as exc:
             msg = _html_escape(str(exc))
             body = (
-                f"<!DOCTYPE html><html><body><h1>Compare</h1><p>{msg}</p>" "</body></html>"
+                f"<!DOCTYPE html><html><body><h1>Compare</h1><p>{msg}</p></body></html>"
             ).encode("utf-8")
             handler.send_response(404)
             handler.send_header("Content-Type", "text/html; charset=utf-8")
