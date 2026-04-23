@@ -1,5 +1,49 @@
 # Changelog
 
+## v5.1.0 (2026-04-23)
+
+### Retrieval metrics (RAG eval parity)
+- Classical IR ranking metrics: `NDCG`, `MRR`, `MAPAtK`, `PrecisionAtK`, `RecallAtK`, `HitRateAtK` under `checkllm.metrics`. Pure-Python, no LLM call required.
+
+### Providers
+- **Native Vertex AI judge** — `VertexAIJudge` using `google-cloud-aiplatform`. Supports `vertex` / `vertexai` in `create_judge()`. ADC and explicit credentials both supported; project/location fall back to `GOOGLE_CLOUD_PROJECT` / `GOOGLE_CLOUD_LOCATION`. Install with `pip install checkllm[vertex]`.
+
+### Reliability & throughput
+- **Per-provider rate limiting** — new `checkllm.rate_limit` module: `TokenBucket`, `ProviderRateLimiter`, `RateLimit`, `RetryConfig`, `retry_with_backoff`. Dual RPM + TPM buckets per provider with sensible tier-1 defaults for every supported backend. `retry_with_backoff` honors `Retry-After` / `x-ratelimit-reset-*` headers on 429s and backs off exponentially on 5xx. Wired into `AsyncEngine.submit_judge` and configurable via `CheckllmConfig.rate_limits`.
+- **Anthropic Message Batches API** — `AnthropicBatchRunner` alongside the existing OpenAI batch runner, unified behind a `BatchRunner` protocol and a `get_batch_runner(provider, ...)` factory. Automatic 50% batch-discount pricing. New `checkllm batch --batch {openai|anthropic}` CLI command.
+
+### Observability
+- **W3C trace-context propagation** — `propagate_trace_context()` injects `traceparent` / `tracestate` headers into every outbound judge HTTP call (OpenAI, Anthropic, Azure, DeepSeek, Ollama, Bedrock, custom HTTP). One evaluation now shows as one trace across the judge boundary. Install with `pip install checkllm[otel]`.
+- **Anthropic streaming** — `StreamingEvaluator.evaluate_provider()` routes streaming through OpenAI or Anthropic; existing checkpoint/early-stop pipeline unchanged.
+
+### Cost & experience
+- **Cost attribution rollups** — `checkllm.pricing` ships a 2026-04 pricing snapshot for OpenAI, Anthropic, Gemini, DeepSeek, and Bedrock variants. `JudgeResponse` now carries `input_tokens` / `output_tokens` / `model` / `provider`; every `CheckResult` gets a `CostBreakdown`. New dashboard endpoints: `GET /api/cost/by-provider`, `by-metric`, `by-test`, `timeseries?bucket=hour|day`.
+- **Live progress dashboard** — `checkllm.dashboard_ws` adds a Starlette app with `GET /live` (self-contained HTML) and `WS /ws/progress` that streams `test_started`, `check_completed`, `test_completed`, `run_completed` events from the new `ProgressBroker`. Optional `token=` gate for non-loopback deployments.
+
+### Agent & red-team depth
+- **Agent trajectory metrics** — `ToolParameterAccuracyMetric`, `ToolSelectionAccuracyMetric`, `TrajectoryMetric` (ordering/loop-detection/coverage/unexpected-tools) under `checkllm.metrics`. New `ToolCallTrace` model on `checkllm.agents`.
+- **Red-team scorecards** — new `checkllm.redteam_scorecard`: `ExploitSuccessRate`, `OWASPTop10LLMScorecard`, `SensitiveDataExposureRate`, plus `generate_redteam_report()` returning a single dashboard-ready object.
+
+### Experiment analysis
+- `checkllm.analysis.correlation` — Pearson / Spearman metric correlations across runs.
+- `checkllm.analysis.significance` — Welch's t-test, Mann-Whitney U, bootstrap CIs, Cohen's d for run-vs-run A/B comparison.
+
+### Deterministic check parity
+- `@check` decorator, `CHECK_REGISTRY`, and `run_check(name, ...)` symmetric with the existing `@metric` surface. Check composition: `AllOf(*checks)`, `AnyOf(*checks)`, `Not(check)`. All 39 built-in deterministic checks auto-registered.
+
+### Vector stores & drift
+- Connectors for **Pinecone, Weaviate, Milvus, Chroma** under `checkllm.integrations.*`, exposing a unified `connect(**config)` / `query(vector_or_text, top_k)` interface returning normalized `RetrievedContext` objects. Install with `pip install checkllm[vectorstores]`.
+- `KBFaithfulnessMetric` — hallucination against an external KB by combining retrieval + faithfulness.
+- `FreshnessAudit` — flag stale entries older than a TTL.
+- **Judge drift detection** — `checkllm.drift`: `JudgeBaseline` (20 canonical probes, SHA-256 of responses, model version), `detect_drift(judge, baseline)`, plus `checkllm drift baseline` / `checkllm drift check` CLI commands.
+
+### Benchmarks & tutorials
+- Five new benchmarks: `squad_v2`, `arc_challenge`, `bbh_hard`, `drop_reading`, `cnn_dailymail` — with BLEU/ROUGE-L summary scoring. Total now 21 benchmarks.
+- Five runnable Jupyter tutorials under `docs/notebooks/`: quickstart, RAG evaluation, conversational eval, agent trajectory, red-team. All run end-to-end offline via a stubbed `FakeJudge`.
+
+### Breaking changes
+- None. All additions are backward compatible; `JudgeResponse` new fields default to `None`/`0`.
+
 ## v5.0.1 (2026-04-18)
 
 ### Competitor benchmark
