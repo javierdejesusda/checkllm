@@ -31,6 +31,19 @@ from checkllm.guardrails import (
 from checkllm.judge import JudgeBackend, JudgeConfigError
 from checkllm.metrics import metric
 from checkllm.models import CheckFailedError, CheckResult, JudgeResponse
+from checkllm.check_registry import (
+    CHECK_REGISTRY,
+    AllOf,
+    AnyOf,
+    CheckRegistry,
+    Not,
+    RegisteredCheck,
+    check,
+    run_check,
+)
+
+# Populate CHECK_REGISTRY with the built-in deterministic checks.
+from checkllm import _check_builtins as _check_builtins  # noqa: F401
 from checkllm.resilience import (
     CircuitBreaker,
     CircuitOpenError,
