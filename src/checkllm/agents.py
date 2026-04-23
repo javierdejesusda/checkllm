@@ -19,6 +19,61 @@ class ToolCall(BaseModel):
     timestamp_ms: int | None = None
 
 
+class ToolCallTrace(BaseModel):
+    """An ordered record of a single tool invocation within a trajectory.
+
+    Richer than :class:`ToolCall`, ``ToolCallTrace`` carries the position of
+    the call within the overall trajectory and an explicit timestamp, which
+    allows downstream metrics to reason about ordering, latency, and loops.
+
+    Attributes:
+        step_index: Zero-based index of the tool call in the trajectory.
+        tool_name: Name of the tool that was invoked.
+        parameters: Keyword arguments passed to the tool.
+        output: Stringified tool output, if any.
+        timestamp: Monotonic timestamp (e.g. seconds or milliseconds) when
+            the call was issued. ``None`` when timestamps are unavailable.
+    """
+
+    step_index: int = Field(ge=0)
+    tool_name: str
+    parameters: dict[str, Any] = Field(default_factory=dict)
+    output: str | None = None
+    timestamp: float | None = None
+
+    def to_tool_call(self) -> ToolCall:
+        """Project this trace entry onto the lightweight :class:`ToolCall`."""
+        return ToolCall(
+            name=self.tool_name,
+            parameters=dict(self.parameters),
+            result=self.output,
+            timestamp_ms=int(self.timestamp * 1000) if self.timestamp is not None else None,
+        )
+
+
+def traces_from_test_case(test_case: "AgentTestCase") -> list[ToolCallTrace]:
+    """Convert an :class:`AgentTestCase`'s tool calls into :class:`ToolCallTrace`.
+
+    Args:
+        test_case: The agent test case whose tool calls should be converted.
+
+    Returns:
+        A list of ``ToolCallTrace`` entries preserving original order.
+    """
+    traces: list[ToolCallTrace] = []
+    for idx, call in enumerate(test_case.tool_calls):
+        traces.append(
+            ToolCallTrace(
+                step_index=idx,
+                tool_name=call.name,
+                parameters=dict(call.parameters),
+                output=call.result,
+                timestamp=(call.timestamp_ms / 1000.0 if call.timestamp_ms is not None else None),
+            )
+        )
+    return traces
+
+
 class AgentStep(BaseModel):
     """A single step in an agent's execution."""
 

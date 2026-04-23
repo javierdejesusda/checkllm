@@ -58,6 +58,8 @@ from checkllm.metrics.summarization import SummarizationMetric
 from checkllm.metrics.task_completion import TaskCompletionMetric
 from checkllm.metrics.tool_accuracy import ToolAccuracyMetric
 from checkllm.metrics.tool_call_f1 import ToolCallF1Metric
+from checkllm.metrics.tool_parameter_accuracy import ToolParameterAccuracyMetric
+from checkllm.metrics.tool_selection_accuracy import ToolSelectionAccuracyMetric
 from checkllm.metrics.topic_adherence import TopicAdherenceMetric
 from checkllm.metrics.trajectory import (
     TrajectoryGoalSuccessMetric,
@@ -65,6 +67,7 @@ from checkllm.metrics.trajectory import (
     TrajectoryToolArgsMatchMetric,
     TrajectoryToolSequenceMetric,
 )
+from checkllm.metrics.trajectory_metric import TrajectoryMetric, TrajectorySubScores
 from checkllm.models import CheckResult
 
 logger = logging.getLogger("checkllm.metrics")
