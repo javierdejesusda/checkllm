@@ -39,6 +39,19 @@ from checkllm.rate_limit import (
     TokenBucket,
     retry_with_backoff,
 )
+from checkllm.check_registry import (
+    CHECK_REGISTRY,
+    AllOf,
+    AnyOf,
+    CheckRegistry,
+    Not,
+    RegisteredCheck,
+    check,
+    run_check,
+)
+
+# Populate CHECK_REGISTRY with the built-in deterministic checks.
+from checkllm import _check_builtins as _check_builtins  # noqa: F401
 from checkllm.resilience import (
     CircuitBreaker,
     CircuitOpenError,

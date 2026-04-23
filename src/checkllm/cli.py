@@ -187,6 +187,133 @@ def snapshot(
 
 
 @app.command()
+def analyze(
+    run_a: str = typer.Argument(help="Baseline snapshot path (run A)"),
+    run_b: str = typer.Argument(help="Candidate snapshot path (run B)"),
+    alpha: float = typer.Option(0.05, "--alpha", help="Significance threshold"),
+    bootstrap: int = typer.Option(
+        2000, "--bootstrap", help="Bootstrap resamples for CI computation"
+    ),
+    seed: Optional[int] = typer.Option(None, "--seed", help="Random seed for bootstrap"),
+    method: str = typer.Option(
+        "welch", "--method", help="Significance method: welch | mann_whitney | bootstrap"
+    ),
+    correlation: bool = typer.Option(
+        False, "--correlation", help="Also emit correlation analysis for run B"
+    ),
+    json_out: Optional[str] = typer.Option(
+        None, "--json", help="Write machine-readable JSON report to this path"
+    ),
+):
+    """A/B analyze two snapshots with t-test, Mann-Whitney U, and bootstrap CI."""
+    import json as _json
+
+    from checkllm.analysis.correlation import (
+        build_correlation_matrix,
+        summarize_correlation_matrix,
+    )
+    from checkllm.analysis.significance import analyze_runs
+    from checkllm.regression.snapshot import load_snapshot
+
+    path_a = Path(run_a)
+    path_b = Path(run_b)
+    if not path_a.exists():
+        console.print(f"[bold red]Run A snapshot not found: {path_a}[/]")
+        raise typer.Exit(code=2)
+    if not path_b.exists():
+        console.print(f"[bold red]Run B snapshot not found: {path_b}[/]")
+        raise typer.Exit(code=2)
+
+    snap_a = load_snapshot(path_a)
+    snap_b = load_snapshot(path_b)
+
+    if method not in {"welch", "mann_whitney", "bootstrap"}:
+        console.print(f"[bold red]Unknown method: {method}[/]")
+        raise typer.Exit(code=2)
+
+    results = analyze_runs(
+        snap_a,
+        snap_b,
+        alpha=alpha,
+        n_bootstrap=bootstrap,
+        seed=seed,
+        method=method,  # type: ignore[arg-type]
+    )
+
+    from rich.table import Table
+
+    table = Table(title=f"A/B Analysis ({method})", show_lines=True)
+    table.add_column("Metric")
+    table.add_column("n_a", justify="right")
+    table.add_column("n_b", justify="right")
+    table.add_column("mean_a", justify="right")
+    table.add_column("mean_b", justify="right")
+    table.add_column("delta", justify="right")
+    table.add_column("Cohen's d", justify="right")
+    table.add_column("p-value", justify="right")
+    table.add_column("95% CI", justify="right")
+    table.add_column("sig?", justify="center")
+
+    for r in results:
+        sig_mark = "[bold red]YES[/]" if r.significant else "[dim]no[/]"
+        table.add_row(
+            r.metric,
+            str(r.n_a),
+            str(r.n_b),
+            f"{r.mean_a:.3f}",
+            f"{r.mean_b:.3f}",
+            f"{r.delta:+.3f}",
+            f"{r.effect_size:+.2f}",
+            f"{r.p_value:.4f}",
+            f"[{r.ci_low:+.3f}, {r.ci_high:+.3f}]",
+            sig_mark,
+        )
+    console.print(table)
+
+    payload: dict[str, object] = {
+        "method": method,
+        "alpha": alpha,
+        "results": [
+            {
+                "metric": r.metric,
+                "n_a": r.n_a,
+                "n_b": r.n_b,
+                "mean_a": r.mean_a,
+                "mean_b": r.mean_b,
+                "delta": r.delta,
+                "effect_size": r.effect_size,
+                "p_value": r.p_value,
+                "mann_whitney_p": r.mann_whitney_p,
+                "ci_low": r.ci_low,
+                "ci_high": r.ci_high,
+                "significant": r.significant,
+            }
+            for r in results
+        ],
+    }
+
+    if correlation:
+        matrix = build_correlation_matrix(snap_b)
+        payload["correlation"] = summarize_correlation_matrix(matrix)
+        best = matrix.best_predictor()
+        if best is not None:
+            console.print(
+                "\n[bold]Best pass/fail predictor:[/] "
+                f"{best.metric_a} (Pearson r={best.pearson_r:+.3f}, p={best.pearson_p:.4f})"
+            )
+
+    if json_out:
+        Path(json_out).write_text(_json.dumps(payload, indent=2), encoding="utf-8")
+        console.print(f"[dim]JSON report written to {json_out}[/]")
+
+    # Non-zero exit when any metric shows a significant regression.
+    # delta = mean_a - mean_b, so candidate (B) regressing vs baseline (A)
+    # shows up as a positive delta.
+    any_regression = any(r.significant and r.delta > 0 for r in results)
+    raise typer.Exit(code=1 if any_regression else 0)
+
+
+@app.command()
 def report(
     test_path: str = typer.Argument(help="Path to test directory or file"),
     output: str = typer.Option("checkllm_report.html", "--output", "-o", help="Output file path"),
