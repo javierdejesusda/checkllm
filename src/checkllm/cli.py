@@ -26,6 +26,13 @@ dataset_app = typer.Typer(
 )
 app.add_typer(dataset_app, name="dataset")
 
+drift_app = typer.Typer(
+    name="drift",
+    help="Record and check judge drift against a canonical probe set.",
+    no_args_is_help=True,
+)
+app.add_typer(drift_app, name="drift")
+
 
 def version_callback(value: bool):
     if value:
@@ -1966,3 +1973,146 @@ def validate_config_cmd(
         location = err.path or "<root>"
         console.print(f"  [{err.severity}] {location}: {err.message}")
     raise typer.Exit(code=1)
+
+
+def _default_baseline_path(judge_name: str) -> Path:
+    """Resolve the default baseline-file location for ``judge_name``."""
+    import os as _os
+
+    root = Path(_os.environ.get("CHECKLLM_DRIFT_DIR") or ".checkllm/drift")
+    safe = "".join(c if c.isalnum() or c in {"-", "_", "."} else "_" for c in judge_name)
+    return root / f"{safe}.json"
+
+
+@drift_app.command("baseline")
+def drift_baseline_cmd(
+    judge_name: str = typer.Argument(
+        ..., help="Judge backend name (openai, anthropic, deepseek, ...)."
+    ),
+    model: Optional[str] = typer.Option(
+        None, "--model", "-M", help="Override the judge model (e.g. gpt-4o-mini)."
+    ),
+    output: Optional[Path] = typer.Option(
+        None,
+        "--output",
+        "-o",
+        help="Where to write the baseline JSON. Defaults to "
+        "$CHECKLLM_DRIFT_DIR/<judge>.json (./.checkllm/drift/<judge>.json).",
+    ),
+    probes_file: Optional[Path] = typer.Option(
+        None,
+        "--probes",
+        help="Path to a text file with one probe prompt per line. "
+        "Defaults to the built-in 20-prompt probe set.",
+    ),
+):
+    """Record a new drift baseline for a judge."""
+    from checkllm.drift import DEFAULT_PROBE_PROMPTS, record_baseline_sync
+    from checkllm.providers import create_judge
+
+    probes: list[str] | None = None
+    if probes_file is not None:
+        if not probes_file.exists():
+            console.print(f"[bold red]Probes file not found:[/] {probes_file}")
+            raise typer.Exit(code=1)
+        probes = [
+            line.strip()
+            for line in probes_file.read_text(encoding="utf-8").splitlines()
+            if line.strip()
+        ]
+        if not probes:
+            console.print("[bold red]Probes file is empty.[/]")
+            raise typer.Exit(code=1)
+
+    kwargs: dict = {"temperature": 0.0}
+    if model is not None:
+        kwargs["model"] = model
+
+    try:
+        judge = create_judge(judge_name, **kwargs)
+    except Exception as exc:
+        console.print(f"[bold red]Failed to build judge '{judge_name}':[/] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    target = output or _default_baseline_path(judge_name)
+    console.print(
+        f"[bold]Recording baseline[/] — judge={judge_name} "
+        f"probes={len(probes) if probes else len(DEFAULT_PROBE_PROMPTS)} -> {target}"
+    )
+    baseline = record_baseline_sync(judge, probes=probes)
+    baseline.save(target)
+    console.print(
+        f"[bold green]Saved baseline[/] (hash={baseline.response_hash[:12]}...) -> {target}"
+    )
+    raise typer.Exit(code=0)
+
+
+@drift_app.command("check")
+def drift_check_cmd(
+    judge_name: str = typer.Argument(
+        ..., help="Judge backend name. Must match the one used for the baseline."
+    ),
+    baseline: Path = typer.Option(
+        ...,
+        "--baseline",
+        "-b",
+        help="Path to the baseline JSON produced by 'checkllm drift baseline'.",
+    ),
+    model: Optional[str] = typer.Option(None, "--model", "-M", help="Override the judge model."),
+    threshold: float = typer.Option(
+        0.85, "--threshold", help="Mean-similarity threshold. Below this flags drift."
+    ),
+    probe_threshold: float = typer.Option(
+        0.7,
+        "--probe-threshold",
+        help="Per-probe similarity threshold. Deltas below are flagged individually.",
+    ),
+    fail_on_drift: bool = typer.Option(
+        True,
+        "--fail-on-drift/--no-fail-on-drift",
+        help="Exit 1 on drift detection (default: on).",
+    ),
+):
+    """Check a judge for drift against a previously recorded baseline."""
+    from checkllm.drift import JudgeBaseline, detect_drift_sync
+    from checkllm.providers import create_judge
+
+    if not baseline.exists():
+        console.print(f"[bold red]Baseline file not found:[/] {baseline}")
+        raise typer.Exit(code=1)
+
+    loaded = JudgeBaseline.load(baseline)
+
+    kwargs: dict = {"temperature": 0.0}
+    if model is not None:
+        kwargs["model"] = model
+
+    try:
+        judge = create_judge(judge_name, **kwargs)
+    except Exception as exc:
+        console.print(f"[bold red]Failed to build judge '{judge_name}':[/] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    report = detect_drift_sync(
+        judge,
+        loaded,
+        threshold=threshold,
+        probe_threshold=probe_threshold,
+    )
+
+    colour = "red" if report.drifted else "green"
+    console.print(f"[bold {colour}]{report.summary()}[/]")
+    if report.version_changed:
+        console.print("[yellow]Model version string changed since baseline.[/]")
+    if report.drifted_probes:
+        console.print(f"[yellow]Drifted probes ({len(report.drifted_probes)}):[/]")
+        for delta in report.drifted_probes[:10]:
+            console.print(
+                f"  [{delta.index:>2}] sim={delta.similarity:.3f}  " f"prompt={delta.prompt[:80]!r}"
+            )
+        if len(report.drifted_probes) > 10:
+            console.print(f"  ... and {len(report.drifted_probes) - 10} more")
+
+    if report.drifted and fail_on_drift:
+        raise typer.Exit(code=1)
+    raise typer.Exit(code=0)
