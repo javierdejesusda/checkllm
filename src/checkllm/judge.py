@@ -167,6 +167,8 @@ _api_retry: Any = _make_retry()
 class OpenAIJudge:
     """OpenAI-based LLM judge for evaluating outputs."""
 
+    provider: str = "openai"
+
     def __init__(
         self,
         model: str = "gpt-4o",
@@ -176,6 +178,8 @@ class OpenAIJudge:
         self.model = model
         self.total_cost: float = 0.0
         self.last_cost: float = 0.0
+        self.last_input_tokens: int = 0
+        self.last_output_tokens: int = 0
 
         try:
             from openai import AsyncOpenAI
@@ -212,13 +216,15 @@ class OpenAIJudge:
         raw_output = response.choices[0].message.content or ""
 
         cost = 0.0
+        input_tokens = 0
+        output_tokens = 0
         if response.usage:
-            cost = estimate_cost(
-                self.model,
-                response.usage.prompt_tokens,
-                response.usage.completion_tokens,
-            )
+            input_tokens = int(response.usage.prompt_tokens or 0)
+            output_tokens = int(response.usage.completion_tokens or 0)
+            cost = estimate_cost(self.model, input_tokens, output_tokens)
         self.last_cost = cost
+        self.last_input_tokens = int(input_tokens)
+        self.last_output_tokens = int(output_tokens)
         self.total_cost += cost
 
         try:
@@ -235,6 +241,10 @@ class OpenAIJudge:
             reasoning=reasoning,
             raw_output=raw_output,
             cost=cost,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            model=self.model,
+            provider="openai",
         )
 
     @_api_retry
@@ -274,13 +284,15 @@ class OpenAIJudge:
         raw_output = response.choices[0].message.content or ""
 
         cost = 0.0
+        input_tokens = 0
+        output_tokens = 0
         if response.usage:
-            cost = estimate_cost(
-                self.model,
-                response.usage.prompt_tokens,
-                response.usage.completion_tokens,
-            )
+            input_tokens = int(response.usage.prompt_tokens or 0)
+            output_tokens = int(response.usage.completion_tokens or 0)
+            cost = estimate_cost(self.model, input_tokens, output_tokens)
         self.last_cost = cost
+        self.last_input_tokens = int(input_tokens)
+        self.last_output_tokens = int(output_tokens)
         self.total_cost += cost
 
         try:
@@ -297,6 +309,10 @@ class OpenAIJudge:
             reasoning=reasoning,
             raw_output=raw_output,
             cost=cost,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            model=self.model,
+            provider="openai",
         )
 
     async def stream_evaluate(
@@ -368,6 +384,8 @@ class OpenAIJudge:
         raw_output = "".join(aggregated)
         cost = estimate_cost(self.model, prompt_tokens, completion_tokens)
         self.last_cost = cost
+        self.last_input_tokens = int(prompt_tokens)
+        self.last_output_tokens = int(completion_tokens)
         self.total_cost += cost
 
         score, reasoning = _parse_judge_json(raw_output)
@@ -376,6 +394,10 @@ class OpenAIJudge:
             reasoning=reasoning,
             raw_output=raw_output,
             cost=cost,
+            input_tokens=int(prompt_tokens),
+            output_tokens=int(completion_tokens),
+            model=self.model,
+            provider="openai",
         )
         yield StreamingJudgeResult(
             response=response,
@@ -395,6 +417,8 @@ class OpenAIJudge:
 class AnthropicJudge:
     """Anthropic Claude-based LLM judge for evaluating outputs."""
 
+    provider: str = "anthropic"
+
     def __init__(
         self,
         model: str = "claude-sonnet-4-6",
@@ -403,6 +427,8 @@ class AnthropicJudge:
         self.model = model
         self.total_cost: float = 0.0
         self.last_cost: float = 0.0
+        self.last_input_tokens: int = 0
+        self.last_output_tokens: int = 0
 
         resolved_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
         if not resolved_key:
@@ -439,13 +465,15 @@ class AnthropicJudge:
         raw_output = response.content[0].text if response.content else ""
 
         cost = 0.0
+        input_tokens = 0
+        output_tokens = 0
         if response.usage:
-            cost = estimate_cost(
-                self.model,
-                response.usage.input_tokens,
-                response.usage.output_tokens,
-            )
+            input_tokens = int(response.usage.input_tokens or 0)
+            output_tokens = int(response.usage.output_tokens or 0)
+            cost = estimate_cost(self.model, input_tokens, output_tokens)
         self.last_cost = cost
+        self.last_input_tokens = int(input_tokens)
+        self.last_output_tokens = int(output_tokens)
         self.total_cost += cost
 
         try:
@@ -462,6 +490,10 @@ class AnthropicJudge:
             reasoning=reasoning,
             raw_output=raw_output,
             cost=cost,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            model=self.model,
+            provider="anthropic",
         )
 
     async def evaluate_with_images(
@@ -500,13 +532,15 @@ class AnthropicJudge:
         raw_output = response.content[0].text if response.content else ""
 
         cost = 0.0
+        input_tokens = 0
+        output_tokens = 0
         if response.usage:
-            cost = estimate_cost(
-                self.model,
-                response.usage.input_tokens,
-                response.usage.output_tokens,
-            )
+            input_tokens = int(response.usage.input_tokens or 0)
+            output_tokens = int(response.usage.output_tokens or 0)
+            cost = estimate_cost(self.model, input_tokens, output_tokens)
         self.last_cost = cost
+        self.last_input_tokens = int(input_tokens)
+        self.last_output_tokens = int(output_tokens)
         self.total_cost += cost
 
         try:
@@ -523,6 +557,10 @@ class AnthropicJudge:
             reasoning=reasoning,
             raw_output=raw_output,
             cost=cost,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            model=self.model,
+            provider="anthropic",
         )
 
     async def stream_evaluate(
@@ -591,6 +629,8 @@ class AnthropicJudge:
         raw_output = "".join(aggregated)
         cost = estimate_cost(self.model, input_tokens, output_tokens)
         self.last_cost = cost
+        self.last_input_tokens = int(input_tokens)
+        self.last_output_tokens = int(output_tokens)
         self.total_cost += cost
 
         score, reasoning = _parse_judge_json(raw_output)
@@ -599,6 +639,10 @@ class AnthropicJudge:
             reasoning=reasoning,
             raw_output=raw_output,
             cost=cost,
+            input_tokens=int(input_tokens),
+            output_tokens=int(output_tokens),
+            model=self.model,
+            provider="anthropic",
         )
         yield StreamingJudgeResult(
             response=response,
@@ -633,6 +677,8 @@ class DeepSeekJudge:
           via the judge's :attr:`last_reasoning_content` attribute.
     """
 
+    provider: str = "deepseek"
+
     def __init__(
         self,
         model: str = "deepseek-chat",
@@ -642,6 +688,8 @@ class DeepSeekJudge:
         self.model = model
         self.total_cost: float = 0.0
         self.last_cost: float = 0.0
+        self.last_input_tokens: int = 0
+        self.last_output_tokens: int = 0
         self.last_reasoning_content: str | None = None
 
         try:
@@ -709,13 +757,15 @@ class DeepSeekJudge:
             raw_output = f"{content}\n\n<reasoning>\n{reasoning_content}\n</reasoning>"
 
         cost = 0.0
+        input_tokens = 0
+        output_tokens = 0
         if response.usage:
-            cost = estimate_cost(
-                self.model,
-                response.usage.prompt_tokens,
-                response.usage.completion_tokens,
-            )
+            input_tokens = int(response.usage.prompt_tokens or 0)
+            output_tokens = int(response.usage.completion_tokens or 0)
+            cost = estimate_cost(self.model, input_tokens, output_tokens)
         self.last_cost = cost
+        self.last_input_tokens = int(input_tokens)
+        self.last_output_tokens = int(output_tokens)
         self.total_cost += cost
 
         score, reasoning = _parse_judge_json(content)
@@ -725,6 +775,10 @@ class DeepSeekJudge:
             reasoning=reasoning,
             raw_output=raw_output,
             cost=cost,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            model=self.model,
+            provider="deepseek",
         )
 
     async def stream_evaluate(
@@ -816,6 +870,8 @@ class DeepSeekJudge:
 
         cost = estimate_cost(self.model, prompt_tokens, completion_tokens)
         self.last_cost = cost
+        self.last_input_tokens = int(prompt_tokens)
+        self.last_output_tokens = int(completion_tokens)
         self.total_cost += cost
 
         score, reasoning = _parse_judge_json(raw_content)
@@ -824,6 +880,10 @@ class DeepSeekJudge:
             reasoning=reasoning,
             raw_output=raw_output,
             cost=cost,
+            input_tokens=int(prompt_tokens),
+            output_tokens=int(completion_tokens),
+            model=self.model,
+            provider="deepseek",
         )
         yield StreamingJudgeResult(
             response=response,

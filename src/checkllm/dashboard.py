@@ -864,6 +864,14 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
             self._serve_trends(query)
         elif path == "/api/cost-breakdown":
             self._serve_cost_breakdown(query)
+        elif path == "/api/cost/by-provider":
+            self._serve_cost_rollup(query, dimension="provider")
+        elif path == "/api/cost/by-metric":
+            self._serve_cost_rollup(query, dimension="metric")
+        elif path == "/api/cost/by-test":
+            self._serve_cost_rollup(query, dimension="test")
+        elif path == "/api/cost/timeseries":
+            self._serve_cost_timeseries(query)
         elif path == "/compare":
             _serve_compare_html(self, query)
         else:
@@ -1069,6 +1077,162 @@ class DashboardHandler(http.server.BaseHTTPRequestHandler):
             )
         finally:
             history.close()
+
+    # ------------------------------------------------------------------
+    # Cost rollups -- aggregate across one or all runs.
+    # ------------------------------------------------------------------
+
+    def _collect_cost_records(
+        self,
+        query: dict[str, str],
+    ) -> list[dict[str, Any]]:
+        """Gather per-check cost records.
+
+        Query params:
+            ``run`` -- optional run id.  When absent, every run in the
+            history is scanned.
+            ``limit`` -- optional integer cap when aggregating across runs
+            (defaults to 200).
+
+        Each record carries ``cost``, ``provider``, ``metric``, ``test_id``,
+        ``model``, ``timestamp``, ``input_tokens`` and ``output_tokens``.
+        """
+        run_id_str = query.get("run", "")
+        limit = int(query.get("limit", "200"))
+        history = self._get_history()
+        records: list[dict[str, Any]] = []
+        try:
+            if run_id_str:
+                try:
+                    rid = int(run_id_str)
+                except ValueError:
+                    return []
+                record = history.get_run(rid)
+                if record is None:
+                    return []
+                run_iter = [record]
+            else:
+                summaries = history.list_runs(limit=limit)
+                run_iter = []
+                for summary in summaries:
+                    record = history.get_run(summary.run_id)
+                    if record is not None:
+                        run_iter.append(record)
+
+            for record in run_iter:
+                run_ts = record.timestamp
+                for test_name, checks in record.results.items():
+                    for c in checks:
+                        cost = float(c.get("cost", 0.0))
+                        bd = c.get("cost_breakdown") or {}
+                        if not isinstance(bd, dict):
+                            bd = {}
+                        provider = str(bd.get("provider") or "unknown")
+                        metric = str(bd.get("metric") or c.get("metric_name", "unknown"))
+                        test_id = str(bd.get("test_id") or test_name)
+                        model = str(bd.get("model") or "")
+                        ts = float(bd.get("timestamp") or run_ts)
+                        records.append(
+                            {
+                                "run_id": record.run_id,
+                                "cost": cost,
+                                "provider": provider,
+                                "metric": metric,
+                                "test_id": test_id,
+                                "model": model,
+                                "timestamp": ts,
+                                "input_tokens": int(bd.get("input_tokens") or 0),
+                                "output_tokens": int(bd.get("output_tokens") or 0),
+                            }
+                        )
+        finally:
+            history.close()
+        return records
+
+    def _serve_cost_rollup(self, query: dict[str, str], dimension: str) -> None:
+        """GET /api/cost/by-<provider|metric|test> -- grouped totals.
+
+        Args:
+            query: Parsed query parameters.
+            dimension: One of ``"provider"``, ``"metric"``, ``"test"``.
+        """
+        records = self._collect_cost_records(query)
+        key = "test_id" if dimension == "test" else dimension
+        grouped: dict[str, dict[str, float]] = {}
+        for r in records:
+            bucket = str(r.get(key, "unknown")) or "unknown"
+            slot = grouped.setdefault(
+                bucket,
+                {
+                    "cost": 0.0,
+                    "calls": 0,
+                    "input_tokens": 0,
+                    "output_tokens": 0,
+                },
+            )
+            slot["cost"] += r["cost"]
+            slot["calls"] += 1
+            slot["input_tokens"] += r["input_tokens"]
+            slot["output_tokens"] += r["output_tokens"]
+
+        ordered = sorted(grouped.items(), key=lambda item: -item[1]["cost"])
+        total = sum(v["cost"] for v in grouped.values())
+        self._send_json(
+            {
+                "dimension": dimension,
+                "total_cost": total,
+                "buckets": [
+                    {
+                        key: name,
+                        "cost": round(v["cost"], 8),
+                        "calls": int(v["calls"]),
+                        "input_tokens": int(v["input_tokens"]),
+                        "output_tokens": int(v["output_tokens"]),
+                    }
+                    for name, v in ordered
+                ],
+            }
+        )
+
+    def _serve_cost_timeseries(self, query: dict[str, str]) -> None:
+        """GET /api/cost/timeseries?bucket=hour|day -- time-bucketed spend."""
+        bucket = query.get("bucket", "hour").lower()
+        if bucket not in ("hour", "day"):
+            self._send_json({"error": "bucket must be 'hour' or 'day'"}, status=400)
+            return
+
+        records = self._collect_cost_records(query)
+        width = 3600 if bucket == "hour" else 86400
+        buckets: dict[int, dict[str, float]] = {}
+        for r in records:
+            ts = float(r["timestamp"])
+            key = int(ts // width) * width
+            slot = buckets.setdefault(
+                key, {"cost": 0.0, "calls": 0, "input_tokens": 0, "output_tokens": 0}
+            )
+            slot["cost"] += r["cost"]
+            slot["calls"] += 1
+            slot["input_tokens"] += r["input_tokens"]
+            slot["output_tokens"] += r["output_tokens"]
+
+        series = sorted(buckets.items())
+        self._send_json(
+            {
+                "bucket": bucket,
+                "bucket_seconds": width,
+                "points": [
+                    {
+                        "bucket_start": int(ts),
+                        "cost": round(v["cost"], 8),
+                        "calls": int(v["calls"]),
+                        "input_tokens": int(v["input_tokens"]),
+                        "output_tokens": int(v["output_tokens"]),
+                    }
+                    for ts, v in series
+                ],
+                "total_cost": round(sum(v["cost"] for v in buckets.values()), 8),
+            }
+        )
 
     def _serve_metrics(self) -> None:
         """GET /api/metrics -- list available metric names."""
