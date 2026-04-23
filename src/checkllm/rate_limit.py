@@ -283,6 +283,21 @@ class ProviderRateLimiter:
         self._providers[provider] = state
         return state
 
+    async def _ensure_provider_async(self, provider: str) -> _ProviderState:
+        state = self._providers.get(provider)
+        if state is not None:
+            return state
+        async with self._registry_lock:
+            existing = self._providers.get(provider)
+            if existing is not None:
+                return existing
+            limit = self._limits.get(provider, self._default_limit)
+            rpm = TokenBucket(capacity=limit.rpm, refill_period=60.0)
+            tpm = TokenBucket(capacity=limit.tpm, refill_period=60.0)
+            state = _ProviderState(limit=limit, rpm_bucket=rpm, tpm_bucket=tpm)
+            self._providers[provider] = state
+            return state
+
     def configure(self, provider: str, limit: RateLimit) -> None:
         """Register (or replace) the rate limit for *provider*.
 
@@ -312,7 +327,7 @@ class ProviderRateLimiter:
         if est_tokens <= 0:
             est_tokens = 1
 
-        state = self._ensure_provider(provider)
+        state = await self._ensure_provider_async(provider)
 
         # Clamp token request to bucket capacity to avoid ValueError — the
         # user can't make a request that inherently exceeds the per-minute

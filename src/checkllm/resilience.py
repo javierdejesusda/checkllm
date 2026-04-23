@@ -31,6 +31,14 @@ T = TypeVar("T")
 class TokenBucketRateLimiter:
     """Async-safe token-bucket rate limiter.
 
+    .. note::
+       This is the legacy resilience-layer rate limiter (``rate``/``burst``
+       API, per-call throttling). For per-provider RPM/TPM limits with
+       ``Retry-After``-aware 429/5xx retries, prefer
+       :class:`checkllm.rate_limit.TokenBucket` and
+       :class:`checkllm.rate_limit.ProviderRateLimiter`, which the
+       :class:`checkllm.engines.AsyncEngine` uses by default.
+
     Parameters
     ----------
     rate:

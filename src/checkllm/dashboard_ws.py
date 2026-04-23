@@ -246,12 +246,23 @@ main { max-width: 1100px; margin: 20px auto; padding: 0 20px; }
 """
 
 
-def create_app(broker: ProgressBroker | None = None) -> "Starlette":
+def create_app(
+    broker: ProgressBroker | None = None,
+    *,
+    token: str | None = None,
+) -> "Starlette":
     """Build the Starlette app exposing ``/live`` and ``/ws/progress``.
 
     Args:
         broker: Optional :class:`ProgressBroker` override (used in tests).
             Defaults to the process-wide broker.
+        token: Optional shared secret required on both ``/live`` (as
+            ``?token=<value>``) and the WebSocket upgrade. If set, any
+            request missing or mismatching the token is rejected. When
+            binding the server to anything other than ``127.0.0.1`` you
+            should always set a token — the dashboard otherwise exposes
+            live evaluation metadata (test ids, scores, costs, provider
+            names) over an unauthenticated channel.
 
     Returns:
         A configured :class:`starlette.applications.Starlette` instance.
@@ -272,10 +283,25 @@ def create_app(broker: ProgressBroker | None = None) -> "Starlette":
 
     pb: ProgressBroker = broker or get_broker()
 
+    def _token_ok(provided: str | None) -> bool:
+        if token is None:
+            return True
+        if provided is None:
+            return False
+        # Constant-time compare to avoid timing oracles.
+        import hmac
+
+        return hmac.compare_digest(provided, token)
+
     async def live_page(request: "Request") -> "HTMLResponse":
+        if not _token_ok(request.query_params.get("token")):
+            return HTMLResponse("forbidden", status_code=403)
         return HTMLResponse(LIVE_HTML)
 
     async def progress_socket(websocket: "WebSocket") -> None:
+        if not _token_ok(websocket.query_params.get("token")):
+            await websocket.close(code=4403)
+            return
         await websocket.accept()
         queue = pb.subscribe()
         try:
@@ -320,13 +346,19 @@ def run(
     port: int = 8485,
     *,
     broker: ProgressBroker | None = None,
+    token: str | None = None,
 ) -> None:  # pragma: no cover - convenience entry point
     """Run the live dashboard with uvicorn.
 
     Args:
-        host: Bind address.
+        host: Bind address. Defaults to loopback. If you bind to a
+            non-loopback address you SHOULD pass ``token`` — otherwise
+            live evaluation metadata is served over an unauthenticated
+            channel.
         port: TCP port.
         broker: Optional broker override.
+        token: Optional shared secret required on ``/live`` and
+            ``/ws/progress``. See :func:`create_app` for semantics.
     """
     try:
         import uvicorn
@@ -334,7 +366,13 @@ def run(
         raise ImportError(
             "checkllm.dashboard_ws.run requires uvicorn. Install with 'pip install uvicorn'."
         ) from exc
-    app = create_app(broker=broker)
+    if host not in {"127.0.0.1", "localhost", "::1"} and token is None:
+        logger.warning(
+            "dashboard_ws.run binding to %s with no token — live progress is served "
+            "unauthenticated. Pass token=... to require a shared secret.",
+            host,
+        )
+    app = create_app(broker=broker, token=token)
     uvicorn.run(app, host=host, port=port)
 
 

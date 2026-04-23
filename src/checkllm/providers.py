@@ -1231,6 +1231,8 @@ class VertexAIJudge:
                     raw_output = getattr(parts[0], "text", "") or ""
 
         cost = 0.0
+        prompt_tokens = 0
+        completion_tokens = 0
         usage = getattr(response, "usage_metadata", None)
         if usage is not None:
             prompt_tokens = getattr(usage, "prompt_token_count", 0) or 0
@@ -1238,6 +1240,8 @@ class VertexAIJudge:
             cost = _gemini_estimate_cost(self.model, prompt_tokens, completion_tokens)
         self.last_cost = cost
         self.total_cost += cost
+        self.last_input_tokens = prompt_tokens
+        self.last_output_tokens = completion_tokens
 
         score, reasoning = _parse_judge_json(raw_output)
 
@@ -1246,6 +1250,10 @@ class VertexAIJudge:
             reasoning=reasoning,
             raw_output=raw_output,
             cost=cost,
+            input_tokens=prompt_tokens,
+            output_tokens=completion_tokens,
+            model=self.model,
+            provider="vertex",
         )
 
     def __repr__(self) -> str:
