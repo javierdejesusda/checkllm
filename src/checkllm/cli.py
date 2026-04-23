@@ -1966,3 +1966,82 @@ def validate_config_cmd(
         location = err.path or "<root>"
         console.print(f"  [{err.severity}] {location}: {err.message}")
     raise typer.Exit(code=1)
+
+
+@app.command("batch")
+def batch_cmd(
+    dataset_path: Path = typer.Option(
+        ..., "--dataset", "-d", help="Path to dataset file (YAML, JSON, CSV) with prompts."
+    ),
+    provider: str = typer.Option(
+        "openai",
+        "--batch",
+        "-b",
+        help="Batch provider to use: 'openai' or 'anthropic'.",
+        case_sensitive=False,
+    ),
+    model: Optional[str] = typer.Option(
+        None,
+        "--model",
+        "-M",
+        help="Model override (e.g. 'gpt-4o' or 'claude-sonnet-4-5-20250929').",
+    ),
+    system_prompt: Optional[str] = typer.Option(
+        None, "--system", "-s", help="Optional system prompt applied to every request."
+    ),
+    poll_interval: float = typer.Option(
+        30.0, "--poll-interval", help="Seconds between batch status polls."
+    ),
+    timeout: float = typer.Option(
+        3600.0, "--timeout", help="Maximum seconds to wait for the batch to finish."
+    ),
+    output: Optional[Path] = typer.Option(
+        None, "--output", "-o", help="Write parsed JudgeResponse results as JSON to this path."
+    ),
+):
+    """Submit a dataset as a batch job via OpenAI or Anthropic.
+
+    Anthropic batches enjoy a 50% discount vs sync pricing; this command
+    applies that discount automatically when estimating per-request cost.
+    """
+    import asyncio
+    import json as _json
+
+    from checkllm.batch import get_batch_runner
+    from checkllm.datasets.loader import load_dataset
+
+    cases = load_dataset(dataset_path)
+    if not cases:
+        console.print(f"[bold red]No cases found in dataset:[/] {dataset_path}")
+        raise typer.Exit(code=1)
+
+    try:
+        runner = get_batch_runner(provider, model=model)
+    except (ValueError, ImportError) as exc:
+        console.print(f"[bold red]{exc}[/]")
+        raise typer.Exit(code=1) from exc
+
+    requests = [{"prompt": case.input} for case in cases]
+
+    console.print(f"[bold]Submitting {len(requests)} requests via provider={runner.provider}[/]")
+
+    async def _run() -> list:
+        job = await runner.submit(requests, system_prompt=system_prompt)
+        console.print(f"[dim]Batch id: {job.job_id}[/]")
+        job = await runner.poll(job, interval_seconds=poll_interval, timeout_seconds=timeout)
+        console.print(
+            f"[dim]Final status: {job.status.value} "
+            f"(completed={job.completed_requests}, failed={job.failed_requests})[/]"
+        )
+        return await runner.retrieve(job)
+
+    responses = asyncio.run(_run())
+    total_cost = sum(r.cost for r in responses)
+    console.print(
+        f"[bold green]Retrieved {len(responses)} responses " f"(total cost: ${total_cost:.4f})[/]"
+    )
+
+    if output is not None:
+        payload = [r.model_dump() for r in responses]
+        output.write_text(_json.dumps(payload, indent=2), encoding="utf-8")
+        console.print(f"[dim]Wrote results to {output}[/]")
