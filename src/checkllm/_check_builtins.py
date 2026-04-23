@@ -31,7 +31,8 @@ def _wrap(method_name: str) -> CheckCallable:
     method = getattr(_SHARED, method_name)
 
     def wrapper(*args: Any, **kwargs: Any) -> CheckResult:
-        return method(*args, **kwargs)
+        result: CheckResult = method(*args, **kwargs)
+        return result
 
     wrapper.__name__ = method_name
     wrapper.__doc__ = method.__doc__
@@ -146,7 +147,7 @@ __all__: list[str] = ["registered_deterministic_checks"]
 
 def _unused_type_anchor() -> Callable[..., CheckResult]:  # pragma: no cover
     """Keep ``CheckCallable`` referenced for static analysis."""
-    return lambda *a, **k: CheckResult(  # type: ignore[return-value]
+    return lambda *a, **k: CheckResult(
         passed=True,
         score=1.0,
         reasoning="",

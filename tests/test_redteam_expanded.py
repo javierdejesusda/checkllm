@@ -353,17 +353,17 @@ class TestCompliancePresets:
 
     def test_all_presets_have_mappings(self):
         for preset in CompliancePreset:
-            assert preset in COMPLIANCE_MAPPINGS, (
-                f"CompliancePreset.{preset.name} missing from COMPLIANCE_MAPPINGS"
-            )
+            assert (
+                preset in COMPLIANCE_MAPPINGS
+            ), f"CompliancePreset.{preset.name} missing from COMPLIANCE_MAPPINGS"
 
     def test_all_mappings_contain_valid_vulnerability_types(self):
         for preset, vuln_types in COMPLIANCE_MAPPINGS.items():
             assert len(vuln_types) > 0, f"{preset.name} has empty vulnerability list"
             for vt in vuln_types:
-                assert isinstance(vt, VulnerabilityType), (
-                    f"{preset.name} contains invalid type: {vt}"
-                )
+                assert isinstance(
+                    vt, VulnerabilityType
+                ), f"{preset.name} contains invalid type: {vt}"
 
     def test_owasp_llm_top_10_preset(self):
         vuln_types = get_compliance_vulnerabilities(CompliancePreset.OWASP_LLM_TOP_10)
@@ -472,16 +472,16 @@ class TestAttackTemplates:
 
     def test_each_template_list_has_at_least_3_entries(self):
         for vt, templates in _ATTACK_TEMPLATES.items():
-            assert len(templates) >= 3, (
-                f"VulnerabilityType.{vt.name} has only {len(templates)} templates (minimum 3)"
-            )
+            assert (
+                len(templates) >= 3
+            ), f"VulnerabilityType.{vt.name} has only {len(templates)} templates (minimum 3)"
 
     def test_templates_are_non_empty_strings(self):
         for vt, templates in _ATTACK_TEMPLATES.items():
             for i, t in enumerate(templates):
-                assert isinstance(t, str) and len(t.strip()) > 0, (
-                    f"Template {i} for {vt.name} is empty or not a string"
-                )
+                assert (
+                    isinstance(t, str) and len(t.strip()) > 0
+                ), f"Template {i} for {vt.name} is empty or not a string"
 
 
 class TestVulnerabilityReportEnhanced:

@@ -160,10 +160,10 @@ def correlate_metrics(snapshot: Snapshot) -> list[CorrelationResult]:
         for metric_b in metric_order[i + 1 :]:
             a_scores: list[float] = []
             b_scores: list[float] = []
-            for run in aligned_runs:
-                if metric_a in run and metric_b in run:
-                    a_scores.append(run[metric_a])
-                    b_scores.append(run[metric_b])
+            for aligned in aligned_runs:
+                if metric_a in aligned and metric_b in aligned:
+                    a_scores.append(aligned[metric_a])
+                    b_scores.append(aligned[metric_b])
             pr, pp = _pearson(a_scores, b_scores)
             sr, sp = _spearman(a_scores, b_scores)
             results.append(

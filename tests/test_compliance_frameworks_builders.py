@@ -126,9 +126,9 @@ class TestFrameworkMappingStructure:
                     "medium",
                     "low",
                 ), f"{framework.value}: requirement {req.id} has invalid severity '{req.severity}'"
-                assert req.remediation, (
-                    f"{framework.value}: requirement {req.id} missing remediation"
-                )
+                assert (
+                    req.remediation
+                ), f"{framework.value}: requirement {req.id} missing remediation"
 
     def test_owasp_llm_top10_has_10_requirements(self):
         mapping = get_framework_mapping(ComplianceFramework.OWASP_LLM_TOP10)

@@ -110,9 +110,7 @@ class MockJudge:
         """Assert that the judge was called (optionally for a specific metric)."""
         if metric:
             matching = [c for c in self.calls if c["metric"] == metric]
-            assert matching, (
-                f"MockJudge was never called for metric '{metric}'. Calls: {[c['metric'] for c in self.calls]}"
-            )
+            assert matching, f"MockJudge was never called for metric '{metric}'. Calls: {[c['metric'] for c in self.calls]}"
         else:
             assert self.calls, "MockJudge was never called"
 

@@ -91,9 +91,9 @@ class TestHallucinationMetric:
         system_prompt = call_args.kwargs["system_prompt"]
         lowered = system_prompt.lower()
         assert "short" in lowered, "system prompt must explicitly handle short direct answers"
-        assert "consistent" in lowered, (
-            "system prompt must frame grading as consistency with context"
-        )
+        assert (
+            "consistent" in lowered
+        ), "system prompt must frame grading as consistency with context"
 
     @pytest.mark.asyncio
     async def test_evaluate_is_backwards_compatible_without_query(self, mock_judge):

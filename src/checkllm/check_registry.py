@@ -20,7 +20,7 @@ on import so they are discoverable by name.
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Iterator
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -109,7 +109,7 @@ class CheckRegistry:
     def __contains__(self, name: object) -> bool:
         return isinstance(name, str) and name in self._specs
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[RegisteredCheck]:
         return iter(self._specs.values())
 
     def __len__(self) -> int:
@@ -181,10 +181,10 @@ def run_check(name: str, *args: Any, **kwargs: Any) -> CheckResult:
 
 def _resolve(check_obj: CheckCallable | str) -> CheckCallable:
     """Resolve a check reference (string name or callable) to a callable."""
+    if isinstance(check_obj, str):
+        return CHECK_REGISTRY.get(check_obj).func
     if callable(check_obj):
         return check_obj
-    if isinstance(check_obj, str):  # type: ignore[unreachable]
-        return CHECK_REGISTRY.get(check_obj).func
     raise TypeError(f"Expected callable or check name, got {type(check_obj).__name__}")
 
 
@@ -192,9 +192,12 @@ def _describe(check_obj: CheckCallable | str) -> str:
     if isinstance(check_obj, str):
         return check_obj
     name = getattr(check_obj, "__checkllm_check_name__", None)
-    if name:
+    if isinstance(name, str) and name:
         return name
-    return getattr(check_obj, "__name__", repr(check_obj))
+    fallback = getattr(check_obj, "__name__", None)
+    if isinstance(fallback, str):
+        return fallback
+    return repr(check_obj)
 
 
 @dataclass

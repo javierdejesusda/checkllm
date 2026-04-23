@@ -103,17 +103,17 @@ class TestFrameworkMappings:
         mapping = get_framework_mapping(framework)
         valid_severities = {"critical", "high", "medium", "low"}
         for req in mapping.requirements:
-            assert req.severity in valid_severities, (
-                f"{req.id} in {framework.value} has invalid severity: {req.severity}"
-            )
+            assert (
+                req.severity in valid_severities
+            ), f"{req.id} in {framework.value} has invalid severity: {req.severity}"
 
     @pytest.mark.parametrize("framework", list(ComplianceFramework))
     def test_requirements_have_test_categories(self, framework):
         mapping = get_framework_mapping(framework)
         for req in mapping.requirements:
-            assert len(req.test_categories) > 0, (
-                f"{req.id} in {framework.value} has no test_categories"
-            )
+            assert (
+                len(req.test_categories) > 0
+            ), f"{req.id} in {framework.value} has no test_categories"
 
     @pytest.mark.parametrize("framework", list(ComplianceFramework))
     def test_requirements_have_remediation(self, framework):
@@ -237,9 +237,9 @@ class TestVulnerabilityTypeMapping:
         mapping = get_framework_mapping(framework)
         for req in mapping.requirements:
             for cat in req.test_categories:
-                assert cat in valid_types, (
-                    f"{req.id} in {framework.value} maps to invalid VulnerabilityType: '{cat}'"
-                )
+                assert (
+                    cat in valid_types
+                ), f"{req.id} in {framework.value} maps to invalid VulnerabilityType: '{cat}'"
 
 
 class TestListAllFrameworks:
