@@ -42,8 +42,47 @@ class CheckllmConfig(BaseModel):
     # Engine type
     engine: str = "auto"
 
+    # Per-provider rate limits. Keys are provider names ("openai",
+    # "anthropic", "bedrock", ...). Each value is ``{"rpm": int, "tpm": int}``.
+    # Missing providers fall back to the defaults in
+    # :mod:`checkllm.rate_limit`.
+    rate_limits: dict[str, dict[str, int]] = Field(default_factory=dict)
+
+    # Retry policy knobs for 429-aware backoff in :class:`AsyncEngine`.
+    retry_max_attempts: int = Field(default=5, ge=1)
+    retry_base_delay: float = Field(default=1.0, ge=0.0)
+    retry_max_delay: float = Field(default=60.0, ge=0.0)
+
     # Active profile (None when no profile is selected)
     active_profile: str | None = None
+
+    def build_rate_limiter(self) -> Any:
+        """Construct a :class:`ProviderRateLimiter` using ``rate_limits``.
+
+        Returns a fresh limiter seeded with defaults plus any overrides
+        declared in this config. Callers typically pass the result to
+        :class:`checkllm.engines.AsyncEngine`.
+        """
+        from checkllm.rate_limit import ProviderRateLimiter, RateLimit
+
+        overrides: dict[str, RateLimit] = {}
+        for provider, cfg in self.rate_limits.items():
+            rpm = int(cfg.get("rpm", 0))
+            tpm = int(cfg.get("tpm", 0))
+            if rpm <= 0 or tpm <= 0:
+                continue
+            overrides[provider] = RateLimit(rpm=rpm, tpm=tpm)
+        return ProviderRateLimiter(limits=overrides)
+
+    def build_retry_config(self) -> Any:
+        """Construct a :class:`RetryConfig` from config fields."""
+        from checkllm.rate_limit import RetryConfig
+
+        return RetryConfig(
+            max_attempts=self.retry_max_attempts,
+            base_delay=self.retry_base_delay,
+            max_delay=self.retry_max_delay,
+        )
 
     @field_validator("runs_per_test")
     @classmethod
