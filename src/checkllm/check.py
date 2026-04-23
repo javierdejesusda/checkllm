@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import statistics
+import time
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -14,6 +15,12 @@ from checkllm.deterministic import DeterministicChecks
 from checkllm.judge import JudgeBackend, JudgeConfigError
 from checkllm.logging_config import setup_logging
 from checkllm.models import CheckFailedError, CheckResult
+from checkllm.pricing import build_cost_breakdown, infer_provider
+from checkllm.progress import (
+    emit_check_completed,
+    emit_test_completed,
+    emit_test_started,
+)
 
 if TYPE_CHECKING:
     from checkllm.expect import SoftCheckProxy
@@ -31,6 +38,7 @@ class CheckCollector(DeterministicChecksMixin, JudgeChecksMixin):
         self,
         config: CheckllmConfig,
         judge: JudgeBackend | None = None,
+        test_id: str = "",
     ) -> None:
         self.config = config
         self.results: list[CheckResult] = []
@@ -38,6 +46,8 @@ class CheckCollector(DeterministicChecksMixin, JudgeChecksMixin):
         self._judge = judge
         self._accumulated_cost: float = 0.0
         self._skipped_budget: int = 0
+        self._test_id: str = test_id
+        self._test_started_at: float | None = None
 
         # Logging
         setup_logging(config.log_level)
@@ -127,6 +137,26 @@ class CheckCollector(DeterministicChecksMixin, JudgeChecksMixin):
 
                 self._judge = OpenAIJudge(model=model)
         return self._judge
+
+    def bind_test(self, test_id: str) -> None:
+        """Associate the collector with a test identifier and emit a start event.
+
+        The pytest plugin calls this from its fixture so live dashboards can
+        correlate every check with the originating test.  Safe to call more
+        than once -- subsequent calls update the ``test_id`` without
+        re-emitting ``test_started``.
+
+        Args:
+            test_id: Pytest node id or caller-supplied identifier.
+        """
+        first = not self._test_id
+        self._test_id = test_id
+        if first and test_id:
+            self._test_started_at = time.time()
+            try:
+                emit_test_started(test_id=test_id)
+            except Exception:  # noqa: BLE001
+                logger.debug("progress broker emit_test_started failed", exc_info=True)
 
     def _check_budget(self) -> bool:
         """Return True if we are within budget, False if budget exceeded."""
@@ -238,6 +268,17 @@ class CheckCollector(DeterministicChecksMixin, JudgeChecksMixin):
         if input_preview is not None and result.input_preview is None:
             result.input_preview = input_preview[:200]
 
+        # Attach cost breakdown using the judge's last token counts.
+        if result.cost_breakdown is None:
+            breakdown = build_cost_breakdown(
+                model=model,
+                input_tokens=int(getattr(judge, "last_input_tokens", 0) or 0),
+                output_tokens=int(getattr(judge, "last_output_tokens", 0) or 0),
+                metric=metric_name,
+                test_id=self._test_id,
+            )
+            result.cost_breakdown = breakdown.to_dict()
+
         # Store in cache
         self._cache.put(key, metric_name, model, result)
 
@@ -259,6 +300,27 @@ class CheckCollector(DeterministicChecksMixin, JudgeChecksMixin):
                 return r
         return kwargs
 
+    def _emit_check_event(self, result: CheckResult) -> None:
+        """Fire a ``check_completed`` progress event for a result."""
+        if not self._test_id:
+            return
+        breakdown = result.cost_breakdown or {}
+        provider = str(breakdown.get("provider", "")) if isinstance(breakdown, dict) else ""
+        model = str(breakdown.get("model", "")) if isinstance(breakdown, dict) else ""
+        try:
+            emit_check_completed(
+                test_id=self._test_id,
+                metric=result.metric_name,
+                passed=result.passed,
+                score=float(result.score),
+                cost=float(result.cost),
+                duration_ms=float(result.latency_ms),
+                provider=provider or infer_provider(model),
+                model=model,
+            )
+        except Exception:  # noqa: BLE001
+            logger.debug("progress broker emit_check_completed failed", exc_info=True)
+
     def _fire_after_hook(self, result) -> None:
         """Fire after_check and on_failure hooks."""
         from checkllm.hookspecs import plugin_manager
@@ -273,6 +335,8 @@ class CheckCollector(DeterministicChecksMixin, JudgeChecksMixin):
                 result=result,
                 metric_name=result.metric_name,
             )
+        # Publish to the live dashboard broker (no-op if no subscribers).
+        self._emit_check_event(result)
 
     async def _run_judge_async(self, coro) -> CheckResult:
         """Run a single judge call with semaphore limiting."""
@@ -329,6 +393,23 @@ class CheckCollector(DeterministicChecksMixin, JudgeChecksMixin):
         self._cache.close()
 
         failed = [r for r in self.results if not r.passed]
+        # Emit a test_completed event before raising so subscribers observe
+        # both passing and failing tests consistently.
+        if self._test_id:
+            duration_ms = 0.0
+            if self._test_started_at is not None:
+                duration_ms = max(0.0, (time.time() - self._test_started_at) * 1000.0)
+            try:
+                emit_test_completed(
+                    test_id=self._test_id,
+                    passed=not failed,
+                    duration_ms=duration_ms,
+                    checks=len(self.results),
+                    cost=float(self._accumulated_cost),
+                )
+            except Exception:  # noqa: BLE001
+                logger.debug("progress broker emit_test_completed failed", exc_info=True)
+
         if failed:
             raise CheckFailedError(self.results)
 

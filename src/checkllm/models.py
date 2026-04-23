@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import Any
+
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -14,6 +16,13 @@ class CheckResult(BaseModel):
     metric_name: str
     threshold: float | None = Field(default=None, ge=0.0, le=1.0)
     input_preview: str | None = Field(default=None)
+    # Granular cost attribution for dashboard rollups (by provider, metric,
+    # test, timestamp).  Populated by judge-backed checks and by the engine
+    # run loop.  Optional so deterministic checks and legacy callers stay
+    # backward-compatible.  Stored as a plain dict so Pydantic can
+    # round-trip it via ``model_dump() / json.loads``; the canonical shape
+    # is :class:`checkllm.pricing.CostBreakdown`.
+    cost_breakdown: dict[str, Any] | None = Field(default=None)
 
     @field_validator("score")
     @classmethod
@@ -47,6 +56,13 @@ class JudgeResponse(BaseModel):
     reasoning: str
     raw_output: str | None = None
     cost: float = Field(default=0.0, ge=0.0)
+    # Token accounting -- populated by judge backends when available so the
+    # caller can build a granular cost breakdown.  Absent values default
+    # to 0 to keep backward compatibility.
+    input_tokens: int = Field(default=0, ge=0)
+    output_tokens: int = Field(default=0, ge=0)
+    model: str | None = Field(default=None)
+    provider: str | None = Field(default=None)
 
 
 class CheckFailedError(Exception):
