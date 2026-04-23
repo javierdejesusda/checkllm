@@ -86,8 +86,14 @@ schema = [
 pdf = [
     "pypdf>=4.0.0",
 ]
+vectorstores = [
+    "pinecone>=5.0.0",
+    "weaviate-client>=4.0.0",
+    "pymilvus>=2.3.0",
+    "chromadb>=0.4.0",
+]
 all = [
-    "checkllm[openai,anthropic,gemini,litellm,embeddings,multimodal,docs,langsmith,langfuse,datadog,prometheus,hf,parquet,schema,pdf]",
+    "checkllm[openai,anthropic,gemini,litellm,embeddings,multimodal,docs,langsmith,langfuse,datadog,prometheus,hf,parquet,schema,pdf,vectorstores]",
 ]
 dev = [
     "pytest>=7.0.0",

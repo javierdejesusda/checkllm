@@ -39,6 +39,7 @@ from checkllm.metrics.visual_faithfulness import VisualFaithfulnessMetric
 from checkllm.metrics.visual_hallucination import VisualHallucinationMetric
 from checkllm.metrics.visual_reasoning import VisualReasoningMetric
 from checkllm.metrics.instruction_completeness import InstructionCompletenessMetric
+from checkllm.metrics.kb_faithfulness import KBFaithfulnessMetric
 from checkllm.metrics.instruction_following import InstructionFollowingMetric
 from checkllm.metrics.knowledge_retention import KnowledgeRetentionMetric
 from checkllm.metrics.noise_sensitivity import NoiseSensitivityMetric

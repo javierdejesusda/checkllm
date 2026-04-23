@@ -33,6 +33,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
+    from checkllm.integrations.chroma import ChromaConnector
     from checkllm.integrations.claude_agents import (
         CheckllmAgentHandler as ClaudeAgentHandler,
     )
@@ -56,15 +57,23 @@ if TYPE_CHECKING:
         CheckllmRetrieverWrapper as LlamaIndexRetrieverWrapper,
         evaluate_retriever as evaluate_llamaindex_retriever,
     )
+    from checkllm.integrations.milvus import MilvusConnector
     from checkllm.integrations.openai_agents import (
         CheckllmRunHandler as OpenAIAgentsHandler,
     )
+    from checkllm.integrations.pinecone import PineconeConnector
     from checkllm.integrations.prometheus import PrometheusExporter
     from checkllm.integrations.pydantic_ai import (
         CheckllmResultValidator as PydanticAIValidator,
     )
+    from checkllm.integrations.vectorstore_base import (
+        RetrievedContext,
+        VectorStoreConnector,
+    )
+    from checkllm.integrations.weaviate import WeaviateConnector
 
 __all__ = [
+    "ChromaConnector",
     "ClaudeAgentHandler",
     "CrewAICallback",
     "DatadogTracer",
@@ -74,11 +83,16 @@ __all__ = [
     "LangSmithTracer",
     "LlamaIndexHandler",
     "LlamaIndexRetrieverWrapper",
+    "MilvusConnector",
     "OpenAIAgentsHandler",
+    "PineconeConnector",
     "PrometheusExporter",
     "PydanticAIValidator",
     "RetrievalEvalResult",
+    "RetrievedContext",
     "SyncResult",
+    "VectorStoreConnector",
+    "WeaviateConnector",
     "evaluate_langchain_retriever",
     "evaluate_llamaindex_retriever",
     "get_tracer",
@@ -218,5 +232,35 @@ def __getattr__(name: str) -> Any:
         )
 
         return _evaluate_llama
+
+    if name == "PineconeConnector":
+        from checkllm.integrations.pinecone import PineconeConnector
+
+        return PineconeConnector
+
+    if name == "WeaviateConnector":
+        from checkllm.integrations.weaviate import WeaviateConnector
+
+        return WeaviateConnector
+
+    if name == "MilvusConnector":
+        from checkllm.integrations.milvus import MilvusConnector
+
+        return MilvusConnector
+
+    if name == "ChromaConnector":
+        from checkllm.integrations.chroma import ChromaConnector
+
+        return ChromaConnector
+
+    if name == "RetrievedContext":
+        from checkllm.integrations.vectorstore_base import RetrievedContext
+
+        return RetrievedContext
+
+    if name == "VectorStoreConnector":
+        from checkllm.integrations.vectorstore_base import VectorStoreConnector
+
+        return VectorStoreConnector
 
     raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
