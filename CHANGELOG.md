@@ -44,6 +44,18 @@
 ### Breaking changes
 - None. All additions are backward compatible; `JudgeResponse` new fields default to `None`/`0`.
 
+### Deprecations (soft — no runtime warnings yet)
+- `checkllm.resilience.TokenBucketRateLimiter` and `PerProviderRateLimiter` are now the legacy rate-limiting surface. New code should use `checkllm.rate_limit.TokenBucket` and `checkllm.rate_limit.ProviderRateLimiter` instead — the new types are what `AsyncEngine` wires up by default and are the only ones that honor `Retry-After` / `x-ratelimit-reset-*` headers on 429 responses. The legacy types will keep working; a runtime `DeprecationWarning` is planned for v5.2.
+
+### Migration — legacy → new rate limiter
+
+| Legacy (v5.0) | v5.1 replacement |
+|---|---|
+| `TokenBucketRateLimiter(rate=5, burst=10)` | `TokenBucket(capacity=10, refill_period=2.0)` |
+| `PerProviderRateLimiter(defaults={"openai": (5, 10)})` | `ProviderRateLimiter(limits={"openai": RateLimit(rpm=300, tpm=30_000)})` |
+| Manual `await limiter.acquire(...)` then judge call | `await engine.submit_judge(provider, factory, est_tokens=...)` handles both |
+| No 429 handling | `retry_with_backoff` honors `Retry-After` + exponential backoff + jitter |
+
 ## v5.0.1 (2026-04-18)
 
 ### Competitor benchmark

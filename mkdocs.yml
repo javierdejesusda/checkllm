@@ -55,6 +55,7 @@ nav:
     - Troubleshooting: guides/troubleshooting.md
     - Migration: guides/migration.md
     - Advanced Patterns: guides/advanced-patterns.md
+    - "v5.1 New APIs": guides/v5.1-new-apis.md
   - Observability: observability.md
   - Red Teaming: red-teaming.md
   - Comparison: comparison.md

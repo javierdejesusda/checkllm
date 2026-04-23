@@ -115,6 +115,10 @@ dev = [
     "types-Jinja2>=2.11.0",
     "jsonschema>=4.0.0",
     "pyarrow>=14.0.0",
+    # Pinned to match .pre-commit-config.yaml — different ruff versions
+    # format multi-line asserts and notebook source cells differently,
+    # and drift between the two fails the pre-commit CI job.
+    "ruff==0.6.9",
 ]
 
 [project.entry-points.pytest11]
