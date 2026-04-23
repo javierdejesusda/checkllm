@@ -2,6 +2,12 @@
 
 Evaluate LLM outputs as they stream in token by token, running checks at
 configurable intervals and supporting early-stop conditions.
+
+The :class:`StreamingEvaluator` natively supports token iterators from any
+source, plus convenience adapters for OpenAI (:func:`stream_openai_chat`)
+and Anthropic (:func:`stream_anthropic_messages`) async clients.  See
+:meth:`StreamingEvaluator.evaluate_provider` for a one-call wrapper that
+routes based on the provider type.
 """
 
 from __future__ import annotations
@@ -9,7 +15,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from typing import AsyncIterator, Awaitable, Callable
+from typing import Any, AsyncIterator, Awaitable, Callable
 
 from pydantic import BaseModel, Field
 
@@ -256,6 +262,53 @@ class StreamingEvaluator:
 
             yield self._build_checkpoint(token_count, accumulated, last_results, elapsed_ms)
 
+    async def evaluate_provider(
+        self,
+        provider: Any,
+        prompt: str,
+        *,
+        system_prompt: str | None = None,
+        model: str | None = None,
+        max_tokens: int = 1024,
+        final_checks: bool = True,
+        **provider_kwargs: Any,
+    ) -> AsyncIterator[StreamingCheckpoint]:
+        """Stream from an OpenAI or Anthropic async client and run checks.
+
+        Detects the client type at runtime and routes to the correct
+        streaming adapter, yielding checkpoints using the same interval
+        behavior as :meth:`evaluate`.
+
+        Args:
+            provider: An ``openai.AsyncOpenAI``-compatible client, an
+                ``anthropic.AsyncAnthropic``-compatible client, or a
+                checkllm judge with a ``stream_evaluate`` method.
+            prompt: User message to send.
+            system_prompt: Optional system prompt.
+            model: Override model name (required for raw SDK clients; judges
+                already know their model).
+            max_tokens: ``max_tokens`` for the underlying API call (Anthropic
+                requires this).
+            final_checks: Whether to run a final set of checks when the
+                stream ends naturally.
+            **provider_kwargs: Extra kwargs forwarded to the SDK streaming
+                call (e.g. ``temperature``).
+
+        Yields:
+            :class:`StreamingCheckpoint` at each interval and (optionally) at
+            the end of the stream.
+        """
+        token_stream = _provider_token_stream(
+            provider,
+            prompt=prompt,
+            system_prompt=system_prompt,
+            model=model,
+            max_tokens=max_tokens,
+            **provider_kwargs,
+        )
+        async for checkpoint in self.evaluate(token_stream, final_checks=final_checks):
+            yield checkpoint
+
     async def evaluate_string_chunks(self, chunks: list[str]) -> StreamingCheckpoint:
         """Convenience method for testing with pre-split chunks.
 
@@ -294,3 +347,214 @@ class StreamingEvaluator:
             )
 
         return final_checkpoint
+
+
+# ---------------------------------------------------------------------------
+# Provider-specific streaming adapters
+# ---------------------------------------------------------------------------
+
+
+def _is_openai_client(provider: Any) -> bool:
+    """Return True when ``provider`` looks like an OpenAI async client.
+
+    Identified by the ``chat.completions.create`` attribute path, which is
+    unique to OpenAI-shaped clients (the Anthropic SDK has ``messages``, not
+    ``chat``).
+    """
+    cls_name = type(provider).__name__
+    # Any real SDK client will be named e.g. ``AsyncOpenAI`` / ``AsyncAzureOpenAI``.
+    if cls_name in {"AsyncOpenAI", "AsyncAzureOpenAI"}:
+        return True
+    chat = getattr(provider, "chat", None)
+    completions = getattr(chat, "completions", None) if chat is not None else None
+    return completions is not None and callable(getattr(completions, "create", None))
+
+
+def _is_anthropic_client(provider: Any) -> bool:
+    """Return True when ``provider`` looks like an Anthropic async client.
+
+    Requires both ``messages.stream`` *and* absence of ``chat`` so that
+    MagicMock-style duck types aimed at OpenAI don't get mis-detected here.
+    """
+    cls_name = type(provider).__name__
+    if cls_name in {"AsyncAnthropic", "AsyncAnthropicBedrock", "AsyncAnthropicVertex"}:
+        return True
+    messages = getattr(provider, "messages", None)
+    if messages is None:
+        return False
+    if not callable(getattr(messages, "stream", None)):
+        return False
+    # Anthropic clients never expose ``chat.completions`` — if this path
+    # exists, this is an OpenAI-shaped client with an unrelated ``messages``
+    # attribute (common when people pass a ``MagicMock``).
+    chat = getattr(provider, "chat", None)
+    if chat is not None and getattr(chat, "completions", None) is not None:
+        return False
+    return True
+
+
+def _has_stream_evaluate(provider: Any) -> bool:
+    """Return True when ``provider`` is a checkllm judge with streaming."""
+    return callable(getattr(provider, "stream_evaluate", None))
+
+
+async def stream_openai_chat(
+    client: Any,
+    prompt: str,
+    *,
+    system_prompt: str | None = None,
+    model: str,
+    **kwargs: Any,
+) -> AsyncIterator[str]:
+    """Yield content-delta strings from an OpenAI ``chat.completions`` stream.
+
+    Mirrors the interface of :func:`stream_anthropic_messages` so both
+    providers can be swapped transparently.
+
+    Args:
+        client: An ``openai.AsyncOpenAI``-compatible client.
+        prompt: User message.
+        system_prompt: Optional system message.
+        model: Model name.
+        **kwargs: Extra kwargs forwarded to ``chat.completions.create``
+            (e.g. ``temperature``, ``max_tokens``).
+
+    Yields:
+        String chunks of content as they arrive.
+    """
+    from checkllm.tracing import propagate_trace_context
+
+    messages: list[dict[str, str]] = []
+    if system_prompt:
+        messages.append({"role": "system", "content": system_prompt})
+    messages.append({"role": "user", "content": prompt})
+
+    trace_headers = propagate_trace_context()
+    stream = await client.chat.completions.create(
+        model=model,
+        messages=messages,
+        stream=True,
+        extra_headers=trace_headers or None,
+        **kwargs,
+    )
+
+    async for chunk in stream:
+        choices = getattr(chunk, "choices", None) or []
+        if not choices:
+            continue
+        delta = getattr(choices[0], "delta", None)
+        piece = getattr(delta, "content", None) if delta else None
+        if piece:
+            yield piece
+
+
+async def stream_anthropic_messages(
+    client: Any,
+    prompt: str,
+    *,
+    system_prompt: str | None = None,
+    model: str,
+    max_tokens: int = 1024,
+    **kwargs: Any,
+) -> AsyncIterator[str]:
+    """Yield text-delta strings from an Anthropic ``messages.stream``.
+
+    Mirrors :func:`stream_openai_chat` so both providers share a single
+    interface.  Uses the ``content_block_delta`` events emitted by the
+    Anthropic SDK.
+
+    Args:
+        client: An ``anthropic.AsyncAnthropic``-compatible client.
+        prompt: User message.
+        system_prompt: Optional system message (passed via ``system=``).
+        model: Model name (e.g. ``"claude-sonnet-4-6"``).
+        max_tokens: Hard cap on generated tokens.  Required by Anthropic.
+        **kwargs: Extra kwargs forwarded to ``messages.stream``
+            (e.g. ``temperature``).
+
+    Yields:
+        String chunks of text content as they arrive.
+    """
+    from checkllm.tracing import propagate_trace_context
+
+    trace_headers = propagate_trace_context()
+    async with client.messages.stream(
+        model=model,
+        max_tokens=max_tokens,
+        system=system_prompt or "",
+        messages=[{"role": "user", "content": prompt}],
+        extra_headers=trace_headers or None,
+        **kwargs,
+    ) as stream:
+        async for event in stream:
+            event_type = getattr(event, "type", None)
+            if event_type != "content_block_delta":
+                continue
+            delta = getattr(event, "delta", None)
+            piece = getattr(delta, "text", None) if delta else None
+            if piece:
+                yield piece
+
+
+async def _judge_token_stream(
+    judge: Any,
+    prompt: str,
+    system_prompt: str | None,
+) -> AsyncIterator[str]:
+    """Yield only the text chunks from a judge's ``stream_evaluate``.
+
+    The judge's terminal ``StreamingJudgeResult`` is discarded so the
+    resulting stream matches the raw provider adapters.
+    """
+    async for item in judge.stream_evaluate(prompt, system_prompt=system_prompt):
+        if isinstance(item, str):
+            yield item
+        # Ignore the terminal StreamingJudgeResult
+
+
+def _provider_token_stream(
+    provider: Any,
+    *,
+    prompt: str,
+    system_prompt: str | None,
+    model: str | None,
+    max_tokens: int,
+    **provider_kwargs: Any,
+) -> AsyncIterator[str]:
+    """Dispatch to the right streaming adapter for ``provider``.
+
+    Raises:
+        TypeError: If ``provider`` is not a supported client / judge type.
+        ValueError: If a raw SDK client is passed without a ``model``.
+    """
+    if _has_stream_evaluate(provider):
+        return _judge_token_stream(provider, prompt, system_prompt)
+
+    if _is_anthropic_client(provider):
+        if model is None:
+            raise ValueError("`model` is required when streaming from a raw Anthropic client")
+        return stream_anthropic_messages(
+            provider,
+            prompt,
+            system_prompt=system_prompt,
+            model=model,
+            max_tokens=max_tokens,
+            **provider_kwargs,
+        )
+
+    if _is_openai_client(provider):
+        if model is None:
+            raise ValueError("`model` is required when streaming from a raw OpenAI client")
+        return stream_openai_chat(
+            provider,
+            prompt,
+            system_prompt=system_prompt,
+            model=model,
+            **provider_kwargs,
+        )
+
+    raise TypeError(
+        f"Unsupported provider type {type(provider).__name__!r}: "
+        "expected an OpenAI / Anthropic async client or a judge with "
+        "`stream_evaluate`."
+    )

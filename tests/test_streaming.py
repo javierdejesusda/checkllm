@@ -367,3 +367,267 @@ class TestJudgeStreaming:
         assert final is not None
         assert final.aggregated_text == "".join(collected)
         assert final.response.raw_output == final.aggregated_text
+
+
+# ---------------------------------------------------------------------------
+# Anthropic streaming adapter (stream_anthropic_messages)
+# ---------------------------------------------------------------------------
+
+
+class _FakeDelta:
+    def __init__(self, text: str) -> None:
+        self.text = text
+
+
+class _FakeEvent:
+    def __init__(self, type_: str, delta: _FakeDelta | None = None) -> None:
+        self.type = type_
+        self.delta = delta
+
+
+class _FakeAnthropicStream:
+    """Mimic an ``AsyncMessageStreamManager``.
+
+    Supports ``async with`` + ``async for event in stream:`` iteration, which
+    is the interface ``anthropic.AsyncAnthropic().messages.stream(...)`` uses.
+    """
+
+    def __init__(self, events: list[_FakeEvent]) -> None:
+        self._events = events
+        self.entered_with: dict | None = None
+
+    async def __aenter__(self):  # noqa: D401 — protocol method
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb) -> None:  # noqa: D401
+        return None
+
+    def __aiter__(self):
+        return self._gen()
+
+    async def _gen(self):
+        for event in self._events:
+            yield event
+
+
+class _FakeAnthropicMessages:
+    def __init__(self) -> None:
+        self.last_kwargs: dict | None = None
+        self._events: list[_FakeEvent] = []
+
+    def set_events(self, events: list[_FakeEvent]) -> None:
+        self._events = events
+
+    def stream(self, **kwargs):  # noqa: D401 — mimic SDK signature
+        self.last_kwargs = kwargs
+        return _FakeAnthropicStream(self._events)
+
+
+class _FakeAnthropicClient:
+    def __init__(self) -> None:
+        self.messages = _FakeAnthropicMessages()
+
+
+class TestAnthropicStreamingAdapter:
+    """Tests for ``stream_anthropic_messages`` and provider routing."""
+
+    @pytest.mark.asyncio
+    async def test_reassembles_chunks_in_order(self) -> None:
+        from checkllm.streaming import stream_anthropic_messages
+
+        client = _FakeAnthropicClient()
+        client.messages.set_events(
+            [
+                _FakeEvent("message_start"),
+                _FakeEvent("content_block_delta", _FakeDelta("Hello ")),
+                _FakeEvent("content_block_delta", _FakeDelta("world")),
+                _FakeEvent("content_block_delta", _FakeDelta("!")),
+                _FakeEvent("message_stop"),
+            ]
+        )
+
+        pieces: list[str] = []
+        async for piece in stream_anthropic_messages(
+            client, "hi", model="claude-sonnet-4-6", max_tokens=16
+        ):
+            pieces.append(piece)
+
+        assert pieces == ["Hello ", "world", "!"]
+        assert "".join(pieces) == "Hello world!"
+
+    @pytest.mark.asyncio
+    async def test_passes_model_and_system_prompt(self) -> None:
+        from checkllm.streaming import stream_anthropic_messages
+
+        client = _FakeAnthropicClient()
+        client.messages.set_events([_FakeEvent("content_block_delta", _FakeDelta("x"))])
+
+        collected: list[str] = []
+        async for piece in stream_anthropic_messages(
+            client,
+            "question",
+            system_prompt="you are helpful",
+            model="claude-haiku-4-5-20251001",
+            max_tokens=32,
+            temperature=0.0,
+        ):
+            collected.append(piece)
+
+        kwargs = client.messages.last_kwargs
+        assert kwargs is not None
+        assert kwargs["model"] == "claude-haiku-4-5-20251001"
+        assert kwargs["system"] == "you are helpful"
+        assert kwargs["max_tokens"] == 32
+        assert kwargs["temperature"] == 0.0
+        assert kwargs["messages"] == [{"role": "user", "content": "question"}]
+
+    @pytest.mark.asyncio
+    async def test_ignores_non_text_events(self) -> None:
+        from checkllm.streaming import stream_anthropic_messages
+
+        client = _FakeAnthropicClient()
+        client.messages.set_events(
+            [
+                _FakeEvent("message_start"),
+                _FakeEvent("content_block_start"),
+                # content_block_delta with no text payload
+                _FakeEvent("content_block_delta", _FakeDelta("")),
+                _FakeEvent("content_block_delta", _FakeDelta("real")),
+                _FakeEvent("message_delta"),
+                _FakeEvent("message_stop"),
+            ]
+        )
+
+        pieces = [
+            chunk
+            async for chunk in stream_anthropic_messages(client, "p", model="claude-sonnet-4-6")
+        ]
+        assert pieces == ["real"]
+
+    @pytest.mark.asyncio
+    async def test_evaluate_provider_with_anthropic_client(self) -> None:
+        from checkllm.models import CheckResult
+        from checkllm.streaming import StreamingCheckpoint, StreamingEvaluator
+
+        client = _FakeAnthropicClient()
+        client.messages.set_events(
+            [
+                _FakeEvent("content_block_delta", _FakeDelta("a")),
+                _FakeEvent("content_block_delta", _FakeDelta("b")),
+                _FakeEvent("content_block_delta", _FakeDelta("c")),
+            ]
+        )
+
+        evaluator = StreamingEvaluator(check_interval=10)
+
+        def always_pass(text: str) -> CheckResult:
+            return CheckResult(
+                passed=True,
+                score=1.0,
+                reasoning="ok",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="ok",
+            )
+
+        evaluator.add_check("ok", always_pass)
+
+        checkpoints: list[StreamingCheckpoint] = []
+        async for cp in evaluator.evaluate_provider(client, "hi", model="claude-sonnet-4-6"):
+            checkpoints.append(cp)
+
+        assert len(checkpoints) >= 1
+        final = checkpoints[-1]
+        assert final.partial_output == "abc"
+        assert final.tokens_received == 3
+
+    @pytest.mark.asyncio
+    async def test_evaluate_provider_routes_openai(self) -> None:
+        from unittest.mock import AsyncMock, MagicMock
+
+        from checkllm.models import CheckResult
+        from checkllm.streaming import StreamingEvaluator
+
+        async def _async_chunks(items):
+            for item in items:
+                yield item
+
+        def _chunk(content: str | None):
+            delta = MagicMock()
+            delta.content = content
+            choice = MagicMock()
+            choice.delta = delta
+            chunk = MagicMock()
+            chunk.choices = [choice]
+            chunk.usage = None
+            return chunk
+
+        chunks = [_chunk("foo"), _chunk("bar"), _chunk(None)]
+
+        create = AsyncMock(return_value=_async_chunks(chunks))
+
+        # Build a small real-object client so attribute auto-vivification
+        # from MagicMock doesn't trigger other provider branches in
+        # ``_provider_token_stream``.
+        class _Completions:
+            def __init__(self, fn):
+                self.create = fn
+
+        class _Chat:
+            def __init__(self, fn):
+                self.completions = _Completions(fn)
+
+        class _OpenAIShaped:
+            def __init__(self, fn):
+                self.chat = _Chat(fn)
+
+        client = _OpenAIShaped(create)
+
+        def always_pass(text: str) -> CheckResult:
+            return CheckResult(
+                passed=True,
+                score=1.0,
+                reasoning="ok",
+                cost=0.0,
+                latency_ms=0,
+                metric_name="ok",
+            )
+
+        ev = StreamingEvaluator(check_interval=10)
+        ev.add_check("ok", always_pass)
+
+        final = None
+        async for cp in ev.evaluate_provider(client, "hi", model="gpt-4o"):
+            final = cp
+
+        assert final is not None
+        assert final.partial_output == "foobar"
+        # Verify streaming was requested
+        create.assert_awaited_once()
+        kwargs = create.await_args.kwargs
+        assert kwargs["model"] == "gpt-4o"
+        assert kwargs["stream"] is True
+
+    @pytest.mark.asyncio
+    async def test_evaluate_provider_rejects_unknown_provider(self) -> None:
+        from checkllm.streaming import StreamingEvaluator
+
+        ev = StreamingEvaluator()
+
+        class Unknown:
+            pass
+
+        with pytest.raises(TypeError, match="Unsupported provider type"):
+            async for _ in ev.evaluate_provider(Unknown(), "hi", model="x"):
+                pass
+
+    @pytest.mark.asyncio
+    async def test_evaluate_provider_requires_model_for_raw_client(self) -> None:
+        from checkllm.streaming import StreamingEvaluator
+
+        client = _FakeAnthropicClient()
+        ev = StreamingEvaluator()
+
+        with pytest.raises(ValueError, match="`model` is required"):
+            async for _ in ev.evaluate_provider(client, "hi"):
+                pass
