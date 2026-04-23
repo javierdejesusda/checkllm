@@ -26,6 +26,7 @@ from checkllm.metrics.faithfulness import FaithfulnessMetric
 from checkllm.metrics.faithfulness_hhem import FaithfulnessHHEMMetric
 from checkllm.metrics.g_eval import GEvalMetric
 from checkllm.metrics.groundedness import GroundednessMetric
+from checkllm.metrics.hit_rate_at_k import HitRateAtKMetric
 from checkllm.metrics.chart_value_extraction import ChartValueExtractionMetric
 from checkllm.metrics.diagram_comprehension import DiagramComprehensionMetric
 from checkllm.metrics.image_captioning_quality import ImageCaptioningQualityMetric
@@ -41,9 +42,14 @@ from checkllm.metrics.visual_reasoning import VisualReasoningMetric
 from checkllm.metrics.instruction_completeness import InstructionCompletenessMetric
 from checkllm.metrics.instruction_following import InstructionFollowingMetric
 from checkllm.metrics.knowledge_retention import KnowledgeRetentionMetric
+from checkllm.metrics.map_at_k import MAPAtKMetric
+from checkllm.metrics.mrr import MRRMetric
+from checkllm.metrics.ndcg import NDCGMetric
 from checkllm.metrics.noise_sensitivity import NoiseSensitivityMetric
 from checkllm.metrics.nonllm_context_precision import NonLLMContextPrecisionMetric
 from checkllm.metrics.nonllm_context_recall import NonLLMContextRecallMetric
+from checkllm.metrics.precision_at_k import PrecisionAtKMetric
+from checkllm.metrics.recall_at_k import RecallAtKMetric
 from checkllm.metrics.per_turn import (
     TurnCoherenceMetric,
     TurnFaithfulnessMetric,
@@ -66,6 +72,14 @@ from checkllm.metrics.trajectory import (
     TrajectoryToolSequenceMetric,
 )
 from checkllm.models import CheckResult
+
+# Convenience aliases for classical IR retrieval-ranking metrics.
+NDCG = NDCGMetric
+MRR = MRRMetric
+MAPAtK = MAPAtKMetric
+PrecisionAtK = PrecisionAtKMetric
+RecallAtK = RecallAtKMetric
+HitRateAtK = HitRateAtKMetric
 
 logger = logging.getLogger("checkllm.metrics")
 
