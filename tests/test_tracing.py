@@ -2,12 +2,13 @@
 
 from __future__ import annotations
 
+import re
 import time
 
 import pytest
 
 from checkllm.models import CheckResult
-from checkllm.tracing import Span, Tracer, get_tracer, trace
+from checkllm.tracing import Span, Tracer, get_tracer, propagate_trace_context, trace
 
 
 # ---------------------------------------------------------------------------
@@ -231,3 +232,84 @@ class TestGlobalTracer:
 
         result = hello()
         assert result == "world"
+
+
+# ---------------------------------------------------------------------------
+# W3C trace context propagation
+# ---------------------------------------------------------------------------
+
+
+_TRACEPARENT_RE = re.compile(r"^00-[0-9a-f]{32}-[0-9a-f]{16}-(00|01)$")
+
+
+class TestPropagateTraceContext:
+    """Verify ``propagate_trace_context`` emits W3C-compliant headers."""
+
+    def _install_tracer(self, monkeypatch: pytest.MonkeyPatch) -> Tracer:
+        """Install a fresh local-only tracer as the global tracer."""
+        import checkllm.tracing as tr_mod
+
+        tracer = Tracer(enable_otel=False)
+        monkeypatch.setattr(tr_mod, "_tracer", tracer)
+        return tracer
+
+    def test_returns_input_when_no_active_span(self, monkeypatch):
+        self._install_tracer(monkeypatch)
+        headers = propagate_trace_context({"Authorization": "Bearer x"})
+        assert headers == {"Authorization": "Bearer x"}
+        assert "traceparent" not in headers
+
+    def test_none_input_returns_empty_when_no_span(self, monkeypatch):
+        self._install_tracer(monkeypatch)
+        headers = propagate_trace_context()
+        assert headers == {}
+
+    def test_emits_valid_traceparent_under_active_span(self, monkeypatch):
+        tracer = self._install_tracer(monkeypatch)
+        with tracer.span("eval"):
+            headers = propagate_trace_context({"X-Auth": "abc"})
+        # Original header preserved
+        assert headers["X-Auth"] == "abc"
+        # traceparent present and W3C-formatted
+        traceparent = headers["traceparent"]
+        assert _TRACEPARENT_RE.match(traceparent), f"bad format: {traceparent}"
+
+    def test_traceparent_fields_match_active_span(self, monkeypatch):
+        tracer = self._install_tracer(monkeypatch)
+        with tracer.span("outer") as outer:
+            with tracer.span("inner") as inner:
+                headers = propagate_trace_context()
+
+        parts = headers["traceparent"].split("-")
+        assert len(parts) == 4
+        version, trace_id, span_id, flags = parts
+        assert version == "00"
+        # Child trace_id inherits from parent so outer.trace_id == inner.trace_id
+        assert trace_id == outer.trace_id == inner.trace_id
+        # span id is the *active* span's id (the innermost one)
+        assert span_id == inner.span_id
+        assert flags == "01"  # sampled
+
+    def test_child_spans_share_trace_id(self, monkeypatch):
+        tracer = self._install_tracer(monkeypatch)
+        with tracer.span("parent") as parent:
+            with tracer.span("child") as child:
+                pass
+        assert parent.trace_id == child.trace_id
+        assert parent.span_id != child.span_id
+
+    def test_does_not_overwrite_existing_traceparent(self, monkeypatch):
+        tracer = self._install_tracer(monkeypatch)
+        preset = "00-" + "a" * 32 + "-" + "b" * 16 + "-01"
+        with tracer.span("eval"):
+            headers = propagate_trace_context({"traceparent": preset})
+        assert headers["traceparent"] == preset
+
+    def test_traceparent_regenerates_per_span_pair(self, monkeypatch):
+        """Separate span stacks should produce different trace ids."""
+        tracer = self._install_tracer(monkeypatch)
+        with tracer.span("first"):
+            first = propagate_trace_context()["traceparent"]
+        with tracer.span("second"):
+            second = propagate_trace_context()["traceparent"]
+        assert first != second

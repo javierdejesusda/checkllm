@@ -20,6 +20,7 @@ from tenacity import (
 )
 
 from checkllm.models import JudgeResponse
+from checkllm.tracing import propagate_trace_context
 
 if TYPE_CHECKING:
     from checkllm.multimodal import ImagePayload
@@ -202,11 +203,13 @@ class OpenAIJudge:
             messages.append({"role": "system", "content": system_prompt})
         messages.append({"role": "user", "content": prompt})
 
+        trace_headers = propagate_trace_context()
         response = await self._client.chat.completions.create(
             model=self.model,
             messages=messages,
             temperature=0.0,
             response_format={"type": "json_object"},
+            extra_headers=trace_headers or None,
         )
 
         raw_output = response.choices[0].message.content or ""
@@ -264,11 +267,13 @@ class OpenAIJudge:
         content.append({"type": "text", "text": prompt})
         messages.append({"role": "user", "content": content})
 
+        trace_headers = propagate_trace_context()
         response = await self._client.chat.completions.create(
             model=self.model,
             messages=messages,
             temperature=0.0,
             response_format={"type": "json_object"},
+            extra_headers=trace_headers or None,
         )
 
         raw_output = response.choices[0].message.content or ""
@@ -326,12 +331,14 @@ class OpenAIJudge:
             messages.append({"role": "system", "content": system_prompt})
         messages.append({"role": "user", "content": prompt})
 
+        trace_headers = propagate_trace_context()
         stream = await self._client.chat.completions.create(
             model=self.model,
             messages=messages,
             temperature=0.0,
             stream=True,
             stream_options={"include_usage": True},
+            extra_headers=trace_headers or None,
         )
 
         aggregated: list[str] = []
@@ -429,11 +436,13 @@ class AnthropicJudge:
             'Respond with JSON only: {"score": <float 0-1>, "reasoning": "<explanation>"}'
         )
 
+        trace_headers = propagate_trace_context()
         response = await self._client.messages.create(
             model=self.model,
             max_tokens=1024,
             system=system,
             messages=[{"role": "user", "content": full_prompt}],
+            extra_headers=trace_headers or None,
         )
 
         raw_output = response.content[0].text if response.content else ""
@@ -490,11 +499,13 @@ class AnthropicJudge:
         content: list[dict[str, object]] = [to_anthropic_content(img) for img in images]
         content.append({"type": "text", "text": full_prompt})
 
+        trace_headers = propagate_trace_context()
         response = await self._client.messages.create(
             model=self.model,
             max_tokens=1024,
             system=system,
             messages=[{"role": "user", "content": content}],
+            extra_headers=trace_headers or None,
         )
 
         raw_output = response.content[0].text if response.content else ""
@@ -555,11 +566,13 @@ class AnthropicJudge:
         input_tokens = 0
         output_tokens = 0
 
+        trace_headers = propagate_trace_context()
         async with self._client.messages.stream(
             model=self.model,
             max_tokens=1024,
             system=system,
             messages=[{"role": "user", "content": full_prompt}],
+            extra_headers=trace_headers or None,
         ) as stream:
             async for event in stream:
                 event_type = getattr(event, "type", None)
@@ -693,10 +706,12 @@ class DeepSeekJudge:
             }
         )
 
+        trace_headers = propagate_trace_context()
         response = await self._client.chat.completions.create(
             model=self.model,
             messages=messages,
             temperature=0.0,
+            extra_headers=trace_headers or None,
         )
 
         message = response.choices[0].message
@@ -762,12 +777,14 @@ class DeepSeekJudge:
             }
         )
 
+        trace_headers = propagate_trace_context()
         stream = await self._client.chat.completions.create(
             model=self.model,
             messages=messages,
             temperature=0.0,
             stream=True,
             stream_options={"include_usage": True},
+            extra_headers=trace_headers or None,
         )
 
         visible: list[str] = []

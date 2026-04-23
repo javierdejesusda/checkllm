@@ -24,6 +24,7 @@ from tenacity import (
 
 from checkllm.judge import JudgeBackend, JudgeConfigError, estimate_cost
 from checkllm.models import JudgeResponse
+from checkllm.tracing import propagate_trace_context
 
 # ---------------------------------------------------------------------------
 # Token pricing tables (USD per token)
@@ -269,11 +270,13 @@ class AzureOpenAIJudge:
             messages.append({"role": "system", "content": system_prompt})
         messages.append({"role": "user", "content": prompt})
 
+        trace_headers = propagate_trace_context()
         response = await self._client.chat.completions.create(
             model=self._deployment,
             messages=messages,
             temperature=0.0,
             response_format={"type": "json_object"},
+            extra_headers=trace_headers or None,
         )
 
         raw_output = response.choices[0].message.content or ""
@@ -359,8 +362,9 @@ class OllamaJudge:
             "options": {"temperature": 0.0},
         }
 
+        trace_headers = propagate_trace_context()
         async with httpx.AsyncClient(timeout=self._timeout) as client:
-            resp = await client.post(url, json=payload)
+            resp = await client.post(url, json=payload, headers=trace_headers or None)
             resp.raise_for_status()
             data = resp.json()
 
@@ -397,9 +401,10 @@ class OllamaJudge:
             "options": {"temperature": 0.0},
         }
 
+        trace_headers = propagate_trace_context()
         timeout = aiohttp.ClientTimeout(total=self._timeout)
         async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.post(url, json=payload) as resp:
+            async with session.post(url, json=payload, headers=trace_headers or None) as resp:
                 resp.raise_for_status()
                 data = await resp.json()
 
@@ -550,6 +555,8 @@ class CustomHTTPJudge:
 
         payload = {"prompt": prompt, "system_prompt": system_prompt}
 
+        merged_headers = propagate_trace_context(self._headers)
+
         last_exc: Exception | None = None
         for _attempt in range(self._max_retries):
             try:
@@ -558,7 +565,7 @@ class CustomHTTPJudge:
                         self._method,
                         self._url,
                         json=payload,
-                        headers=self._headers,
+                        headers=merged_headers,
                     )
                     resp.raise_for_status()
                     data = resp.json()
@@ -643,6 +650,7 @@ class OpenAICompatibleJudge:
         }
         if self._api_key:
             headers["Authorization"] = f"Bearer {self._api_key}"
+        headers = propagate_trace_context(headers)
 
         payload: dict[str, Any] = {
             "model": self.model,
@@ -1060,12 +1068,25 @@ class BedrockJudge:
             "messages": messages,
         }
 
-        response = self._client.invoke_model(
-            modelId=self.model,
-            contentType="application/json",
-            accept="application/json",
-            body=json.dumps(body),
-        )
+        trace_headers = propagate_trace_context()
+
+        def _inject_headers(request: Any, **_kwargs: Any) -> None:
+            for key, value in trace_headers.items():
+                request.headers[key] = value
+
+        events = getattr(self._client.meta, "events", None)
+        if events is not None and trace_headers:
+            events.register_first("before-sign.bedrock-runtime.*", _inject_headers)
+        try:
+            response = self._client.invoke_model(
+                modelId=self.model,
+                contentType="application/json",
+                accept="application/json",
+                body=json.dumps(body),
+            )
+        finally:
+            if events is not None and trace_headers:
+                events.unregister("before-sign.bedrock-runtime.*", _inject_headers)
 
         response_body = json.loads(response["body"].read())
         raw_output = ""
