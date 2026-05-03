@@ -1,0 +1,2986 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="The pytest of LLM testing">
+      
+      
+      
+        <link rel="canonical" href="https://javierdejesusda.github.io/checkllm/guides/metrics-reference/">
+      
+      
+        <link rel="prev" href="../choosing-metrics/">
+      
+      
+        <link rel="next" href="../deterministic-checks/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.6">
+    
+    
+      
+        <title>Metrics reference - checkllm</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="amber">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#metrics-reference" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="checkllm" class="md-header__button md-logo" aria-label="checkllm" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            checkllm
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Metrics reference
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="amber"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 18c-.89 0-1.74-.2-2.5-.55C11.56 16.5 13 14.42 13 12s-1.44-4.5-3.5-5.45C10.26 6.2 11.11 6 12 6a6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/javierdejesusda/checkllm" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    javierdejesusda/checkllm
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../quickstart/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Quickstart
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../notebooks/" class="md-tabs__link">
+          
+  
+  
+  Tutorials
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../choosing-metrics/" class="md-tabs__link">
+          
+  
+  
+  Guides
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../observability/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Observability
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../red-teaming/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Red Teaming
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../comparison/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Comparison
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../benchmarks/competitor-comparison/" class="md-tabs__link">
+          
+  
+  
+  Benchmarks
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../release-process/" class="md-tabs__link">
+        
+  
+  
+    
+  
+  Release process
+
+      </a>
+    </li>
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="checkllm" class="md-nav__button md-logo" aria-label="checkllm" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    checkllm
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/javierdejesusda/checkllm" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    javierdejesusda/checkllm
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quickstart
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Tutorials
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Tutorials
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notebooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Overview
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../choosing-metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Choosing metrics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Metrics reference
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Metrics reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#rag-and-grounding" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RAG and grounding
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#answer-quality" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Answer quality
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agents-and-tool-use" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agents and tool use
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conversation-and-multi-turn" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conversation and multi-turn
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#safety-and-red-team" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Safety and red team
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#code-and-structured-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Code and structured output
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#multimodal-and-vision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multimodal and vision
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deterministic-checks-structural-and-lexical" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deterministic checks (structural and lexical)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Deterministic checks (structural and lexical)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#content-presence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Content presence
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#size-and-shape" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Size and shape
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#format-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Format validation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#similarity-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Similarity metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#budgets-and-numeric" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Budgets and numeric
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#safety-primitives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Safety primitives
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deterministic-checks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deterministic Checks
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../llm-metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    LLM Metrics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../dag-metric/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    DAG metric
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../rag-dataset-generation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    RAG dataset generation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../retriever-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Retriever validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guardrails/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guardrails
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../exporting-results/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Exporting results
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../model-graded-assertions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Model-graded assertions
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../yaml-config-validation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    YAML config validation
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ci-cd/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CI/CD
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../custom-metrics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Custom Metrics
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../plugins/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Plugins
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../configuration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Configuration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../yaml-schema/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    YAML Schema
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli-reference/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI Reference
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../deployment/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Deployment
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../troubleshooting/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Troubleshooting
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../migration/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Migration
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../advanced-patterns/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Advanced Patterns
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../v5.1-new-apis/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    v5.1 New APIs
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../observability/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Observability
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../red-teaming/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Red Teaming
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../comparison/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Comparison
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_8" >
+        
+          
+          <label class="md-nav__link" for="__nav_8" id="__nav_8_label" tabindex="0">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Benchmarks
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_8_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_8">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Benchmarks
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benchmarks/competitor-comparison/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Competitor leaderboard
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benchmarks/cost-latency/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Cost and latency
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../benchmarks/methodology/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Methodology
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../release-process/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Release process
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#rag-and-grounding" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        RAG and grounding
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#answer-quality" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Answer quality
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#agents-and-tool-use" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Agents and tool use
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#conversation-and-multi-turn" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Conversation and multi-turn
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#safety-and-red-team" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Safety and red team
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#code-and-structured-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Code and structured output
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#multimodal-and-vision" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Multimodal and vision
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#deterministic-checks-structural-and-lexical" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Deterministic checks (structural and lexical)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Deterministic checks (structural and lexical)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#content-presence" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Content presence
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#size-and-shape" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Size and shape
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#format-validation" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Format validation
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#similarity-metrics" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Similarity metrics
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#budgets-and-numeric" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Budgets and numeric
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#safety-primitives" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Safety primitives
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="metrics-reference">Metrics reference<a class="headerlink" href="#metrics-reference" title="Permanent link">&para;</a></h1>
+<p>A categorized catalog of every built-in metric and deterministic check in checkllm.
+Use this page as an index; for <strong>which</strong> metric to pick in a given scenario see
+<a href="../choosing-metrics/">Choosing metrics</a>.</p>
+<div class="admonition tip">
+<p class="admonition-title">Import shortcuts</p>
+<p>Every judge metric is also exposed as a method on the <code>check</code> pytest fixture
+(e.g. <code>check.faithfulness(...)</code>). The <code>Import</code> column shows the direct class
+import used when you instantiate a metric yourself.</p>
+<p>Deterministic checks live on the <code>DeterministicChecks</code> class
+(<code>from checkllm.deterministic import DeterministicChecks</code>) and as methods on
+the <code>check</code> fixture (e.g. <code>check.contains(...)</code>).</p>
+</div>
+<h2 id="rag-and-grounding">RAG and grounding<a class="headerlink" href="#rag-and-grounding" title="Permanent link">&para;</a></h2>
+<p>Evaluates retrieval quality and whether generation is grounded in retrieved context.</p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Import</th>
+<th>Type</th>
+<th>What it measures</th>
+<th>Typical threshold</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>faithfulness</code></td>
+<td><code>checkllm.metrics.faithfulness.FaithfulnessMetric</code></td>
+<td>LLM judge</td>
+<td>Fraction of claims in the answer that are supported by context</td>
+<td>0.85</td>
+</tr>
+<tr>
+<td><code>faithfulness_hhem</code></td>
+<td><code>checkllm.metrics.faithfulness_hhem.FaithfulnessHHEMMetric</code></td>
+<td>Model (HHEM)</td>
+<td>HHEM-2.1 hallucination score; local, fast, cheap</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td><code>hallucination</code></td>
+<td><code>checkllm.metrics.hallucination.HallucinationMetric</code></td>
+<td>LLM judge</td>
+<td>Probability the answer contains unsupported claims (lower is better, score inverted)</td>
+<td>0.85</td>
+</tr>
+<tr>
+<td><code>contextual_precision</code></td>
+<td><code>checkllm.metrics.contextual_precision.ContextualPrecisionMetric</code></td>
+<td>LLM judge</td>
+<td>Whether relevant chunks are ranked ahead of irrelevant ones</td>
+<td>0.75</td>
+</tr>
+<tr>
+<td><code>contextual_recall</code></td>
+<td><code>checkllm.metrics.contextual_recall.ContextualRecallMetric</code></td>
+<td>LLM judge</td>
+<td>Fraction of the expected answer found in retrieved context</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td><code>context_relevance</code></td>
+<td><code>checkllm.metrics.context_relevance.ContextRelevanceMetric</code></td>
+<td>LLM judge</td>
+<td>Relevance of retrieved context to the query</td>
+<td>0.75</td>
+</tr>
+<tr>
+<td><code>context_entity_recall</code></td>
+<td><code>checkllm.metrics.context_entity_recall.ContextEntityRecallMetric</code></td>
+<td>LLM judge</td>
+<td>Fraction of ground-truth entities present in context</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td><code>nonllm_context_precision</code></td>
+<td><code>checkllm.metrics.nonllm_context_precision.NonLLMContextPrecisionMetric</code></td>
+<td>Deterministic</td>
+<td>Context precision via string/semantic match (no judge)</td>
+<td>0.70</td>
+</tr>
+<tr>
+<td><code>nonllm_context_recall</code></td>
+<td><code>checkllm.metrics.nonllm_context_recall.NonLLMContextRecallMetric</code></td>
+<td>Deterministic</td>
+<td>Context recall via string/semantic match (no judge)</td>
+<td>0.70</td>
+</tr>
+<tr>
+<td><code>groundedness</code></td>
+<td><code>checkllm.metrics.groundedness.GroundednessMetric</code></td>
+<td>LLM judge</td>
+<td>Whether every factual claim traces back to context</td>
+<td>0.85</td>
+</tr>
+<tr>
+<td><code>noise_sensitivity</code></td>
+<td><code>checkllm.metrics.noise_sensitivity.NoiseSensitivityMetric</code></td>
+<td>LLM judge</td>
+<td>How much irrelevant context degrades the answer</td>
+<td>0.75</td>
+</tr>
+<tr>
+<td><code>citation_accuracy</code></td>
+<td><code>checkllm.metrics.citation_accuracy.CitationAccuracyMetric</code></td>
+<td>LLM judge</td>
+<td>Whether inline citations point to the correct chunk</td>
+<td>0.85</td>
+</tr>
+<tr>
+<td><code>quoted_spans</code></td>
+<td><code>checkllm.metrics.quoted_spans.QuotedSpansAlignmentMetric</code></td>
+<td>Deterministic</td>
+<td>Verbatim-quoted spans actually appear in context</td>
+<td>0.95</td>
+</tr>
+<tr>
+<td><code>nv_answer_accuracy</code></td>
+<td><code>checkllm.metrics.dual_judge_nv.NVAnswerAccuracyMetric</code></td>
+<td>Dual judge</td>
+<td>NVIDIA dual-judge answer accuracy (two models vote)</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td><code>nv_context_relevance</code></td>
+<td><code>checkllm.metrics.dual_judge_nv.NVContextRelevanceMetric</code></td>
+<td>Dual judge</td>
+<td>NVIDIA dual-judge context relevance</td>
+<td>0.75</td>
+</tr>
+<tr>
+<td><code>nv_response_groundedness</code></td>
+<td><code>checkllm.metrics.dual_judge_nv.NVResponseGroundednessMetric</code></td>
+<td>Dual judge</td>
+<td>NVIDIA dual-judge response groundedness</td>
+<td>0.80</td>
+</tr>
+</tbody>
+</table>
+<h2 id="answer-quality">Answer quality<a class="headerlink" href="#answer-quality" title="Permanent link">&para;</a></h2>
+<p>Generic output-quality signals that apply beyond RAG.</p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Import</th>
+<th>Type</th>
+<th>What it measures</th>
+<th>Typical threshold</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>relevance</code></td>
+<td><code>checkllm.metrics.relevance.RelevanceMetric</code></td>
+<td>LLM judge</td>
+<td>Whether the answer addresses the query</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td><code>correctness</code></td>
+<td><code>checkllm.metrics.correctness.CorrectnessMetric</code></td>
+<td>LLM judge</td>
+<td>Whether the answer matches the expected output</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td><code>factual_correctness</code></td>
+<td><code>checkllm.metrics.factual_correctness.FactualCorrectnessMetric</code></td>
+<td>LLM judge</td>
+<td>Precision/recall/F1 over atomic factual claims</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td><code>answer_completeness</code></td>
+<td><code>checkllm.metrics.answer_completeness.AnswerCompletenessMetric</code></td>
+<td>LLM judge</td>
+<td>Whether every sub-question in the query is answered</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td><code>response_completeness</code></td>
+<td><code>checkllm.metrics.response_completeness.ResponseCompletenessMetric</code></td>
+<td>LLM judge</td>
+<td>Whether the response covers all required aspects</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td><code>fluency</code></td>
+<td><code>checkllm.metrics.fluency.FluencyMetric</code></td>
+<td>LLM judge</td>
+<td>Grammatical and stylistic fluency</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td><code>coherence</code></td>
+<td><code>checkllm.metrics.coherence.CoherenceMetric</code></td>
+<td>LLM judge</td>
+<td>Logical flow and structure</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td><code>consistency</code></td>
+<td><code>checkllm.metrics.consistency.ConsistencyMetric</code></td>
+<td>LLM judge</td>
+<td>Internal self-consistency across the output</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td><code>summarization</code></td>
+<td><code>checkllm.metrics.summarization.SummarizationMetric</code></td>
+<td>LLM judge</td>
+<td>Summary preserves key information without distortion</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td><code>instruction_following</code></td>
+<td><code>checkllm.metrics.instruction_following.InstructionFollowingMetric</code></td>
+<td>LLM judge</td>
+<td>Whether explicit instructions were followed</td>
+<td>0.85</td>
+</tr>
+<tr>
+<td><code>instruction_completeness</code></td>
+<td><code>checkllm.metrics.instruction_completeness.InstructionCompletenessMetric</code></td>
+<td>LLM judge</td>
+<td>Fraction of instructions executed</td>
+<td>0.85</td>
+</tr>
+<tr>
+<td><code>prompt_alignment</code></td>
+<td><code>checkllm.metrics.prompt_alignment.PromptAlignmentMetric</code></td>
+<td>LLM judge</td>
+<td>Response stays aligned with prompt intent and constraints</td>
+<td>0.85</td>
+</tr>
+<tr>
+<td><code>rubric</code></td>
+<td><code>checkllm.metrics.rubric.RubricMetric</code></td>
+<td>LLM judge</td>
+<td>Free-form rubric criteria you supply</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td><code>g_eval</code></td>
+<td><code>checkllm.metrics.g_eval.GEvalMetric</code></td>
+<td>LLM judge</td>
+<td>G-Eval chain-of-thought rubric scoring</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td><code>comparative_quality</code></td>
+<td><code>checkllm.metrics.comparative_quality.ComparativeQualityMetric</code></td>
+<td>LLM judge</td>
+<td>Pairwise comparison against a reference output</td>
+<td>0.50</td>
+</tr>
+<tr>
+<td><code>sentiment</code></td>
+<td><code>checkllm.metrics.sentiment.SentimentMetric</code></td>
+<td>LLM judge</td>
+<td>Polarity; pair with an expected direction</td>
+<td>0.50</td>
+</tr>
+</tbody>
+</table>
+<h2 id="agents-and-tool-use">Agents and tool use<a class="headerlink" href="#agents-and-tool-use" title="Permanent link">&para;</a></h2>
+<p>Evaluates agent trajectories, tool calls, and planning.</p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Import</th>
+<th>Type</th>
+<th>What it measures</th>
+<th>Typical threshold</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>tool_call_f1</code></td>
+<td><code>checkllm.metrics.tool_call_f1.ToolCallF1Metric</code></td>
+<td>Deterministic</td>
+<td>F1 of predicted vs expected tool names</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td><code>tool_accuracy</code></td>
+<td><code>checkllm.metrics.tool_accuracy.ToolAccuracyMetric</code></td>
+<td>LLM judge</td>
+<td>Whether the right tools were invoked for the query</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td><code>argument_correctness</code></td>
+<td><code>checkllm.metrics.argument_correctness.ArgumentCorrectnessMetric</code></td>
+<td>LLM judge</td>
+<td>Whether tool arguments are semantically correct</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td><code>task_completion</code></td>
+<td><code>checkllm.metrics.task_completion.TaskCompletionMetric</code></td>
+<td>LLM judge</td>
+<td>Whether the agent finished the requested task</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td><code>goal_accuracy</code></td>
+<td><code>checkllm.metrics.goal_accuracy.GoalAccuracyMetric</code></td>
+<td>LLM judge</td>
+<td>Final output achieves the stated goal</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td><code>plan_quality</code></td>
+<td><code>checkllm.metrics.plan_quality.PlanQualityMetric</code></td>
+<td>LLM judge</td>
+<td>The agent's plan is sensible and minimal</td>
+<td>0.75</td>
+</tr>
+<tr>
+<td><code>plan_adherence</code></td>
+<td><code>checkllm.metrics.plan_adherence.PlanAdherenceMetric</code></td>
+<td>LLM judge</td>
+<td>Execution trace follows the declared plan</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td><code>step_efficiency</code></td>
+<td><code>checkllm.metrics.step_efficiency.StepEfficiencyMetric</code></td>
+<td>LLM judge</td>
+<td>Fraction of steps that were actually necessary</td>
+<td>0.70</td>
+</tr>
+<tr>
+<td><code>trajectory_goal_success</code></td>
+<td><code>checkllm.metrics.trajectory.TrajectoryGoalSuccessMetric</code></td>
+<td>LLM judge</td>
+<td>Whole trajectory reaches the goal</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td><code>trajectory_tool_sequence</code></td>
+<td><code>checkllm.metrics.trajectory.TrajectoryToolSequenceMetric</code></td>
+<td>Hybrid</td>
+<td>Tools invoked in the expected order</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td><code>trajectory_step_count</code></td>
+<td><code>checkllm.metrics.trajectory.TrajectoryStepCountMetric</code></td>
+<td>Hybrid</td>
+<td>Task completed within a step budget</td>
+<td>0.75</td>
+</tr>
+<tr>
+<td><code>trajectory_tool_args_match</code></td>
+<td><code>checkllm.metrics.trajectory.TrajectoryToolArgsMatchMetric</code></td>
+<td>LLM judge</td>
+<td>Tool arguments match expected values (fuzzy)</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td><code>mcp_use</code></td>
+<td><code>checkllm.metrics.mcp_use.McpUseMetric</code></td>
+<td>LLM judge</td>
+<td>MCP tool usage is appropriate</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td><code>mcp_task_completion</code></td>
+<td><code>checkllm.metrics.mcp_task_completion.McpTaskCompletionMetric</code></td>
+<td>LLM judge</td>
+<td>MCP session completed the task</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td><code>multi_turn_mcp_use</code></td>
+<td><code>checkllm.metrics.multi_turn_mcp_use.MultiTurnMcpUseMetric</code></td>
+<td>LLM judge</td>
+<td>Multi-turn MCP interaction stayed on task</td>
+<td>0.80</td>
+</tr>
+</tbody>
+</table>
+<h2 id="conversation-and-multi-turn">Conversation and multi-turn<a class="headerlink" href="#conversation-and-multi-turn" title="Permanent link">&para;</a></h2>
+<p>Evaluates chatbots and multi-turn sessions using <code>ConversationalTestCase</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Import</th>
+<th>Type</th>
+<th>What it measures</th>
+<th>Typical threshold</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>conversation_completeness</code></td>
+<td><code>checkllm.metrics.conversation_completeness.ConversationCompletenessMetric</code></td>
+<td>LLM judge</td>
+<td>Every user request in the transcript was satisfied</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td><code>role_adherence</code></td>
+<td><code>checkllm.metrics.role_adherence.RoleAdherenceMetric</code></td>
+<td>LLM judge</td>
+<td>Assistant stayed in its declared role</td>
+<td>0.85</td>
+</tr>
+<tr>
+<td><code>knowledge_retention</code></td>
+<td><code>checkllm.metrics.knowledge_retention.KnowledgeRetentionMetric</code></td>
+<td>LLM judge</td>
+<td>Assistant remembers information from earlier turns</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td><code>topic_adherence</code></td>
+<td><code>checkllm.metrics.topic_adherence.TopicAdherenceMetric</code></td>
+<td>LLM judge</td>
+<td>Conversation stays within allowed topics</td>
+<td>0.85</td>
+</tr>
+<tr>
+<td><code>turn_relevancy</code></td>
+<td><code>checkllm.metrics.per_turn.TurnRelevancyMetric</code></td>
+<td>LLM judge</td>
+<td>Per-turn response relevance</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td><code>turn_faithfulness</code></td>
+<td><code>checkllm.metrics.per_turn.TurnFaithfulnessMetric</code></td>
+<td>LLM judge</td>
+<td>Per-turn faithfulness to provided context</td>
+<td>0.85</td>
+</tr>
+<tr>
+<td><code>turn_coherence</code></td>
+<td><code>checkllm.metrics.per_turn.TurnCoherenceMetric</code></td>
+<td>LLM judge</td>
+<td>Per-turn coherence with surrounding turns</td>
+<td>0.80</td>
+</tr>
+</tbody>
+</table>
+<h2 id="safety-and-red-team">Safety and red team<a class="headerlink" href="#safety-and-red-team" title="Permanent link">&para;</a></h2>
+<p>Runtime safety signals. Use these as guardrails <strong>and</strong> inside red-team scans.</p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Import</th>
+<th>Type</th>
+<th>What it measures</th>
+<th>Typical threshold</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>toxicity</code></td>
+<td><code>checkllm.metrics.toxicity.ToxicityMetric</code></td>
+<td>LLM judge</td>
+<td>Toxic/abusive content probability</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td><code>bias</code></td>
+<td><code>checkllm.metrics.bias.BiasMetric</code></td>
+<td>LLM judge</td>
+<td>Demographic, political, or ideological bias</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td><code>pii_detection</code></td>
+<td><code>checkllm.metrics.pii_detection.PIIDetectionMetric</code></td>
+<td>LLM judge</td>
+<td>Free-text PII that regex misses (names, addresses)</td>
+<td>0.90</td>
+</tr>
+<tr>
+<td><code>misuse_detection</code></td>
+<td><code>checkllm.metrics.misuse_detection.MisuseDetectionMetric</code></td>
+<td>LLM judge</td>
+<td>Output assists harmful or disallowed use</td>
+<td>0.90</td>
+</tr>
+<tr>
+<td><code>role_violation</code></td>
+<td><code>checkllm.metrics.role_violation.RoleViolationMetric</code></td>
+<td>LLM judge</td>
+<td>Response breaks configured role constraints</td>
+<td>0.85</td>
+</tr>
+<tr>
+<td><code>non_advice</code></td>
+<td><code>checkllm.metrics.non_advice.NonAdviceMetric</code></td>
+<td>LLM judge</td>
+<td>Response avoids regulated professional advice</td>
+<td>0.85</td>
+</tr>
+<tr>
+<td><code>no_pii</code> (deterministic)</td>
+<td><code>checkllm.deterministic.DeterministicChecks.no_pii</code></td>
+<td>Deterministic</td>
+<td>SSN/email/credit-card regex screen</td>
+<td>n/a (pass/fail)</td>
+</tr>
+<tr>
+<td><code>is_refusal</code></td>
+<td><code>checkllm.deterministic.DeterministicChecks.is_refusal</code></td>
+<td>Deterministic</td>
+<td>Text is a safety refusal ("I can't help with that")</td>
+<td>n/a (pass/fail)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="code-and-structured-output">Code and structured output<a class="headerlink" href="#code-and-structured-output" title="Permanent link">&para;</a></h2>
+<p>Evaluates code, SQL, JSON, and other structured responses.</p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Import</th>
+<th>Type</th>
+<th>What it measures</th>
+<th>Typical threshold</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>code_correctness</code></td>
+<td><code>checkllm.metrics.code_correctness.CodeCorrectnessMetric</code></td>
+<td>LLM judge</td>
+<td>Code meets functional and quality criteria</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td><code>sql_equivalence</code></td>
+<td><code>checkllm.metrics.sql_equivalence.SQLEquivalenceMetric</code></td>
+<td>LLM judge</td>
+<td>Two SQL queries are logically equivalent</td>
+<td>0.85</td>
+</tr>
+<tr>
+<td><code>datacompy_score</code></td>
+<td><code>checkllm.metrics.datacompy_score.DataCompyMetric</code></td>
+<td>Deterministic</td>
+<td>Pandas dataframe equality via <code>datacompy</code></td>
+<td>0.95</td>
+</tr>
+<tr>
+<td><code>dag</code></td>
+<td><code>checkllm.metrics.dag.DAGMetric</code></td>
+<td>Composite</td>
+<td>Node-graph of metrics with gating edges</td>
+<td>custom</td>
+</tr>
+</tbody>
+</table>
+<h2 id="multimodal-and-vision">Multimodal and vision<a class="headerlink" href="#multimodal-and-vision" title="Permanent link">&para;</a></h2>
+<p>Evaluates responses involving images or other modalities.</p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Import</th>
+<th>Type</th>
+<th>What it measures</th>
+<th>Typical threshold</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>image_text_alignment</code></td>
+<td><code>checkllm.metrics.image_text_alignment.ImageTextAlignmentMetric</code></td>
+<td>LLM judge</td>
+<td>Text matches the provided image</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td><code>image_captioning_quality</code></td>
+<td><code>checkllm.metrics.image_captioning_quality.ImageCaptioningQualityMetric</code></td>
+<td>LLM judge</td>
+<td>Caption quality and completeness</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td><code>image_coherence</code></td>
+<td><code>checkllm.metrics.image_coherence.ImageCoherenceMetric</code></td>
+<td>LLM judge</td>
+<td>Output coherent with the image context</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td><code>image_consistency</code></td>
+<td><code>checkllm.metrics.image_consistency.ImageConsistencyMetric</code></td>
+<td>LLM judge</td>
+<td>Multiple images remain consistent</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td><code>image_editing</code></td>
+<td><code>checkllm.metrics.image_editing.ImageEditingMetric</code></td>
+<td>LLM judge</td>
+<td>Edit matches the requested transformation</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td><code>image_helpfulness</code></td>
+<td><code>checkllm.metrics.image_helpfulness.ImageHelpfulnessMetric</code></td>
+<td>LLM judge</td>
+<td>Image actually helps answer the query</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td><code>image_reference</code></td>
+<td><code>checkllm.metrics.image_reference.ImageReferenceMetric</code></td>
+<td>LLM judge</td>
+<td>Text refers to correct image regions</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td><code>image_relevance</code></td>
+<td><code>checkllm.metrics.image_relevance.ImageRelevanceMetric</code></td>
+<td>LLM judge</td>
+<td>Image is relevant to the text query</td>
+<td>0.75</td>
+</tr>
+<tr>
+<td><code>image_safety</code></td>
+<td><code>checkllm.metrics.image_safety.ImageSafetyMetric</code></td>
+<td>LLM judge</td>
+<td>Image content is safe</td>
+<td>0.90</td>
+</tr>
+<tr>
+<td><code>text_to_image</code></td>
+<td><code>checkllm.metrics.text_to_image.TextToImageMetric</code></td>
+<td>LLM judge</td>
+<td>Generated image matches the text prompt</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td><code>multimodal_faithfulness</code></td>
+<td><code>checkllm.metrics.multimodal_faithfulness.MultimodalFaithfulnessMetric</code></td>
+<td>LLM judge</td>
+<td>Answer grounded in both image and text context</td>
+<td>0.85</td>
+</tr>
+<tr>
+<td><code>visual_faithfulness</code></td>
+<td><code>checkllm.metrics.visual_faithfulness.VisualFaithfulnessMetric</code></td>
+<td>LLM judge</td>
+<td>Visual claims are supported by the image</td>
+<td>0.85</td>
+</tr>
+<tr>
+<td><code>visual_hallucination</code></td>
+<td><code>checkllm.metrics.visual_hallucination.VisualHallucinationMetric</code></td>
+<td>LLM judge</td>
+<td>Output hallucinates visual details</td>
+<td>0.85</td>
+</tr>
+<tr>
+<td><code>visual_reasoning</code></td>
+<td><code>checkllm.metrics.visual_reasoning.VisualReasoningMetric</code></td>
+<td>LLM judge</td>
+<td>Correct reasoning over visual content</td>
+<td>0.80</td>
+</tr>
+<tr>
+<td><code>ocr_accuracy</code></td>
+<td><code>checkllm.metrics.ocr_accuracy.OCRAccuracyMetric</code></td>
+<td>LLM judge</td>
+<td>OCR output matches image text</td>
+<td>0.90</td>
+</tr>
+<tr>
+<td><code>chart_value_extraction</code></td>
+<td><code>checkllm.metrics.chart_value_extraction.ChartValueExtractionMetric</code></td>
+<td>LLM judge</td>
+<td>Numeric values extracted from a chart are correct</td>
+<td>0.90</td>
+</tr>
+<tr>
+<td><code>diagram_comprehension</code></td>
+<td><code>checkllm.metrics.diagram_comprehension.DiagramComprehensionMetric</code></td>
+<td>LLM judge</td>
+<td>Understanding of a technical diagram</td>
+<td>0.80</td>
+</tr>
+</tbody>
+</table>
+<h2 id="deterministic-checks-structural-and-lexical">Deterministic checks (structural and lexical)<a class="headerlink" href="#deterministic-checks-structural-and-lexical" title="Permanent link">&para;</a></h2>
+<p>Deterministic checks are free, instant, and stable. Reach for these first and
+only add judge metrics where judgement is required.</p>
+<h3 id="content-presence">Content presence<a class="headerlink" href="#content-presence" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Check</th>
+<th>Signature</th>
+<th>What it checks</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>contains</code></td>
+<td><code>contains(output, substring)</code></td>
+<td>Substring is present</td>
+</tr>
+<tr>
+<td><code>not_contains</code></td>
+<td><code>not_contains(output, substring)</code></td>
+<td>Substring is absent</td>
+</tr>
+<tr>
+<td><code>icontains</code></td>
+<td><code>icontains(output, substring)</code></td>
+<td>Case-insensitive contains</td>
+</tr>
+<tr>
+<td><code>icontains_any</code> / <code>icontains_all</code></td>
+<td><code>(output, substrings)</code></td>
+<td>Any/all substrings present (case-insensitive)</td>
+</tr>
+<tr>
+<td><code>all_of</code> / <code>any_of</code> / <code>none_of</code></td>
+<td><code>(output, substrings)</code></td>
+<td>Set membership over required substrings</td>
+</tr>
+<tr>
+<td><code>starts_with</code> / <code>ends_with</code></td>
+<td><code>(output, prefix/suffix)</code></td>
+<td>Prefix/suffix check</td>
+</tr>
+<tr>
+<td><code>exact_match</code></td>
+<td><code>exact_match(output, expected, ignore_case=False)</code></td>
+<td>Full equality</td>
+</tr>
+<tr>
+<td><code>exact_match_strict</code></td>
+<td><code>(output, reference, ignore_case, ignore_whitespace)</code></td>
+<td>Full equality with whitespace options</td>
+</tr>
+<tr>
+<td><code>regex</code></td>
+<td><code>regex(output, pattern)</code></td>
+<td>Regex match</td>
+</tr>
+<tr>
+<td><code>has_structure</code></td>
+<td><code>has_structure(output, elements)</code></td>
+<td>Required structural elements present</td>
+</tr>
+<tr>
+<td><code>has_citations</code></td>
+<td><code>has_citations(output, min_count=1)</code></td>
+<td>At least N citation markers</td>
+</tr>
+</tbody>
+</table>
+<h3 id="size-and-shape">Size and shape<a class="headerlink" href="#size-and-shape" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Check</th>
+<th>Signature</th>
+<th>What it checks</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>max_tokens</code> / <code>min_tokens</code></td>
+<td><code>(output, limit / minimum)</code></td>
+<td>Token budget bounds</td>
+</tr>
+<tr>
+<td><code>word_count</code></td>
+<td><code>word_count(output, min_words=None, max_words=None)</code></td>
+<td>Word-count bounds</td>
+</tr>
+<tr>
+<td><code>char_count</code></td>
+<td><code>char_count(output, min_chars=None, max_chars=None)</code></td>
+<td>Character-count bounds</td>
+</tr>
+<tr>
+<td><code>sentence_count</code></td>
+<td><code>sentence_count(output, min_sentences=None, max_sentences=None)</code></td>
+<td>Sentence-count bounds</td>
+</tr>
+<tr>
+<td><code>readability</code></td>
+<td><code>readability(output, max_grade=None, min_grade=None)</code></td>
+<td>Flesch-Kincaid grade-level bounds</td>
+</tr>
+<tr>
+<td><code>no_repetition</code></td>
+<td><code>no_repetition(output, max_ngram_repeat=3)</code></td>
+<td>No N-gram repeated beyond a limit</td>
+</tr>
+</tbody>
+</table>
+<h3 id="format-validation">Format validation<a class="headerlink" href="#format-validation" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Check</th>
+<th>Signature</th>
+<th>What it checks</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>is_json</code></td>
+<td><code>is_json(output)</code></td>
+<td>Parses as JSON</td>
+</tr>
+<tr>
+<td><code>json_schema</code></td>
+<td><code>json_schema(output, schema)</code></td>
+<td>Conforms to a Pydantic schema</td>
+</tr>
+<tr>
+<td><code>json_field</code></td>
+<td><code>json_field(output, field_path, expected=None, condition=None)</code></td>
+<td>JSON field equals/satisfies condition</td>
+</tr>
+<tr>
+<td><code>is_valid_python</code></td>
+<td><code>is_valid_python(output)</code></td>
+<td>Parses as Python</td>
+</tr>
+<tr>
+<td><code>is_valid_sql</code></td>
+<td><code>is_valid_sql(output)</code></td>
+<td>Parses as SQL</td>
+</tr>
+<tr>
+<td><code>is_valid_yaml</code> / <code>is_yaml</code></td>
+<td><code>(output)</code></td>
+<td>Parses as YAML</td>
+</tr>
+<tr>
+<td><code>is_valid_markdown</code></td>
+<td><code>is_valid_markdown(output, require_headers=False, require_lists=False, require_code_blocks=False)</code></td>
+<td>Markdown structural checks</td>
+</tr>
+<tr>
+<td><code>is_html</code> / <code>contains_html</code></td>
+<td><code>(output)</code></td>
+<td>HTML structure / fragment</td>
+</tr>
+<tr>
+<td><code>is_xml</code> / <code>contains_xml</code></td>
+<td><code>(output)</code></td>
+<td>XML structure / fragment</td>
+</tr>
+<tr>
+<td><code>is_url</code> / <code>is_valid_url</code> / <code>has_url</code></td>
+<td><code>(output)</code></td>
+<td>URL validation</td>
+</tr>
+</tbody>
+</table>
+<h3 id="similarity-metrics">Similarity metrics<a class="headerlink" href="#similarity-metrics" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Check</th>
+<th>Signature</th>
+<th>What it checks</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>similarity</code></td>
+<td><code>similarity(output, expected, threshold=0.8, ignore_case=False)</code></td>
+<td>Token-based Jaccard similarity</td>
+</tr>
+<tr>
+<td><code>levenshtein</code></td>
+<td><code>levenshtein(output, reference, threshold=0.7)</code></td>
+<td>Normalised edit distance</td>
+</tr>
+<tr>
+<td><code>string_distance</code></td>
+<td><code>string_distance(output, reference, method="levenshtein", threshold=0.7)</code></td>
+<td>Pluggable string distance</td>
+</tr>
+<tr>
+<td><code>semantic_similarity</code></td>
+<td><code>semantic_similarity(output, reference, threshold=0.7)</code></td>
+<td>Embedding cosine similarity</td>
+</tr>
+<tr>
+<td><code>bleu</code></td>
+<td><code>bleu(output, reference, threshold=0.5)</code></td>
+<td>BLEU n-gram overlap</td>
+</tr>
+<tr>
+<td><code>rouge_l</code></td>
+<td><code>rouge_l(output, reference, threshold=0.5)</code></td>
+<td>ROUGE-L longest-common-subsequence</td>
+</tr>
+<tr>
+<td><code>meteor</code></td>
+<td><code>meteor(output, reference, threshold=0.5)</code></td>
+<td>METEOR with stemming/synonyms</td>
+</tr>
+<tr>
+<td><code>gleu</code></td>
+<td><code>gleu(output, reference, threshold=0.5)</code></td>
+<td>GLEU (Google BLEU)</td>
+</tr>
+<tr>
+<td><code>chrf</code></td>
+<td><code>chrf(output, reference, threshold=0.5)</code></td>
+<td>ChrF character-n-gram F-score</td>
+</tr>
+</tbody>
+</table>
+<h3 id="budgets-and-numeric">Budgets and numeric<a class="headerlink" href="#budgets-and-numeric" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Check</th>
+<th>Signature</th>
+<th>What it checks</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>max_tokens</code> / <code>min_tokens</code></td>
+<td><code>(output, limit / minimum)</code></td>
+<td>Token budget</td>
+</tr>
+<tr>
+<td><code>latency</code></td>
+<td><code>latency(actual_ms, max_ms)</code></td>
+<td>Elapsed latency under bound</td>
+</tr>
+<tr>
+<td><code>latency_check</code></td>
+<td><code>latency_check(start_time, end_time, max_ms=5000.0)</code></td>
+<td>Latency from wall-clock times</td>
+</tr>
+<tr>
+<td><code>cost</code></td>
+<td><code>cost(actual_usd, max_usd)</code></td>
+<td>USD cost under bound</td>
+</tr>
+<tr>
+<td><code>cost_check</code></td>
+<td><code>cost_check(input_tokens, output_tokens, model, max_cost=1.0)</code></td>
+<td>Estimated cost from token counts</td>
+</tr>
+<tr>
+<td><code>greater_than</code> / <code>less_than</code> / <code>between</code></td>
+<td><code>(output, threshold [, high])</code></td>
+<td>Numeric bounds on parsed output</td>
+</tr>
+<tr>
+<td><code>perplexity_check</code></td>
+<td><code>perplexity_check(output, max_perplexity=50.0)</code></td>
+<td>Perplexity upper bound</td>
+</tr>
+</tbody>
+</table>
+<h3 id="safety-primitives">Safety primitives<a class="headerlink" href="#safety-primitives" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Check</th>
+<th>Signature</th>
+<th>What it checks</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>no_pii</code></td>
+<td><code>no_pii(output, patterns=None)</code></td>
+<td>No SSN/email/credit-card patterns</td>
+</tr>
+<tr>
+<td><code>is_refusal</code></td>
+<td><code>is_refusal(output)</code></td>
+<td>Output is a safety refusal phrase</td>
+</tr>
+<tr>
+<td><code>language</code></td>
+<td><code>language(output, expected)</code></td>
+<td>Detected language matches</td>
+</tr>
+</tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.instant", "navigation.tabs", "navigation.sections", "content.code.copy", "content.code.annotate", "search.highlight"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
