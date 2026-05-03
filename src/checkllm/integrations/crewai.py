@@ -306,7 +306,9 @@ def to_checkllm_test_case(
     tool_calls = to_checkllm_tool_calls(aggregated)
     steps = [AgentStep(tool_call=tc, action="call_tool") for tc in tool_calls]
     resolved_query = query if query is not None else ""
-    resolved_output = final_output if final_output is not None else _extract_text(crew_output)
+    resolved_output: str | None = (
+        final_output if final_output is not None else _extract_text(crew_output)
+    )
     if resolved_output == str(crew_output) and not isinstance(crew_output, str):
         # Heuristic: if we fell all the way to repr(), prefer None over noise.
         if not any(getattr(crew_output, a, None) for a in ("raw", "output")):
