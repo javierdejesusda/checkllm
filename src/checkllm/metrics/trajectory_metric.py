@@ -22,6 +22,7 @@ from __future__ import annotations
 
 from collections import Counter
 from collections.abc import Mapping
+from dataclasses import dataclass
 from typing import Any, Union
 
 from checkllm.agents import ToolCall, ToolCallTrace
@@ -105,6 +106,59 @@ class TrajectorySubScores:
         }
 
 
+@dataclass
+class TrajectoryMetricConfig:
+    """Config object exposing TrajectoryMetric's sub-score weights and loop threshold.
+
+    Used for ablation experiments: sweep these four weights + ``loop_threshold``
+    and measure correlation between the resulting overall score and
+    ground-truth task success.
+
+    Attributes:
+        ordering_weight: Weight on the Levenshtein-based ordering sub-score.
+        loop_weight: Weight on the loop-detection sub-score.
+        coverage_weight: Weight on the expected-tool coverage sub-score.
+        unexpected_weight: Weight on the unexpected-tool penalty sub-score.
+        loop_threshold: Number of consecutive identical calls that
+            count as benign. Runs strictly greater than this incur penalty.
+    """
+
+    ordering_weight: float = 0.4
+    loop_weight: float = 0.2
+    coverage_weight: float = 0.25
+    unexpected_weight: float = 0.15
+    loop_threshold: int = 2
+
+    def __post_init__(self) -> None:
+        if self.loop_threshold < 1:
+            raise ValueError("loop_threshold must be >= 1")
+
+    def normalized_weights(self) -> dict[str, float]:
+        """Return the four weights normalized so they sum to 1.0.
+
+        Returns:
+            Dict mapping ``"ordering"`` / ``"loops"`` / ``"coverage"`` /
+            ``"unexpected"`` to non-negative floats summing to 1.
+
+        Raises:
+            ValueError: If any weight is negative, or if all four weights
+                are zero.
+        """
+        raw = {
+            "ordering": self.ordering_weight,
+            "loops": self.loop_weight,
+            "coverage": self.coverage_weight,
+            "unexpected": self.unexpected_weight,
+        }
+        for name, value in raw.items():
+            if value < 0:
+                raise ValueError(f"Weight {name!r} must be non-negative, got {value}")
+        total = sum(raw.values())
+        if total <= 0:
+            raise ValueError("at least one weight must be positive (got all zero)")
+        return {name: value / total for name, value in raw.items()}
+
+
 class TrajectoryMetric:
     """Evaluate an ordered trajectory of :class:`ToolCallTrace` entries.
 
@@ -120,6 +174,11 @@ class TrajectoryMetric:
             four sub-scores (keys: ``ordering``, ``loops``, ``coverage``,
             ``unexpected``). Weights are normalised.
         threshold: Minimum overall score to count as passing.
+        config: Optional :class:`TrajectoryMetricConfig` providing the
+            four sub-score weights and ``loop_threshold`` as a single
+            dataclass; convenient for ablation sweeps. Mutually exclusive
+            with ``weights``: pass exactly one of the two (or neither to
+            fall back to library defaults).
     """
 
     metric_name = "trajectory"
@@ -137,25 +196,33 @@ class TrajectoryMetric:
         loop_threshold: int = 2,
         weights: Mapping[str, float] | None = None,
         threshold: float = 0.8,
+        *,
+        config: TrajectoryMetricConfig | None = None,
     ) -> None:
+        if config is not None and weights is not None:
+            raise ValueError("cannot specify both `config` and `weights`; use only one")
+        if config is not None:
+            loop_threshold = config.loop_threshold
+            self.weights = config.normalized_weights()
+        else:
+            chosen = dict(self._DEFAULT_WEIGHTS)
+            if weights is not None:
+                for k, v in weights.items():
+                    if k not in chosen:
+                        raise ValueError(f"Unknown weight key: {k!r}")
+                    if v < 0:
+                        raise ValueError(f"Weight {k!r} must be non-negative")
+                    chosen[k] = float(v)
+            total = sum(chosen.values())
+            if total <= 0:
+                raise ValueError("At least one weight must be positive")
+            self.weights = {k: v / total for k, v in chosen.items()}
+
         if loop_threshold < 1:
             raise ValueError("loop_threshold must be >= 1")
         self.expected_trajectory = list(expected_trajectory)
         self.loop_threshold = loop_threshold
         self.threshold = threshold
-
-        chosen = dict(self._DEFAULT_WEIGHTS)
-        if weights is not None:
-            for k, v in weights.items():
-                if k not in chosen:
-                    raise ValueError(f"Unknown weight key: {k!r}")
-                if v < 0:
-                    raise ValueError(f"Weight {k!r} must be non-negative")
-                chosen[k] = float(v)
-        total = sum(chosen.values())
-        if total <= 0:
-            raise ValueError("At least one weight must be positive")
-        self.weights = {k: v / total for k, v in chosen.items()}
 
     def _ordering_score(self, actual_names: list[str]) -> float:
         expected = self.expected_trajectory

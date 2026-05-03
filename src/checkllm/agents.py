@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import json
 from collections import Counter
+from pathlib import Path
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -98,6 +100,68 @@ class AgentTestCase(BaseModel):
     def tool_calls(self) -> list[ToolCall]:
         """Extract all tool calls from steps."""
         return [s.tool_call for s in self.steps if s.tool_call is not None]
+
+    @classmethod
+    def from_trace_jsonl(
+        cls,
+        path: Path | str,
+        *,
+        query: str,
+        final_output: str | None = None,
+    ) -> AgentTestCase:
+        """Construct an ``AgentTestCase`` from an OpenTelemetry JSONL span export.
+
+        Each tool-kind span in the trace is projected onto a single
+        :class:`AgentStep` with its :attr:`tool_call` populated from the span's
+        ``tool.name``, ``tool.arguments``, and ``tool.result`` attributes.
+        Non-tool spans (LLM calls, retrieval, custom) are ignored.
+
+        Tool arguments may be either a JSON-encoded string or an already-parsed
+        mapping; both are accepted. If a JSON-encoded string decodes to a
+        non-mapping value (e.g. a list or number, as some instrumentors emit
+        for positional args), ``parameters`` falls back to ``{}`` rather than
+        raising.
+
+        Args:
+            path: Path to an OTel-exported JSONL file of spans.
+            query: The user-facing question or instruction the agent was given.
+                Stored as :attr:`AgentTestCase.query`.
+            final_output: The agent's final response, if captured. Stored as
+                :attr:`AgentTestCase.final_output`.
+
+        Returns:
+            A populated :class:`AgentTestCase` whose ``steps`` contain one
+            :class:`AgentStep` per tool span in the trace, in file order.
+
+        Raises:
+            FileNotFoundError: If ``path`` does not exist.
+            json.JSONDecodeError: If a span line is not valid JSON.
+            KeyError: If a span is missing required OTel fields
+                (``name``, ``start_time_unix_nano``, ``end_time_unix_nano``).
+            TypeError: If timestamp fields cannot be converted to ``int``.
+        """
+        from checkllm.trace.otel_genai import otel_jsonl_to_trace_spans
+
+        steps: list[AgentStep] = []
+        for span in otel_jsonl_to_trace_spans(path):
+            if span.span_type != "tool":
+                continue
+            arguments = span.attributes.get("tool.arguments", {})
+            if isinstance(arguments, str):
+                parsed = json.loads(arguments) if arguments else {}
+                parameters = parsed if isinstance(parsed, dict) else {}
+            elif isinstance(arguments, dict):
+                parameters = dict(arguments)
+            else:
+                parameters = {}
+            tool_call = ToolCall(
+                name=str(span.attributes.get("tool.name", "")),
+                parameters=parameters,
+                result=span.attributes.get("tool.result"),
+                timestamp_ms=span.start_ms,
+            )
+            steps.append(AgentStep(tool_call=tool_call, action="call_tool"))
+        return cls(query=query, steps=steps, final_output=final_output)
 
     @property
     def trajectory(self) -> list[str]:

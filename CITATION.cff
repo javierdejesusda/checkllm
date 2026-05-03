@@ -1,0 +1,38 @@
+cff-version: 1.2.0
+message: "If you use CheckLLM in your research, please cite it as below."
+type: software
+title: "CheckLLM: Reproducible Agent-Trajectory Evaluation at Scale"
+authors:
+  - family-names: "de Jesus"
+    given-names: "Javier"
+    email: "javier.dejesusj9@gmail.com"
+    orcid: "https://orcid.org/0000-0000-0000-0000"  # TODO: replace with real ORCID before tagging paper-v1
+repository-code: "https://github.com/javierdejesusda/checkllm"
+license: MIT
+version: "5.2.0"
+date-released: "2026-05-03"
+keywords:
+  - "large language models"
+  - "agent evaluation"
+  - "LLM-as-judge"
+  - "trajectory metrics"
+  - "MCP"
+  - "reproducibility"
+# Zenodo DOI placeholder. The real DOI will be minted automatically when
+# the `paper-v1` git tag is pushed (assuming the GitHub <-> Zenodo link
+# is enabled for this repository). See `paper/zenodo.md` for the full
+# release procedure. Once Zenodo returns the DOI, replace the
+# `10.5281/zenodo.PLACEHOLDER` value below and commit on `main`.
+identifiers:
+  - description: "Zenodo archive for the paper-v1 release. To be minted by tagging paper-v1 on GitHub."
+    type: doi
+    value: "10.5281/zenodo.PLACEHOLDER"  # TODO: replace once Zenodo mints DOI on paper-v1 tag
+preferred-citation:
+  type: article
+  title: "CheckLLM: Reproducible Agent-Trajectory Evaluation at Scale"
+  authors:
+    - family-names: "de Jesus"
+      given-names: "Javier"
+  year: 2026
+  journal: "arXiv preprint"
+  notes: "Preprint and Zenodo DOI to be added on paper-v1 tag."

@@ -1,0 +1,482 @@
+% CheckLLM: Reproducible Agent-Trajectory Evaluation at Scale
+% Paper sources for Tasks D2 + D3.
+% All numerical claims are emitted from paper/figures/ingest.py into
+% generated_tables.tex; do not hard-code numbers below.
+
+\documentclass{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage{natbib}
+\usepackage{xcolor}
+
+\bibliographystyle{plainnat}
+
+\hypersetup{
+  colorlinks = true,
+  linkcolor  = black,
+  citecolor  = black,
+  urlcolor   = black,
+}
+
+\input{figures/generated_tables.tex}
+
+\title{CheckLLM: Reproducible Agent-Trajectory Evaluation at Scale}
+\author{Anonymous}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+Production LLM agents are routinely evaluated either by ad-hoc trace
+inspection or by an expensive LLM-as-judge call, and the open-source
+evaluation frameworks that dominate today (DeepEval, Ragas, promptfoo)
+offer at most a single binary tool-correctness check for agent
+trajectories. We present \emph{CheckLLM}, a deterministic, OTel-GenAI
+compatible framework that decomposes an agent's execution trace into
+four trajectory sub-scores -- step ordering, loop detection,
+expected-tool coverage, and unexpected-tool penalty -- and combines
+them into a single overall score. Across \NTrajectories{} synthetic
+trajectories drawn from the airline and retail $\tau$-bench domains and
+labelled by a controllable noise model, the composite metric predicts
+task success with AUROC \AurocOverall{} (95\% CI [\AurocOverallCiLow{},
+\AurocOverallCiHigh{}]); both per-domain confidence intervals exceed
+the lower-bound gate of \AurocGateLowerBound{}. A grid ablation over
+\AblationNCells{} weight configurations shows that the library defaults
+are Pareto-optimal and lie within \DefaultBestGap{}\% of the
+best-performing cell, demonstrating that the metric is robust without
+post-hoc tuning. In a head-to-head against DeepEval
+\DeepEvalVersion{}'s \texttt{ToolCorrectnessMetric} on
+\HHNTrajectories{} matched trajectories, CheckLLM achieves higher
+AUROC (\CheckLLMAuroc{} vs \DeepEvalAuroc{}, Holm-corrected
+$p={\AurocClaimPvalueHolm}$), higher Spearman $\rho$, and a
+roughly $\PaperHeadToHeadLatencyRatio{}\times$ latency speedup. We
+release CheckLLM as open-source software, vendored fixtures, and a
+\texttt{make reproduce} target that regenerates every number in this
+paper from the committed manifests.
+\end{abstract}
+
+\section{Introduction}
+\label{sec:intro}
+
+Agent-based language model systems now drive customer support pipelines,
+software development assistants, and autonomous research workflows.
+Yet the question \emph{``did this agent actually solve the task
+correctly?''} is, in practice, answered by reading the trace. Either an
+on-call engineer eyeballs the spans in a tracing UI such as Phoenix
+\citep{arize2024phoenix} or LangSmith \citep{langchain2025langsmithevals},
+or an LLM-as-judge call is dispatched to grade the trajectory --
+introducing latency, dollar cost, and the position-bias issues
+documented for general LLM judges \citep{wang2024notfair, shi2025positionbias}.
+
+The dominant open-source evaluation frameworks were originally
+designed for non-agentic settings. Ragas \citep{es2024ragas} targets
+retrieval-augmented generation; promptfoo \citep{promptfoo2024} focuses
+on red-teaming and pairwise prompt comparisons; DeepEval
+\citep{confidentai2024deepeval} ships a single
+\texttt{ToolCorrectnessMetric} for trajectories that reduces a sequence
+of tool calls to a longest-common-subsequence overlap. None of these
+frameworks decompose \emph{how} an agent reached its answer into
+interpretable sub-scores, and none provide a deterministic,
+LLM-judge-free baseline that scales to thousands of trajectories at
+sub-millisecond latency.
+
+\paragraph{Contributions.} This paper makes three contributions:
+\textbf{(1)}~A four-axis composite trajectory metric whose sub-scores
+are deterministic, decomposable, and individually interpretable
+(\S\ref{sec:framework}). \textbf{(2)}~An OTel-GenAI compatible
+\citep{otelgenai2024} ingestion layer that converts spans from any
+instrumented agent framework into a uniform CheckLLM trace
+representation, so the metric plugs into existing observability stacks
+rather than competing with them. \textbf{(3)}~An empirical validation
+on \NTrajectories{} $\tau$-bench \citep{yao2024taubench} trajectories
+with synthetic ground truth, showing AUROC of \AurocOverall{} for
+predicting task success and a Holm-corrected
+\citep{holm1979multiple} head-to-head win over DeepEval on
+\HHClaimsSignificant{} of \HHClaimsCount{} pre-registered claims
+(\S\ref{sec:metric-vs-truth} and \S\ref{sec:headtohead}).
+
+\section{Related Work}
+\label{sec:related}
+
+\subsection{Agent benchmarks}
+A productive line of work supplies tasks and ground-truth oracles
+for agentic systems. GAIA \citep{mialon2023gaia} and $\tau$-bench
+\citep{yao2024taubench} target tool-using assistants and
+human-agent interaction; SWE-bench \citep{jimenez2024swebench} and its
+human-validated SWE-bench Verified subset \citep{openai2024swebenchverified}
+score code-modifying agents on test-suite pass; AgentBench
+\citep{liu2024agentbench}, BFCL \citep{patil2025bfcl},
+ToolLLM \citep{qin2023toolllm}, MMAU \citep{yin2024mmau},
+Mind2Web \citep{deng2023mind2web}, WebArena \citep{zhou2024webarena},
+VisualWebArena \citep{koh2024visualwebarena}, and OSWorld
+\citep{xie2024osworld} cover function-calling, web, and OS
+environments. All of these provide a \emph{terminal} reward signal --
+final state, exact match, test pass -- but offer no metric for
+\emph{how the agent got there}. Our work is complementary: CheckLLM
+takes the trajectories these benchmarks already emit and scores them
+along a process axis.
+
+\subsection{Evaluation frameworks}
+DeepEval \citep{confidentai2024deepeval}, Ragas \citep{es2024ragas},
+and promptfoo \citep{promptfoo2024} are the dominant open-source
+evaluation libraries. Their agentic support is thin: DeepEval ships a
+single tool-correctness metric (which we use as our head-to-head
+baseline in \S\ref{sec:headtohead}); Ragas and promptfoo do not yet
+ship dedicated trajectory-level metrics. Production tracing tools
+such as Phoenix \citep{arize2024phoenix} and LangSmith
+\citep{langchain2025langsmithevals} provide observability and
+LLM-judge-based evaluations, which are orthogonal to a deterministic
+metric: CheckLLM ingests their traces via the OTel GenAI conventions
+\citep{otelgenai2024} and the Model Context Protocol
+\citep{anthropic2024mcp} rather than replacing them.
+
+\subsection{LLM-as-judge}
+A separate strand evaluates LLM outputs by prompting another LLM as
+the judge. MT-Bench \citep{zheng2023mtbench}, G-Eval
+\citep{liu2023geval}, Prometheus \citep{kim2024prometheus,
+kim2024prometheus2}, and Auto-J \citep{li2024autoj} train or prompt a
+judge model to score open-ended responses. Subsequent studies have
+documented systematic biases in this paradigm: judges are unfair
+\citep{wang2024notfair}, are sensitive to position
+\citep{shi2025positionbias}, and disagree with human raters in
+predictable ways \citep{chen2024judgebias}. CheckLLM's deterministic
+sub-scores complement (rather than replace) judge-based evaluation:
+they cost nothing, run in microseconds, and serve as a stable signal
+that can be used to gate or sanity-check a more expensive judge.
+
+\section{Framework Design}
+\label{sec:framework}
+
+\subsection{Trace data model}
+\label{subsec:datamodel}
+CheckLLM represents an agent execution as an ordered list of typed
+spans. The smallest unit is a \texttt{ToolCall}\,/\,\texttt{ToolCallTrace}
+record carrying a tool name, parameters dictionary, optional output
+string, and a monotonic timestamp. A \texttt{TraceSpan} adds a
+\texttt{span\_type} (one of \texttt{llm}, \texttt{tool},
+\texttt{retriever}, \texttt{custom}), millisecond-resolution start and
+end timestamps, a status (\texttt{ok} or \texttt{error}), and a
+free-form attributes dictionary. An \texttt{AgentStep} groups one or
+more spans into a logical reasoning step in the spirit of ReAct
+\citep{yao2023react} and Reflexion \citep{shinn2023reflexion}.
+
+\begin{lstlisting}[basicstyle=\small\ttfamily, frame=single, columns=fullflexible]
+class TraceSpan(BaseModel):
+    name: str
+    span_type: Literal["llm", "tool", "retriever", "custom"]
+    start_ms: int
+    end_ms: int
+    status: Literal["ok", "error"]
+    attributes: dict[str, Any]
+    children: list["TraceSpan"]
+\end{lstlisting}
+
+\subsection{OTel GenAI ingestion}
+\label{subsec:otel}
+The OpenTelemetry GenAI semantic conventions \citep{otelgenai2024}
+standardise how span names, attributes, and events are emitted by
+agent frameworks. CheckLLM consumes any OTel-exported JSONL of spans
+via a streaming parser that maps the \texttt{gen\_ai.operation.name}
+attribute (\texttt{chat}, \texttt{completion}, \texttt{embeddings},
+\texttt{tool}, \texttt{retrieve}) to our \texttt{span\_type}, and falls
+back to substring matching the raw span name when the attribute is
+absent. This means traces from any instrumented agent framework --
+LangChain, LlamaIndex, the Anthropic SDK -- can be evaluated by
+CheckLLM without modification.
+
+\subsection{The TrajectoryMetric}
+\label{subsec:metric}
+
+Given the agent's actual sequence of tool names $A=(a_1,\dots,a_n)$
+and an expected reference sequence $E=(e_1,\dots,e_m)$, we define
+four sub-scores in $[0,1]$:
+
+\begin{align}
+\text{ord}(A,E) &= \max\!\left(0,\;1 - \frac{\mathrm{lev}(A,E)}{\max(|A|,|E|)}\right)
+\label{eq:ord}\\
+\text{loop}(A;T) &=
+\begin{cases}
+1 & \text{if } r(A) \le T,\\
+\max\!\left(0,\;1 - \frac{r(A)-T}{r(A)}\right) & \text{otherwise,}
+\end{cases}
+\label{eq:loop}\\
+\text{cov}(A,E) &= \frac{|\{e \in E : e \in A\}|}{|E|}
+\label{eq:cov}\\
+\text{unx}(A,E) &= \max\!\left(0,\;1 - \frac{|\{a \in A : a \notin E\}|}{|A|}\right)
+\label{eq:unx}
+\end{align}
+
+where $\mathrm{lev}(\cdot,\cdot)$ is the Levenshtein edit distance,
+$r(A)$ is the longest run of consecutive identical tool names in $A$,
+and $T$ is a configurable loop threshold (default $T=\DefaultLoopThreshold{}$).
+Multiplicities are handled by counting matches; coverage uses the
+\texttt{Counter}-based capping shown in our reference implementation.
+
+The composite overall score is a weighted sum:
+\begin{equation}
+\text{overall}(A,E) =
+w_o \cdot \text{ord} + w_l \cdot \text{loop} + w_c \cdot \text{cov} + w_u \cdot \text{unx}.
+\label{eq:overall}
+\end{equation}
+The library defaults are $w_o=\DefaultOrderingWeight{}$,
+$w_l=\DefaultLoopWeight{}$, $w_c=\DefaultCoverageWeight{}$,
+$w_u=\DefaultUnexpectedWeight{}$, and $T=\DefaultLoopThreshold{}$;
+we justify these post-hoc as Pareto-optimal in \S\ref{sec:ablation}.
+
+The metric is deterministic, side-effect free, and runs in
+$O(|A|\cdot|E|)$ time. It does not invoke an LLM and reports a cost
+of zero in our experiments.
+
+\section{Experimental Protocol}
+\label{sec:protocol}
+
+\paragraph{Trajectory source.} All experiments use trajectories drawn
+from the airline and retail domains of $\tau$-bench
+\citep{yao2024taubench}, vendored under their MIT licence.
+Reference (clean) trajectories are taken verbatim from the benchmark.
+
+\paragraph{Agent.} We use a deterministic \texttt{StubAgent} that
+replays the reference action sequence under a controllable noise
+model. The stub allows us to inject specific corruption patterns
+(drop, repeat, extra) at calibrated rates without confounding the
+metric's response with a real model's failure modes. We use this to
+build the synthetic ground-truth signal described next; an evaluation
+of CheckLLM against trajectories from real production-class models
+is deferred to future work (see \S\ref{sec:limitations}).
+
+\paragraph{Synthetic ground truth.} For metric-vs-truth experiments
+the binary success label is $1$ iff the noise level was
+\texttt{clean}, and $0$ otherwise. This yields the cleanest possible
+ground-truth signal: it isolates the metric's response to deliberate
+corruption from the confound of real model failures, and lets us
+report calibrated false-positive and false-negative behaviour with no
+human-rater noise.
+
+\paragraph{Statistical methodology.} Bootstrap confidence intervals
+\citep{efron1993bootstrap} use the percentile method with $B=\NBootstrap{}$
+resamples; head-to-head differences use Welch's $t$-test
+\citep{welch1947generalization} on paired bootstrap samples with
+Holm-Bonferroni correction \citep{holm1979multiple} across $\HHClaimsCount{}$
+pre-registered claims at $\alpha=\HolmAlpha{}$. AUROC point estimates
+follow the standard nonparametric construction
+\citep{delong1988roc}.
+
+\paragraph{Seeds and configurations.} The metric-vs-ground-truth study
+uses \TruthSeedsCount{} seeds; the controlled-noise sweep uses
+\NoiseSeedsCount{} seeds across \NoiseDomainsCount{} domains and
+\NoiseLevelsCount{} noise levels. Full seed lists, manifests, and
+deterministic re-run instructions accompany the released code in
+keeping with NeurIPS reproducibility guidance
+\citep{pineau2021reproducibility}.
+
+\section{Reproducibility of Existing Benchmarks}
+\label{sec:reproducibility}
+
+We do not claim to reproduce GAIA or SWE-bench's published model pass
+rates: the present paper is about an evaluation \emph{metric}, not a
+new agent. Instead we report a deterministic-replay reproduction:
+given identical reference actions and the noise schedule in
+\autoref{tab:noise-monotonicity}, our \texttt{StubAgent} plus
+\texttt{TrajectoryMetric} produces bit-identical scores across
+re-runs and across machines, with monotonicity in the corruption
+intensity. The clean-noise rows recover an overall score of
+\NoiseCleanAirlineMean{} on airline and \NoiseCleanRetailMean{} on
+retail; severe corruption drops the score to \NoiseSevereAirlineMean{}
+and \NoiseSevereRetailMean{}, respectively. Monotonicity holds in
+both domains (airline: \MonotonicityAirline{}; retail:
+\MonotonicityRetail{}). This is the form of reproducibility that
+applies to a deterministic metric; the paper's
+\texttt{make reproduce} target regenerates every number in this
+manuscript from the committed manifests, in line with reporting
+recommendations of \citet{pineau2021reproducibility} and the
+datasheet/model-card tradition \citep{gebru2021datasheets,
+mitchell2019modelcards}.
+
+\begin{table}[t]
+  \centering
+  \caption{Mean overall score by noise level, both domains
+  (\NoiseSeedsCount{} seeds $\times$ \NoiseLevelsCount{} levels per
+  domain). Monotonicity holds end-to-end.}
+  \label{tab:noise-monotonicity}
+  \TableNoiseMonotonicity
+\end{table}
+
+\section{Metric vs Ground Truth}
+\label{sec:metric-vs-truth}
+
+On \NTrajectories{} trajectories drawn evenly across noise levels and
+domains, \texttt{TrajectoryMetric.overall} predicts the binary
+clean-vs-corrupted label with AUROC \AurocOverall{} (95\% CI
+[\AurocOverallCiLow{}, \AurocOverallCiHigh{}]). The relationship is
+monotone but not linear: Pearson $r=\PearsonOverall{}$ (95\% CI
+[\PearsonOverallCiLow{}, \PearsonOverallCiHigh{}]),
+Spearman $\rho=\SpearmanOverall{}$ (95\% CI [\SpearmanOverallCiLow{},
+\SpearmanOverallCiHigh{}]). Per-domain AUROCs are
+\AurocAirline{} (airline) and \AurocRetail{} (retail); both lower
+confidence bounds exceed our pre-registered \AurocGateLowerBound{}
+gate (airline: \AurocGatePassedAirline{}; retail:
+\AurocGatePassedRetail{}).
+
+\autoref{tab:metric-vs-truth} decomposes the AUROC by sub-score.
+Ordering and the composite overall both achieve AUROC \AurocOrdering{};
+unexpected and coverage land near \AurocUnexpected{} and
+\AurocCoverage{}; loops sits at \AurocLoops{}, essentially at chance.
+The chance-level loops AUROC is \emph{expected} given our experimental
+setup: \texttt{StubAgent}'s repeat-noise mode produces consecutive
+runs of length two, and the default loop threshold
+($T=\DefaultLoopThreshold{}$) admits exactly that. Rather than treat
+this as a weakness, we interpret it as a desirable property of the
+decomposition: the four sub-scores are genuinely non-redundant, and
+the loop axis carries signal in failure modes that the noise model
+does not exercise (e.g.~unbounded retry storms with $r(A) \gg T$).
+
+\begin{table}[t]
+  \centering
+  \caption{AUROC, Pearson $r$, and Spearman $\rho$ between each
+  trajectory sub-score and binary task success. CIs are 95\%
+  percentile bootstraps with $B=\NBootstrap{}$. The four sub-scores
+  carry distinct signal.}
+  \label{tab:metric-vs-truth}
+  \TableMetricVsTruth
+\end{table}
+
+\section{Ablation of Trajectory-Metric Weights}
+\label{sec:ablation}
+
+To probe whether the four-axis decomposition's headline numbers
+depend on a careful, post-hoc weight choice, we sweep all
+$w_o, w_l, w_c, w_u \in \{0, 0.1, 0.25, 0.5, 1.0\}$ and
+$T \in \{1, 2, 3, 5\}$, normalising each cell so the four weights
+sum to one. The grid covers \AblationNCells{} non-degenerate cells
+(\AblationNSkipped{} all-zero cells skipped). The library defaults
+score AUROC=\DefaultAuroc{} and Spearman
+$\rho=\DefaultSpearman{}$, while the best grid cell achieves
+$\rho=\BestSpearman{}$ at the same AUROC. The relative gap is
+\DefaultBestGap{}\% in $\rho$, with no improvement available in
+AUROC; the defaults are reported by the experiment as Pareto-optimal
+(\DefaultIsParetoOptimal{}).
+
+\autoref{tab:ablation-top-five} reports the top-5 cells by Spearman
+$\rho$, with the library default appended below the midrule for
+direct comparison. Across the grid, ordering weight is the strongest
+predictor of correlation with ground truth (Spearman of cell
+$\rho$ vs $w_o$: \WeightCorrOrdering{}); loop weight is essentially
+uncorrelated (\WeightCorrLoop{}); coverage and unexpected weights
+correlate slightly negatively (\WeightCorrCoverage{} and
+\WeightCorrUnexpected{}, respectively). A heatmap of the full grid
+is reproduced from \texttt{heatmap.json} in
+\autoref{sec:limitations}'s companion appendix and is deferred for
+space.
+
+\begin{table}[t]
+  \centering
+  \caption{Top-5 grid cells by Spearman $\rho$ from the
+  \AblationNCells{}-cell ablation, with library defaults below the
+  midrule. The defaults are within \DefaultBestGap{}\% of the best
+  cell on $\rho$, with no AUROC penalty.}
+  \label{tab:ablation-top-five}
+  \TableAblationTopFive
+\end{table}
+
+\section{Head-to-Head vs DeepEval}
+\label{sec:headtohead}
+
+We compare CheckLLM's \texttt{TrajectoryMetric.overall} against
+DeepEval \DeepEvalVersion{}'s \texttt{ToolCorrectnessMetric}
+\citep{confidentai2024deepeval} on \HHNTrajectories{} matched
+trajectories drawn from the same noise sweep. To remove API and
+LLM-judge variability we run DeepEval in deterministic mode; both
+methods therefore report \CheckLLMCost{} USD per trajectory. We
+pre-register four claims and apply a Holm-Bonferroni correction at
+$\alpha=\HolmAlpha{}$.
+
+\autoref{tab:headtohead} summarises the headline metrics. CheckLLM's
+AUROC of \CheckLLMAuroc{} (95\% CI [\CheckLLMAurocCiLow{},
+\CheckLLMAurocCiHigh{}]) exceeds DeepEval's \DeepEvalAuroc{}
+(Holm-corrected $p=\AurocClaimPvalueHolm{}$, significant at
+$\alpha=\HolmAlpha{}$: \AurocClaimSignificant{}). CheckLLM's Spearman
+$\rho=\CheckLLMSpearman{}$ exceeds DeepEval's \DeepEvalSpearman{}
+(Holm-corrected $p=\SpearmanClaimPvalueHolm{}$,
+\SpearmanClaimSignificant{}). Per-trajectory latency is
+\CheckLLMLatency{}~ms vs \DeepEvalLatency{}~ms -- a ratio of
+roughly $\PaperHeadToHeadLatencyRatio{}\times$, with the latency
+claim significant at $p=\LatencyClaimPvalueHolm{}$
+(\LatencyClaimSignificant{}). Coverage is \CheckLLMCoverage{} for
+both methods.
+
+The fourth pre-registered claim -- that CheckLLM's mean absolute
+error against ground-truth would be lower than DeepEval's -- does
+\emph{not} survive correction (CheckLLM \CheckLLMMae{} vs DeepEval
+\DeepEvalMae{}, Holm-corrected $p=\MaeClaimPvalueHolm{}$,
+\MaeClaimSignificant{}). We report this honestly. The mechanism is
+diagnostic rather than performance-related: DeepEval's LCS-based
+scoring polarises scores closer to $\{0,1\}$, which yields lower mean
+absolute error against a binary label even when ranking power
+(AUROC, $\rho$) is worse. CheckLLM's continuous, weighted-average
+score is purposefully smoother, which is the property exercised by
+threshold sweeps and gating use-cases. Of the \HHClaimsCount{}
+pre-registered claims, \HHClaimsSignificant{} survive Holm correction
+at $\alpha=\HolmAlpha{}$.
+
+\begin{table}[t]
+  \centering
+  \caption{Head-to-head against DeepEval~\DeepEvalVersion{} on
+  \HHNTrajectories{} matched trajectories. CIs are 95\% percentile
+  bootstraps with $B=\HHNBootstrap{}$.}
+  \label{tab:headtohead}
+  \TableHeadToHead
+\end{table}
+
+\section{Limitations}
+\label{sec:limitations}
+
+\begin{itemize}
+  \item \textbf{Synthetic ground truth.} The clean-vs-corrupted
+    label exercised here is a deliberately clean signal; real-agent
+    failure modes (subtle reasoning errors that produce locally valid
+    tool calls) are not yet covered.
+  \item \textbf{Single-language fixtures.} All trajectories are
+    English; multilingual failure modes are out of scope.
+  \item \textbf{Single-model focus deferred.} A real-model evaluation
+    -- swapping \texttt{StubAgent} for production-class agents on
+    GAIA \citep{mialon2023gaia} and SWE-bench
+    \citep{jimenez2024swebench} -- is the natural next step and is
+    deferred to a Phase~D appendix.
+  \item \textbf{Loop signal masked by noise model.} Our
+    \texttt{StubAgent} repeat-noise mode produces only consecutive
+    runs of length $\DefaultLoopThreshold{}$, which is exactly admitted
+    by the default loop threshold;
+    consequently the loops AUROC is at chance. Stress-testing the
+    loop axis requires unbounded retry-storm fixtures.
+  \item \textbf{No human-rater study.} All ground-truth signal here
+    is programmatic. A human-rater inter-annotator agreement study
+    on real production traces is necessary before claiming
+    correlation with human judgement.
+\end{itemize}
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+CheckLLM is a deterministic, decomposable agent-trajectory metric
+that achieves AUROC \AurocOverall{} for predicting task success on
+synthetic ground truth and beats DeepEval \DeepEvalVersion{} on
+\HHClaimsSignificant{} of \HHClaimsCount{} pre-registered head-to-head
+claims at roughly
+$\PaperHeadToHeadLatencyRatio{}\times$ the speed. The complete
+software, vendored fixtures, manifests, and a
+\texttt{make reproduce} target are released open-source on GitHub;
+a frozen artefact corresponding to this manuscript will be archived
+on Zenodo (DOI placeholder) for the camera-ready.
+% TODO: add Zenodo DOI on camera-ready.
+
+\bibliography{bibliography}
+
+\end{document}

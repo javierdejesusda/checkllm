@@ -30,3 +30,8 @@ site/
 editor/vscode/out/
 editor/vscode/node_modules/
 editor/vscode/*.vsix
+
+benchmarks/paper/results/
+
+launch/
+docs/integrations/pr_drafts/

@@ -1,0 +1,11 @@
+experiments:
+  - id: smoke-airline
+    benchmark: tau_bench
+    domain: airline
+    limit: 2
+    models:
+      - stub
+    seeds:
+      - 42
+
+results_dir: benchmarks/paper/results/smoke

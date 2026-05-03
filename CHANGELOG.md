@@ -1,5 +1,50 @@
 # Changelog
 
+## v5.2.0 (2026-05-03)
+
+### Agent-trajectory evaluation wedge
+
+- **OpenTelemetry GenAI ingestion** — `checkllm.trace.otel_genai.otel_jsonl_to_trace_spans()` parses OTel-exported spans into `TraceSpan` objects. Maps `gen_ai.operation.name` and span-name conventions to `llm` / `tool` / `retriever` types.
+- **`AgentTestCase.from_trace_jsonl()`** — build an `AgentTestCase` directly from an OTel trace export. Accepts `tool.arguments` as either JSON string or dict; degrades gracefully when arguments aren't a JSON object.
+- **`TrajectoryMetricConfig`** dataclass — exposes the four sub-score weights (`ordering`, `loops`, `coverage`, `unexpected`) and `loop_threshold` as a single dataclass for ablation sweeps. `TrajectoryMetric.__init__` accepts a `config=` keyword (mutually exclusive with `weights=`). Backwards-compatible defaults preserved.
+
+### Benchmarks
+
+- **GAIA loader** (`checkllm.benchmarks.gaia_loader`) — license-gated via `CHECKLLM_GAIA_LICENSE_ACK=yes` + `HF_TOKEN`. Pinned to dataset SHA `682dd723…` for reproducibility.
+- **τ-bench loader** (`checkllm.benchmarks.tau_bench_loader`) — `airline` and `retail` domains with synthetic fixtures bundled. Required `domain: str` field on `TauBenchTask` for type-safety.
+- **End-to-end paper runner** (`benchmarks/paper/run_all.py`) — iterates `{model × benchmark × seed × task}` and writes a `manifest.json` with Phase-C placeholder columns (`model_version_sha`, `benchmark_sha`, `temperature`, `mean_latency_ms`, `total_cost_usd`).
+
+### Paper experiments (Phase C, $0 budget)
+
+- **C1 — controlled-noise validation:** `TrajectoryMetric` responds monotonically to drop/repeat/extra noise across 5 levels × 2 domains × 3 seeds (150 trajectories).
+- **C2 — metric-vs-synthetic-truth correlation:** AUROC = 0.926 [0.91, 0.94] on 500 trajectories. Bootstrap 95% CIs (n=1000). Sub-score breakdown reveals ordering = 0.93, coverage = 0.82, unexpected = 0.82, loops = 0.51.
+- **C3 — TrajectoryMetric weight ablation:** 1875-cell grid (5⁴ × 3 loop thresholds, 3 degenerate cells skipped). Library defaults are Pareto-optimal and within 2.4% of the best grid cell.
+- **C4 — head-to-head vs DeepEval `ToolCorrectnessMetric`:** CheckLLM wins AUROC, Spearman ρ, and latency (~1546× faster) with Holm-Bonferroni-corrected p < 0.005. DeepEval wins mean abs error (reported honestly).
+
+### Paper artifacts
+
+- `paper/checkllm.tex` — sections 1–8 drafted with auto-generated tables and verified citations.
+- `paper/bibliography.bib` — 47 verified entries across agent benchmarks, eval frameworks, judge-LLM literature, tool-use foundations, reproducibility, and statistical methodology.
+- `paper/figures/ingest.py` — idempotent script that regenerates `generated_tables.tex` from the four `summary.json` files.
+- `paper/reproducibility_checklist.md` — NeurIPS 2024 D&B reproducibility checklist with file:line evidence pointers.
+- `paper/datasheets/{gaia,tau_bench}_checkllm.md` — 7-section Gebru datasheets.
+
+### Integrations
+
+- **Adapters for LangChain, LlamaIndex, CrewAI, and Pydantic-AI** — `to_checkllm_test_case()` / `to_checkllm_tool_calls()` translation helpers under `checkllm.integrations`. All four adapters use lazy imports — no runtime dep added.
+
+### Reproducibility
+
+- `Dockerfile` + `Makefile` (`make reproduce`, `make reproduce-smoke`, `make plots`, `make paper`).
+- `CITATION.cff` with Zenodo DOI placeholder.
+- `paper/lint.py` — structural verifier for the .tex (matched `\begin/\end`, citation/ref resolution).
+
+### Documentation
+
+- README rewritten around the agent-eval wedge: deterministic / composite / OTel-compatible.
+- `docs/tutorials/evaluating-agents-in-10-minutes.md` — flagship tutorial with 8 verified executable code blocks.
+- `docs/vs-deepeval.md`, `docs/vs-ragas.md`, `docs/vs-promptfoo.md` — honest comparison pages, ≤500 words each.
+
 ## v5.1.0 (2026-04-23)
 
 ### Retrieval metrics (RAG eval parity)

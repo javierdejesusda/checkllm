@@ -1,24 +1,39 @@
-# checkllm
+# CheckLLM: Reproducible Agent-Trajectory Evaluation
 
-The most comprehensive LLM evaluation framework. The pytest of LLM testing.
+A deterministic, judge-free metric for scoring agent tool-call trajectories -- with AUROC 0.93 against synthetic ground truth and ~1500x faster than DeepEval's `ToolCorrectnessMetric`.
 
-[![PyPI](https://img.shields.io/pypi/v/checkllm)](https://pypi.org/project/checkllm/) [![Python](https://img.shields.io/pypi/pyversions/checkllm)](https://pypi.org/project/checkllm/) [![License](https://img.shields.io/pypi/l/checkllm)](https://github.com/javierdejesusda/checkllm/blob/main/LICENSE) [![CI](https://github.com/javierdejesusda/checkllm/actions/workflows/ci.yml/badge.svg)](https://github.com/javierdejesusda/checkllm/actions/workflows/ci.yml) [![Benchmark](https://img.shields.io/badge/leaderboard-rank%201-brightgreen)](docs/benchmarks/competitor-comparison.md)
+[![PyPI](https://img.shields.io/pypi/v/checkllm)](https://pypi.org/project/checkllm/) [![Python](https://img.shields.io/pypi/pyversions/checkllm)](https://pypi.org/project/checkllm/) [![License](https://img.shields.io/pypi/l/checkllm)](https://github.com/javierdejesusda/checkllm/blob/main/LICENSE) [![CI](https://github.com/javierdejesusda/checkllm/actions/workflows/ci.yml/badge.svg)](https://github.com/javierdejesusda/checkllm/actions/workflows/ci.yml) [![arXiv](https://img.shields.io/badge/arXiv-XXXX.YYYYY-b31b1b.svg)](https://arxiv.org/abs/XXXX.YYYYY) [![DOI](https://img.shields.io/badge/DOI-10.5281%2Fzenodo.PLACEHOLDER-blue)](https://doi.org/10.5281/zenodo.PLACEHOLDER) [![Benchmark](https://img.shields.io/badge/leaderboard-rank%201-brightgreen)](docs/benchmarks/competitor-comparison.md)
 
 ```bash
 pip install checkllm
 ```
 
 ```python
-def test_my_llm(check):
-    output = my_llm("What is Python?")
-    check.contains(output, "programming language")
-    check.no_pii(output)
-    check.hallucination(output, context="Python is a programming language created by Guido van Rossum.")
+from checkllm.metrics.trajectory_metric import TrajectoryMetric
+
+# Expected plan vs. what the agent actually did
+expected = ["search", "fetch", "parse", "respond"]
+actual = ["search", "fetch", "parse", "fetch", "respond"]
+
+metric = TrajectoryMetric(expected_trajectory=expected)
+sub = metric.compute_subscores(actual)
+
+print(f"ordering   {sub.ordering:.2f}")   # 0.80
+print(f"loops      {sub.loops:.2f}")      # 1.00
+print(f"coverage   {sub.coverage:.2f}")   # 1.00
+print(f"unexpected {sub.unexpected:.2f}") # 1.00
+print(f"overall    {sub.overall:.2f}")    # 0.92
 ```
 
-That's it. No setup, no boilerplate. The `check` fixture works in any pytest test.
+No judge LLM. No API key. Bit-identical scores across runs. See [the 10-minute tutorial](docs/tutorials/evaluating-agents-in-10-minutes.md) for the full walkthrough.
 
-## Why checkllm?
+## Why CheckLLM?
+
+- **Deterministic** -- no judge LLM, no API cost, bit-identical scores across runs and machines.
+- **Composite** -- 4-axis trajectory scoring (ordering, loops, coverage, unexpected), AUROC 0.93 [0.91, 0.94] on 500 trajectories.
+- **OTel-compatible** -- ingest traces from any agent framework via OpenTelemetry GenAI semantic conventions.
+
+Beyond trajectory evaluation, CheckLLM also ships the broader testing suite the project has always provided:
 
 - **Zero learning curve** -- if you know pytest, you know checkllm. Just add a `check` parameter.
 - **39 free deterministic checks** run instantly with zero API calls. No API key needed to start.
@@ -403,6 +418,23 @@ def brevity_check(output: str, max_words: int = 50, **kwargs) -> CheckResult:
         cost=0.0, latency_ms=0, metric_name="brevity",
     )
 ```
+
+## Citing CheckLLM
+
+If you use CheckLLM's trajectory metric in academic work, please cite the companion paper:
+
+```bibtex
+@article{dejesus2026checkllm,
+  title        = {{CheckLLM}: Reproducible Agent-Trajectory Evaluation at Scale},
+  author       = {de Jesus, Javier},
+  journal      = {arXiv preprint arXiv:XXXX.YYYYY},
+  year         = {2026},
+  doi          = {10.5281/zenodo.PLACEHOLDER},
+  url          = {https://github.com/javierdejesusda/checkllm}
+}
+```
+
+The arXiv ID and Zenodo DOI placeholders will be replaced once the paper-v1 tag is cut. See [`CITATION.cff`](CITATION.cff) for the canonical citation metadata.
 
 ## License
 

@@ -1,0 +1,32 @@
+# CheckLLM paper experiment configuration.
+#
+# This config is declarative: each entry under `experiments` is one row in
+# the paper's numerical claims. Real model entries (anthropic-*, openai-*,
+# ollama-*) require those provider adapters to be wired in Phase C -
+# running this file today with only the stub agent is a no-cost smoke test;
+# adding real models without wiring their provider will raise ValueError.
+
+experiments:
+  - id: tau-bench-airline-full
+    benchmark: tau_bench
+    domain: airline
+    limit: null  # all tasks
+    models:
+      - stub
+    seeds:
+      - 42
+      - 123
+      - 2026
+
+  - id: tau-bench-retail-full
+    benchmark: tau_bench
+    domain: retail
+    limit: null
+    models:
+      - stub
+    seeds:
+      - 42
+      - 123
+      - 2026
+
+results_dir: benchmarks/paper/results/production
