@@ -37,9 +37,7 @@ def main() -> None:
 
     llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
     agent = create_tool_calling_agent(llm, [search, fetch], prompt="...")
-    executor = AgentExecutor(
-        agent=agent, tools=[search, fetch], return_intermediate_steps=True
-    )
+    executor = AgentExecutor(agent=agent, tools=[search, fetch], return_intermediate_steps=True)
 
     run = executor.invoke({"input": "Summarise example.org/climate."})
 

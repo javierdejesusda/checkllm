@@ -70,9 +70,7 @@ def _check_begin_end(src: str) -> list[str]:
             if not stack:
                 errs.append(f"\\end{{{name}}} with no matching \\begin")
             elif stack[-1] != name:
-                errs.append(
-                    f"\\end{{{name}}} does not close \\begin{{{stack[-1]}}}"
-                )
+                errs.append(f"\\end{{{name}}} does not close \\begin{{{stack[-1]}}}")
                 stack.pop()
             else:
                 stack.pop()
@@ -132,8 +130,8 @@ def main() -> int:
 
     print("[lint] OK")
     print(f"  bibliography keys: {len(bib_keys)}")
-    print(f"  begin/end blocks balanced")
-    print(f"  citations + refs resolved")
+    print("  begin/end blocks balanced")
+    print("  citations + refs resolved")
     return 0
 
 

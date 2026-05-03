@@ -192,18 +192,11 @@ def run_experiment(
                         user_instruction=task.user_instruction,
                         tools=task.tools,
                     )
-                    _, subs, passed = _score_trajectory(
-                        predicted, task.reference_actions
-                    )
+                    _, subs, passed = _score_trajectory(predicted, task.reference_actions)
                     traj_path = (
-                        output_root
-                        / domain
-                        / noise.name
-                        / f"seed{seed}_{task.task_id}.jsonl"
+                        output_root / domain / noise.name / f"seed{seed}_{task.task_id}.jsonl"
                     )
-                    _write_trajectory_jsonl(
-                        traj_path, predicted, task.reference_actions
-                    )
+                    _write_trajectory_jsonl(traj_path, predicted, task.reference_actions)
                     timestamp = datetime.now(timezone.utc).isoformat()
 
                     manifest_row: dict[str, Any] = {
@@ -219,9 +212,7 @@ def run_experiment(
                         "passed": bool(passed),
                         "reference_action_count": len(task.reference_actions),
                         "predicted_action_count": len(predicted),
-                        "trajectory_path": str(
-                            traj_path.relative_to(output_root)
-                        ),
+                        "trajectory_path": str(traj_path.relative_to(output_root)),
                         "timestamp_utc": timestamp,
                         "model_version_sha": None,
                         "benchmark_sha": None,
@@ -254,25 +245,19 @@ def run_experiment(
             fh.write(json.dumps(row) + "\n")
 
     summary = _build_summary(jsonl_rows)
-    summary_path.write_text(
-        json.dumps(summary, indent=2, sort_keys=True), encoding="utf-8"
-    )
+    summary_path.write_text(json.dumps(summary, indent=2, sort_keys=True), encoding="utf-8")
 
     manifest = {
         "schema": "https://checkllm.dev/schemas/paper_manifest/v1",
         "experiment_id": EXPERIMENT_ID,
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
-        "noise_levels": [
-            {"name": n.name, **n.as_params()} for n in NOISE_LEVELS
-        ],
+        "noise_levels": [{"name": n.name, **n.as_params()} for n in NOISE_LEVELS],
         "seeds": list(SEEDS),
         "domains": list(DOMAINS),
         "limit_tasks": limit_tasks,
         "rows": rows,
     }
-    manifest_path.write_text(
-        json.dumps(manifest, indent=2), encoding="utf-8"
-    )
+    manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
     return {
         "total_rows": len(rows),
@@ -302,35 +287,23 @@ def _build_summary(jsonl_rows: list[dict[str, Any]]) -> dict[str, Any]:
         domain_noise_means[domain] = {}
         for noise in NOISE_LEVELS:
             bucket = [
-                r
-                for r in jsonl_rows
-                if r["domain"] == domain and r["noise_level"] == noise.name
+                r for r in jsonl_rows if r["domain"] == domain and r["noise_level"] == noise.name
             ]
             stats: dict[str, dict[str, float | int]] = {}
             for key in sub_keys:
                 values = [float(r[key]) for r in bucket]
                 stats[key] = {
                     "mean": float(statistics.fmean(values)) if values else 0.0,
-                    "stdev": (
-                        float(statistics.pstdev(values))
-                        if len(values) > 1
-                        else 0.0
-                    ),
+                    "stdev": (float(statistics.pstdev(values)) if len(values) > 1 else 0.0),
                     "n": len(values),
                 }
             domain_noise_stats[domain][noise.name] = stats
-            domain_noise_means[domain][noise.name] = float(
-                stats["overall"]["mean"]
-            )
+            domain_noise_means[domain][noise.name] = float(stats["overall"]["mean"])
 
     monotonicity_check: dict[str, bool] = {}
     for domain in DOMAINS:
-        ordered_means = [
-            domain_noise_means[domain][n.name] for n in NOISE_LEVELS
-        ]
-        monotonicity_check[domain] = _is_monotonic_non_increasing(
-            ordered_means
-        )
+        ordered_means = [domain_noise_means[domain][n.name] for n in NOISE_LEVELS]
+        monotonicity_check[domain] = _is_monotonic_non_increasing(ordered_means)
 
     return {
         "experiment_id": EXPERIMENT_ID,
@@ -347,8 +320,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     """Build the argparse namespace for the CLI entry point."""
     parser = argparse.ArgumentParser(
         description=(
-            "Controlled-noise validation experiment for TrajectoryMetric "
-            "(Task C1-zero)."
+            "Controlled-noise validation experiment for TrajectoryMetric " "(Task C1-zero)."
         )
     )
     parser.add_argument(
@@ -376,9 +348,7 @@ def main(argv: list[str] | None = None) -> int:
         Exit code; ``0`` on success.
     """
     args = _parse_args(argv)
-    summary = run_experiment(
-        output_dir=args.output_dir, limit_tasks=args.limit_tasks
-    )
+    summary = run_experiment(output_dir=args.output_dir, limit_tasks=args.limit_tasks)
     print(json.dumps(summary, indent=2))
     return 0
 

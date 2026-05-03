@@ -27,43 +27,47 @@ def test_tool_span_becomes_agent_step(tmp_path: Path):
     jsonl = tmp_path / "trace.jsonl"
     lines = [
         # LLM span - no step emitted
-        json.dumps({
-            "name": "chat",
-            "attributes": {
-                "gen_ai.operation.name": "chat",
-                "gen_ai.request.model": "claude-opus-4-7",
-            },
-            "start_time_unix_nano": 1_000_000_000,
-            "end_time_unix_nano": 1_200_000_000,
-            "status": {"code": "OK"},
-        }),
+        json.dumps(
+            {
+                "name": "chat",
+                "attributes": {
+                    "gen_ai.operation.name": "chat",
+                    "gen_ai.request.model": "claude-opus-4-7",
+                },
+                "start_time_unix_nano": 1_000_000_000,
+                "end_time_unix_nano": 1_200_000_000,
+                "status": {"code": "OK"},
+            }
+        ),
         # Tool span - becomes one AgentStep with a ToolCall
-        json.dumps({
-            "name": "tool",
-            "attributes": {
-                "gen_ai.operation.name": "tool",
-                "tool.name": "calculator",
-                "tool.arguments": json.dumps({"expr": "6*7"}),
-                "tool.result": "42",
-            },
-            "start_time_unix_nano": 1_300_000_000,
-            "end_time_unix_nano": 1_400_000_000,
-            "status": {"code": "OK"},
-        }),
+        json.dumps(
+            {
+                "name": "tool",
+                "attributes": {
+                    "gen_ai.operation.name": "tool",
+                    "tool.name": "calculator",
+                    "tool.arguments": json.dumps({"expr": "6*7"}),
+                    "tool.result": "42",
+                },
+                "start_time_unix_nano": 1_300_000_000,
+                "end_time_unix_nano": 1_400_000_000,
+                "status": {"code": "OK"},
+            }
+        ),
         # Second LLM span - no step emitted
-        json.dumps({
-            "name": "chat",
-            "attributes": {"gen_ai.operation.name": "chat"},
-            "start_time_unix_nano": 1_500_000_000,
-            "end_time_unix_nano": 1_600_000_000,
-            "status": {"code": "OK"},
-        }),
+        json.dumps(
+            {
+                "name": "chat",
+                "attributes": {"gen_ai.operation.name": "chat"},
+                "start_time_unix_nano": 1_500_000_000,
+                "end_time_unix_nano": 1_600_000_000,
+                "status": {"code": "OK"},
+            }
+        ),
     ]
     jsonl.write_text("\n".join(lines) + "\n", encoding="utf-8")
 
-    test_case = AgentTestCase.from_trace_jsonl(
-        jsonl, query="what is 6*7?", final_output="42"
-    )
+    test_case = AgentTestCase.from_trace_jsonl(jsonl, query="what is 6*7?", final_output="42")
     assert test_case.query == "what is 6*7?"
     assert test_case.final_output == "42"
     assert len(test_case.steps) == 1

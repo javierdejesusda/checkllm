@@ -53,19 +53,21 @@ def test_run_all_from_yaml_file(tmp_path: Path):
     yaml = pytest.importorskip("yaml")
     cfg_path = tmp_path / "cfg.yaml"
     cfg_path.write_text(
-        yaml.safe_dump({
-            "experiments": [
-                {
-                    "id": "smoke-retail",
-                    "benchmark": "tau_bench",
-                    "domain": "retail",
-                    "limit": 1,
-                    "models": ["stub"],
-                    "seeds": [0],
-                }
-            ],
-            "results_dir": str(tmp_path / "r2"),
-        }),
+        yaml.safe_dump(
+            {
+                "experiments": [
+                    {
+                        "id": "smoke-retail",
+                        "benchmark": "tau_bench",
+                        "domain": "retail",
+                        "limit": 1,
+                        "models": ["stub"],
+                        "seeds": [0],
+                    }
+                ],
+                "results_dir": str(tmp_path / "r2"),
+            }
+        ),
         encoding="utf-8",
     )
     from benchmarks.paper.run_all import run_all_from_yaml
@@ -106,12 +108,24 @@ def test_manifest_rows_include_reproducibility_metadata(tmp_path: Path):
     manifest = json.loads((tmp_path / "results" / "manifest.json").read_text(encoding="utf-8"))
     row = manifest["rows"][0]
     # Reproducibility-critical fields.
-    for key in ("experiment_id", "model", "benchmark", "domain", "seed",
-                "task_id", "trajectory_score", "passed",
-                "reference_action_count", "predicted_action_count",
-                "timestamp_utc",
-                "model_version_sha", "benchmark_sha", "temperature",
-                "mean_latency_ms", "total_cost_usd"):
+    for key in (
+        "experiment_id",
+        "model",
+        "benchmark",
+        "domain",
+        "seed",
+        "task_id",
+        "trajectory_score",
+        "passed",
+        "reference_action_count",
+        "predicted_action_count",
+        "timestamp_utc",
+        "model_version_sha",
+        "benchmark_sha",
+        "temperature",
+        "mean_latency_ms",
+        "total_cost_usd",
+    ):
         assert key in row, f"Missing key: {key}"
 
 

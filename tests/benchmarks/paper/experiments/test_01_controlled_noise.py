@@ -94,7 +94,9 @@ def test_clean_noise_level_produces_perfect_overall(tmp_path: Path) -> None:
     module.run_experiment(output_dir=output_dir, limit_tasks=2)
 
     jsonl_path = output_dir / "trajectories.jsonl"
-    rows = [json.loads(line) for line in jsonl_path.read_text(encoding="utf-8").splitlines() if line]
+    rows = [
+        json.loads(line) for line in jsonl_path.read_text(encoding="utf-8").splitlines() if line
+    ]
     clean_rows = [r for r in rows if r["noise_level"] == "clean"]
     assert clean_rows, "no clean rows recorded"
     for row in clean_rows:
@@ -111,10 +113,16 @@ def test_severe_noise_degrades_overall(tmp_path: Path) -> None:
     module.run_experiment(output_dir=output_dir, limit_tasks=2)
 
     jsonl_path = output_dir / "trajectories.jsonl"
-    rows = [json.loads(line) for line in jsonl_path.read_text(encoding="utf-8").splitlines() if line]
+    rows = [
+        json.loads(line) for line in jsonl_path.read_text(encoding="utf-8").splitlines() if line
+    ]
     for domain in ("airline", "retail"):
-        clean_scores = [r["overall"] for r in rows if r["domain"] == domain and r["noise_level"] == "clean"]
-        severe_scores = [r["overall"] for r in rows if r["domain"] == domain and r["noise_level"] == "severe"]
+        clean_scores = [
+            r["overall"] for r in rows if r["domain"] == domain and r["noise_level"] == "clean"
+        ]
+        severe_scores = [
+            r["overall"] for r in rows if r["domain"] == domain and r["noise_level"] == "severe"
+        ]
         assert clean_scores and severe_scores
         assert statistics.mean(severe_scores) < statistics.mean(clean_scores), (
             f"severe noise did not degrade overall in {domain}: "

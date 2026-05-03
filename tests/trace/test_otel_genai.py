@@ -10,19 +10,24 @@ from checkllm.trace.otel_genai import otel_jsonl_to_trace_spans
 
 def test_otel_llm_span_becomes_tracespan(tmp_path: Path):
     jsonl = tmp_path / "spans.jsonl"
-    jsonl.write_text(json.dumps({
-        "name": "chat",
-        "kind": "CLIENT",
-        "attributes": {
-            "gen_ai.system": "anthropic",
-            "gen_ai.request.model": "claude-opus-4-7",
-            "gen_ai.usage.input_tokens": 100,
-            "gen_ai.usage.output_tokens": 50,
-        },
-        "start_time_unix_nano": 1000_000_000,
-        "end_time_unix_nano": 1500_000_000,
-        "status": {"code": "OK"},
-    }) + "\n")
+    jsonl.write_text(
+        json.dumps(
+            {
+                "name": "chat",
+                "kind": "CLIENT",
+                "attributes": {
+                    "gen_ai.system": "anthropic",
+                    "gen_ai.request.model": "claude-opus-4-7",
+                    "gen_ai.usage.input_tokens": 100,
+                    "gen_ai.usage.output_tokens": 50,
+                },
+                "start_time_unix_nano": 1000_000_000,
+                "end_time_unix_nano": 1500_000_000,
+                "status": {"code": "OK"},
+            }
+        )
+        + "\n"
+    )
     spans = otel_jsonl_to_trace_spans(jsonl)
     assert len(spans) == 1
     assert spans[0].span_type == "llm"
@@ -32,14 +37,19 @@ def test_otel_llm_span_becomes_tracespan(tmp_path: Path):
 
 def test_otel_tool_span_maps_to_tool_type(tmp_path: Path):
     jsonl = tmp_path / "spans.jsonl"
-    jsonl.write_text(json.dumps({
-        "name": "tool",
-        "kind": "INTERNAL",
-        "attributes": {"gen_ai.tool.name": "search"},
-        "start_time_unix_nano": 2_000_000_000,
-        "end_time_unix_nano": 2_200_000_000,
-        "status": {"code": "OK"},
-    }) + "\n")
+    jsonl.write_text(
+        json.dumps(
+            {
+                "name": "tool",
+                "kind": "INTERNAL",
+                "attributes": {"gen_ai.tool.name": "search"},
+                "start_time_unix_nano": 2_000_000_000,
+                "end_time_unix_nano": 2_200_000_000,
+                "status": {"code": "OK"},
+            }
+        )
+        + "\n"
+    )
     spans = otel_jsonl_to_trace_spans(jsonl)
     assert len(spans) == 1
     assert spans[0].span_type == "tool"
@@ -49,14 +59,19 @@ def test_otel_tool_span_maps_to_tool_type(tmp_path: Path):
 
 def test_unknown_span_name_maps_to_custom(tmp_path: Path):
     jsonl = tmp_path / "spans.jsonl"
-    jsonl.write_text(json.dumps({
-        "name": "something_weird",
-        "kind": "INTERNAL",
-        "attributes": {},
-        "start_time_unix_nano": 100_000_000,
-        "end_time_unix_nano": 200_000_000,
-        "status": {"code": "OK"},
-    }) + "\n")
+    jsonl.write_text(
+        json.dumps(
+            {
+                "name": "something_weird",
+                "kind": "INTERNAL",
+                "attributes": {},
+                "start_time_unix_nano": 100_000_000,
+                "end_time_unix_nano": 200_000_000,
+                "status": {"code": "OK"},
+            }
+        )
+        + "\n"
+    )
     spans = otel_jsonl_to_trace_spans(jsonl)
     assert len(spans) == 1
     assert spans[0].span_type == "custom"
@@ -64,14 +79,16 @@ def test_unknown_span_name_maps_to_custom(tmp_path: Path):
 
 def test_blank_lines_are_skipped(tmp_path: Path):
     jsonl = tmp_path / "spans.jsonl"
-    chat_span = json.dumps({
-        "name": "chat",
-        "kind": "CLIENT",
-        "attributes": {"gen_ai.system": "openai"},
-        "start_time_unix_nano": 0,
-        "end_time_unix_nano": 1_000_000,
-        "status": {"code": "OK"},
-    })
+    chat_span = json.dumps(
+        {
+            "name": "chat",
+            "kind": "CLIENT",
+            "attributes": {"gen_ai.system": "openai"},
+            "start_time_unix_nano": 0,
+            "end_time_unix_nano": 1_000_000,
+            "status": {"code": "OK"},
+        }
+    )
     # Intentionally interleave blank and whitespace-only lines.
     jsonl.write_text("\n" + chat_span + "\n   \n\n" + chat_span + "\n\n")
     spans = otel_jsonl_to_trace_spans(jsonl)
@@ -81,13 +98,18 @@ def test_blank_lines_are_skipped(tmp_path: Path):
 
 def test_span_without_status_is_ok(tmp_path: Path):
     jsonl = tmp_path / "spans.jsonl"
-    jsonl.write_text(json.dumps({
-        "name": "chat",
-        "kind": "CLIENT",
-        "attributes": {"gen_ai.system": "openai"},
-        "start_time_unix_nano": 0,
-        "end_time_unix_nano": 1_000_000,
-    }) + "\n")
+    jsonl.write_text(
+        json.dumps(
+            {
+                "name": "chat",
+                "kind": "CLIENT",
+                "attributes": {"gen_ai.system": "openai"},
+                "start_time_unix_nano": 0,
+                "end_time_unix_nano": 1_000_000,
+            }
+        )
+        + "\n"
+    )
     spans = otel_jsonl_to_trace_spans(jsonl)
     assert len(spans) == 1
     assert spans[0].status == "ok"
@@ -95,14 +117,19 @@ def test_span_without_status_is_ok(tmp_path: Path):
 
 def test_span_with_unset_status_is_ok(tmp_path: Path):
     jsonl = tmp_path / "spans.jsonl"
-    jsonl.write_text(json.dumps({
-        "name": "chat",
-        "kind": "CLIENT",
-        "attributes": {"gen_ai.system": "openai"},
-        "start_time_unix_nano": 0,
-        "end_time_unix_nano": 1_000_000,
-        "status": {"code": "UNSET"},
-    }) + "\n")
+    jsonl.write_text(
+        json.dumps(
+            {
+                "name": "chat",
+                "kind": "CLIENT",
+                "attributes": {"gen_ai.system": "openai"},
+                "start_time_unix_nano": 0,
+                "end_time_unix_nano": 1_000_000,
+                "status": {"code": "UNSET"},
+            }
+        )
+        + "\n"
+    )
     spans = otel_jsonl_to_trace_spans(jsonl)
     assert len(spans) == 1
     assert spans[0].status == "ok"
@@ -110,14 +137,19 @@ def test_span_with_unset_status_is_ok(tmp_path: Path):
 
 def test_operation_name_attribute_overrides_span_name(tmp_path: Path):
     jsonl = tmp_path / "spans.jsonl"
-    jsonl.write_text(json.dumps({
-        "name": "anthropic.chat.completions.create",
-        "kind": "CLIENT",
-        "attributes": {"gen_ai.operation.name": "chat"},
-        "start_time_unix_nano": 0,
-        "end_time_unix_nano": 1_000_000,
-        "status": {"code": "OK"},
-    }) + "\n")
+    jsonl.write_text(
+        json.dumps(
+            {
+                "name": "anthropic.chat.completions.create",
+                "kind": "CLIENT",
+                "attributes": {"gen_ai.operation.name": "chat"},
+                "start_time_unix_nano": 0,
+                "end_time_unix_nano": 1_000_000,
+                "status": {"code": "OK"},
+            }
+        )
+        + "\n"
+    )
     spans = otel_jsonl_to_trace_spans(jsonl)
     assert len(spans) == 1
     assert spans[0].span_type == "llm"
@@ -125,14 +157,19 @@ def test_operation_name_attribute_overrides_span_name(tmp_path: Path):
 
 def test_span_name_substring_matches_when_no_operation_name(tmp_path: Path):
     jsonl = tmp_path / "spans.jsonl"
-    jsonl.write_text(json.dumps({
-        "name": "ChatOpenAI",
-        "kind": "CLIENT",
-        "attributes": {},
-        "start_time_unix_nano": 0,
-        "end_time_unix_nano": 1_000_000,
-        "status": {"code": "OK"},
-    }) + "\n")
+    jsonl.write_text(
+        json.dumps(
+            {
+                "name": "ChatOpenAI",
+                "kind": "CLIENT",
+                "attributes": {},
+                "start_time_unix_nano": 0,
+                "end_time_unix_nano": 1_000_000,
+                "status": {"code": "OK"},
+            }
+        )
+        + "\n"
+    )
     spans = otel_jsonl_to_trace_spans(jsonl)
     assert len(spans) == 1
     assert spans[0].span_type == "llm"

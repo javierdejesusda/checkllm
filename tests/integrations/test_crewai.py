@@ -24,12 +24,8 @@ def test_to_checkllm_tool_calls_translates_dict_entries():
         {"tool_name": "weather", "tool_args": {"city": "Lisbon"}, "output": "sunny"},
     ]
     calls = to_checkllm_tool_calls(tool_usage)
-    assert calls[0] == ToolCall(
-        name="search_web", parameters={"q": "lisbon"}, result="list"
-    )
-    assert calls[1] == ToolCall(
-        name="weather", parameters={"city": "Lisbon"}, result="sunny"
-    )
+    assert calls[0] == ToolCall(name="search_web", parameters={"q": "lisbon"}, result="list")
+    assert calls[1] == ToolCall(name="weather", parameters={"city": "Lisbon"}, result="sunny")
 
 
 def test_to_checkllm_test_case_reads_tasks_output_concatenated():

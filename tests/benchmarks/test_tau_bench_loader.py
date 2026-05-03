@@ -48,13 +48,16 @@ def test_load_tau_bench_from_custom_path(tmp_path: Path):
     custom_tasks = tmp_path / "airline" / "tasks.jsonl"
     custom_tasks.parent.mkdir()
     custom_tasks.write_text(
-        json.dumps({
-            "task_id": "custom-1",
-            "user_instruction": "Book me a flight.",
-            "tools": [{"name": "search_flights", "parameters": {}}],
-            "reference_actions": [{"name": "search_flights", "arguments": {}}],
-            "ground_truth_final_state": {"booking_id": "XYZ"},
-        }) + "\n",
+        json.dumps(
+            {
+                "task_id": "custom-1",
+                "user_instruction": "Book me a flight.",
+                "tools": [{"name": "search_flights", "parameters": {}}],
+                "reference_actions": [{"name": "search_flights", "arguments": {}}],
+                "ground_truth_final_state": {"booking_id": "XYZ"},
+            }
+        )
+        + "\n",
         encoding="utf-8",
     )
     tasks = load_tau_bench("airline", data_root=tmp_path)
@@ -67,13 +70,15 @@ def test_load_tau_bench_skips_blank_lines(tmp_path: Path):
     f.parent.mkdir()
     f.write_text(
         "\n"
-        + json.dumps({
-            "task_id": "r-1",
-            "user_instruction": "Return item.",
-            "tools": [],
-            "reference_actions": [],
-            "ground_truth_final_state": {},
-        })
+        + json.dumps(
+            {
+                "task_id": "r-1",
+                "user_instruction": "Return item.",
+                "tools": [],
+                "reference_actions": [],
+                "ground_truth_final_state": {},
+            }
+        )
         + "\n\n   \n",
         encoding="utf-8",
     )

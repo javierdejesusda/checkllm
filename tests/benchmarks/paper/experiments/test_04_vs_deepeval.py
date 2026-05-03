@@ -15,22 +15,18 @@ import sys
 from pathlib import Path
 from types import ModuleType
 
+import pytest
+
+pytest.importorskip(
+    "deepeval",
+    reason="deepeval is an optional dev dep used only for the C4-zero head-to-head experiment",
+)
+
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
-_EXPERIMENT_PATH = (
-    _REPO_ROOT
-    / "benchmarks"
-    / "paper"
-    / "experiments"
-    / "04_vs_deepeval.py"
-)
+_EXPERIMENT_PATH = _REPO_ROOT / "benchmarks" / "paper" / "experiments" / "04_vs_deepeval.py"
 _C1_INPUT_FILE = (
-    _REPO_ROOT
-    / "benchmarks"
-    / "paper"
-    / "results"
-    / "01_controlled_noise"
-    / "trajectories.jsonl"
+    _REPO_ROOT / "benchmarks" / "paper" / "results" / "01_controlled_noise" / "trajectories.jsonl"
 )
 
 
@@ -91,9 +87,9 @@ def test_summary_has_required_statistics(tmp_path: Path) -> None:
             stat_block = block[key]
             for sub in ("value", "ci_lower", "ci_upper"):
                 assert sub in stat_block, f"missing {framework}.{key}.{sub}"
-                assert isinstance(stat_block[sub], (int, float)), (
-                    f"{framework}.{key}.{sub} must be numeric"
-                )
+                assert isinstance(
+                    stat_block[sub], (int, float)
+                ), f"{framework}.{key}.{sub} must be numeric"
         for scalar_key in (
             "coverage",
             "mean_latency_ms_per_trajectory",
@@ -101,9 +97,9 @@ def test_summary_has_required_statistics(tmp_path: Path) -> None:
             "cost_usd_per_trajectory",
         ):
             assert scalar_key in block, f"missing {framework}.{scalar_key}"
-            assert isinstance(block[scalar_key], (int, float)), (
-                f"{framework}.{scalar_key} must be numeric"
-            )
+            assert isinstance(
+                block[scalar_key], (int, float)
+            ), f"{framework}.{scalar_key} must be numeric"
 
 
 def test_head_to_head_holm_correction(tmp_path: Path) -> None:
@@ -132,9 +128,7 @@ def test_head_to_head_holm_correction(tmp_path: Path) -> None:
         ):
             assert field in claim, f"claim missing {field}: {claim}"
         # Holm only inflates p-values.
-        assert (
-            claim["p_value_holm_corrected"] >= claim["p_value_raw"]
-        ), (
+        assert claim["p_value_holm_corrected"] >= claim["p_value_raw"], (
             f"Holm-corrected p-value < raw p-value for {claim['name']!r}: "
             f"raw={claim['p_value_raw']} corrected={claim['p_value_holm_corrected']}"
         )
@@ -160,8 +154,7 @@ def test_per_trajectory_jsonl_count_matches_summary(tmp_path: Path) -> None:
         if line.strip()
     ]
     assert len(rows) == summary["n_trajectories"], (
-        f"per_trajectory.jsonl has {len(rows)} rows, summary says "
-        f"{summary['n_trajectories']}"
+        f"per_trajectory.jsonl has {len(rows)} rows, summary says " f"{summary['n_trajectories']}"
     )
     # Sanity-check that each row has the fields we promise.
     required = {
@@ -195,14 +188,12 @@ def test_deepeval_version_recorded(tmp_path: Path) -> None:
 
     summary = json.loads((output_dir / "summary.json").read_text(encoding="utf-8"))
     version = summary.get("deepeval_version")
-    assert isinstance(version, str), (
-        f"deepeval_version must be a string, got {type(version).__name__}"
-    )
+    assert isinstance(
+        version, str
+    ), f"deepeval_version must be a string, got {type(version).__name__}"
     assert version, "deepeval_version is empty"
     # Loosely match semver-like: e.g. 3.9.7, 1.0.0a1, 2.5.0.dev3.
-    assert re.match(r"^\d+\.\d+(\.\d+)?", version), (
-        f"deepeval_version not semver-ish: {version!r}"
-    )
+    assert re.match(r"^\d+\.\d+(\.\d+)?", version), f"deepeval_version not semver-ish: {version!r}"
 
 
 def test_coverage_is_float_in_unit_interval(tmp_path: Path) -> None:
@@ -219,9 +210,5 @@ def test_coverage_is_float_in_unit_interval(tmp_path: Path) -> None:
     summary = json.loads((output_dir / "summary.json").read_text(encoding="utf-8"))
     for framework in ("checkllm", "deepeval"):
         coverage = summary[framework]["coverage"]
-        assert isinstance(coverage, (int, float)), (
-            f"{framework}.coverage must be numeric"
-        )
-        assert 0.0 <= coverage <= 1.0, (
-            f"{framework}.coverage out of [0, 1]: {coverage}"
-        )
+        assert isinstance(coverage, (int, float)), f"{framework}.coverage must be numeric"
+        assert 0.0 <= coverage <= 1.0, f"{framework}.coverage out of [0, 1]: {coverage}"

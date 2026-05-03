@@ -33,13 +33,9 @@ def test_to_checkllm_tool_calls_translates_sources():
         _tool_output("calculator", '{"a": 1, "b": 2}', "3"),
     ]
     calls = to_checkllm_tool_calls(sources)
-    assert calls[0] == ToolCall(
-        name="search", parameters={"query": "lisbon"}, result="results..."
-    )
+    assert calls[0] == ToolCall(name="search", parameters={"query": "lisbon"}, result="results...")
     # JSON-string raw_input is parsed.
-    assert calls[1] == ToolCall(
-        name="calculator", parameters={"a": 1, "b": 2}, result="3"
-    )
+    assert calls[1] == ToolCall(name="calculator", parameters={"a": 1, "b": 2}, result="3")
 
 
 def test_to_checkllm_test_case_reads_sources_and_response():

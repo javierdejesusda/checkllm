@@ -72,8 +72,7 @@ def load_tau_bench(
     """
     if domain not in _VALID_DOMAINS:
         raise ValueError(
-            f"Unknown tau-bench domain {domain!r}; expected one of "
-            f"{sorted(_VALID_DOMAINS)}"
+            f"Unknown tau-bench domain {domain!r}; expected one of " f"{sorted(_VALID_DOMAINS)}"
         )
 
     root = Path(data_root) if data_root is not None else _VENDORED_ROOT

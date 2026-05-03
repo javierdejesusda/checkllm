@@ -140,9 +140,7 @@ def _score_trajectory(
     return metric.compute_subscores(predicted_names).as_dict()
 
 
-def _auroc_mann_whitney(
-    scores: np.ndarray, labels: np.ndarray
-) -> float:
+def _auroc_mann_whitney(scores: np.ndarray, labels: np.ndarray) -> float:
     """Compute AUROC via the Mann-Whitney U statistic on average ranks.
 
     Equivalent to :func:`sklearn.metrics.roc_auc_score` for binary
@@ -232,9 +230,7 @@ def _bootstrap_ci(
         resample produced a defined statistic.
     """
 
-    def _vectorized_statistic(
-        sample_scores: np.ndarray, sample_labels: np.ndarray
-    ) -> float:
+    def _vectorized_statistic(sample_scores: np.ndarray, sample_labels: np.ndarray) -> float:
         # scipy.stats.bootstrap calls the statistic on each resample;
         # vectorize=False (the default for non-vectorised callables) is
         # set in the bootstrap call so each resample arrives as 1-D.
@@ -297,9 +293,7 @@ def _statistics_block(
         ("auroc", _auroc_mann_whitney),
     ):
         value = fn(scores, labels)
-        ci_lower, ci_upper = _bootstrap_ci(
-            scores, labels, fn, n_bootstrap=n_bootstrap, rng=rng
-        )
+        ci_lower, ci_upper = _bootstrap_ci(scores, labels, fn, n_bootstrap=n_bootstrap, rng=rng)
         block[name] = {
             "value": float(value),
             "ci_lower": float(ci_lower),
@@ -410,26 +404,20 @@ def run_experiment(
             fh.write(json.dumps(row) + "\n")
 
     summary = _build_summary(score_rows, n_bootstrap=n_bootstrap)
-    summary_path.write_text(
-        json.dumps(summary, indent=2, sort_keys=True), encoding="utf-8"
-    )
+    summary_path.write_text(json.dumps(summary, indent=2, sort_keys=True), encoding="utf-8")
 
     manifest = {
         "schema": "https://checkllm.dev/schemas/paper_manifest/v1",
         "experiment_id": EXPERIMENT_ID,
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
-        "noise_levels": [
-            {"name": n.name, **n.as_params()} for n in NOISE_LEVELS
-        ],
+        "noise_levels": [{"name": n.name, **n.as_params()} for n in NOISE_LEVELS],
         "seeds": list(SEEDS),
         "domains": list(DOMAINS),
         "limit_tasks": limit_tasks,
         "n_bootstrap": n_bootstrap,
         "rows": manifest_rows,
     }
-    manifest_path.write_text(
-        json.dumps(manifest, indent=2), encoding="utf-8"
-    )
+    manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
     return {
         "n_trajectories": len(manifest_rows),
@@ -439,9 +427,7 @@ def run_experiment(
     }
 
 
-def _build_summary(
-    score_rows: list[dict[str, Any]], n_bootstrap: int
-) -> dict[str, Any]:
+def _build_summary(score_rows: list[dict[str, Any]], n_bootstrap: int) -> dict[str, Any]:
     """Aggregate per-trajectory rows into the paper-summary statistics.
 
     Args:
@@ -458,9 +444,7 @@ def _build_summary(
     labels = np.asarray([r["label"] for r in score_rows], dtype=int)
     overall_scores = np.asarray([r["score"] for r in score_rows], dtype=float)
 
-    overall_block = _statistics_block(
-        overall_scores, labels, n_bootstrap=n_bootstrap, rng=rng
-    )
+    overall_block = _statistics_block(overall_scores, labels, n_bootstrap=n_bootstrap, rng=rng)
 
     per_domain: dict[str, dict[str, dict[str, float]]] = {}
     auroc_gate_passed: dict[str, bool] = {}
@@ -468,16 +452,12 @@ def _build_summary(
         bucket = [r for r in score_rows if r["domain"] == domain]
         d_scores = np.asarray([r["score"] for r in bucket], dtype=float)
         d_labels = np.asarray([r["label"] for r in bucket], dtype=int)
-        block = _statistics_block(
-            d_scores, d_labels, n_bootstrap=n_bootstrap, rng=rng
-        )
+        block = _statistics_block(d_scores, d_labels, n_bootstrap=n_bootstrap, rng=rng)
         per_domain[domain] = block
         ci_lower = block["auroc"]["ci_lower"]
         # Gate passes when the 95% CI lower bound is at or above 0.70.
         # NaN (undefined AUROC) fails the gate.
-        auroc_gate_passed[domain] = bool(
-            not np.isnan(ci_lower) and ci_lower >= AUROC_GATE_LOWER
-        )
+        auroc_gate_passed[domain] = bool(not np.isnan(ci_lower) and ci_lower >= AUROC_GATE_LOWER)
 
     per_metric: dict[str, dict[str, dict[str, float]]] = {}
     for sub_metric in SUB_METRIC_KEYS:
@@ -507,9 +487,7 @@ def _build_summary(
 def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     """Build the argparse namespace for the CLI entry point."""
     parser = argparse.ArgumentParser(
-        description=(
-            "Metric-vs-synthetic-truth correlation study (Task C2-zero)."
-        )
+        description=("Metric-vs-synthetic-truth correlation study (Task C2-zero).")
     )
     parser.add_argument(
         "--output-dir",
@@ -527,10 +505,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         "--n-bootstrap",
         type=int,
         default=DEFAULT_N_BOOTSTRAP,
-        help=(
-            "Number of percentile bootstrap resamples for 95%% CIs "
-            "(default: 1000)."
-        ),
+        help=("Number of percentile bootstrap resamples for 95%% CIs " "(default: 1000)."),
     )
     return parser.parse_args(argv)
 

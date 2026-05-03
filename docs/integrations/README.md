@@ -21,18 +21,6 @@ Each adapter:
 | CrewAI (`CrewOutput` / `TaskOutput`) | `checkllm.integrations.crewai` | [crewai_example.py](crewai_example.py) |
 | pydantic-ai (`RunResult`) | `checkllm.integrations.pydantic_ai` | [pydantic_ai_example.py](pydantic_ai_example.py) |
 
-## Pre-drafted upstream PRs
-
-The same adapters are also packaged for inclusion in each upstream
-repo, with a short PR description explaining the integration. Drafts
-live under [`pr_drafts/`](pr_drafts/) and are intentionally **not yet
-opened** — review them before any of these PRs goes live.
-
-- [`pr_drafts/langchain.md`](pr_drafts/langchain.md)
-- [`pr_drafts/llama_index.md`](pr_drafts/llama_index.md)
-- [`pr_drafts/crewai.md`](pr_drafts/crewai.md)
-- [`pr_drafts/pydantic_ai.md`](pr_drafts/pydantic_ai.md)
-
 ## Quick example
 
 ```python

@@ -16,13 +16,7 @@ from types import ModuleType
 
 
 _REPO_ROOT = Path(__file__).resolve().parents[4]
-_EXPERIMENT_PATH = (
-    _REPO_ROOT
-    / "benchmarks"
-    / "paper"
-    / "experiments"
-    / "03_trajectory_ablation.py"
-)
+_EXPERIMENT_PATH = _REPO_ROOT / "benchmarks" / "paper" / "experiments" / "03_trajectory_ablation.py"
 _C2_INPUT_DIR = _REPO_ROOT / "benchmarks" / "paper" / "results" / "02_metric_vs_truth"
 
 
@@ -78,12 +72,10 @@ def test_grid_size_is_correct(tmp_path: Path) -> None:
     module.run_experiment(input_dir=_C2_INPUT_DIR, output_dir=output_dir)
 
     summary = json.loads((output_dir / "summary.json").read_text(encoding="utf-8"))
-    assert summary["n_skipped_degenerate"] == 3, (
-        f"expected 3 skipped degenerate cells, got {summary['n_skipped_degenerate']}"
-    )
-    assert summary["n_cells"] == 1872, (
-        f"expected 1872 valid cells, got {summary['n_cells']}"
-    )
+    assert (
+        summary["n_skipped_degenerate"] == 3
+    ), f"expected 3 skipped degenerate cells, got {summary['n_skipped_degenerate']}"
+    assert summary["n_cells"] == 1872, f"expected 1872 valid cells, got {summary['n_cells']}"
 
     rows = [
         json.loads(line)
@@ -123,16 +115,12 @@ def test_top_5_correctly_sorted(tmp_path: Path) -> None:
     top5 = summary["top_5_by_spearman"]
     assert len(top5) == 5, f"expected 5 rows, got {len(top5)}"
     rhos = [row["spearman_rho"] for row in top5]
-    assert rhos == sorted(rhos, reverse=True), (
-        f"top_5_by_spearman not sorted descending: {rhos}"
-    )
+    assert rhos == sorted(rhos, reverse=True), f"top_5_by_spearman not sorted descending: {rhos}"
 
     top5_auroc = summary["top_5_by_auroc"]
     assert len(top5_auroc) == 5
     aurocs = [row["auroc"] for row in top5_auroc]
-    assert aurocs == sorted(aurocs, reverse=True), (
-        f"top_5_by_auroc not sorted descending: {aurocs}"
-    )
+    assert aurocs == sorted(aurocs, reverse=True), f"top_5_by_auroc not sorted descending: {aurocs}"
 
 
 def test_default_within_5pct_of_best(tmp_path: Path) -> None:
@@ -143,9 +131,7 @@ def test_default_within_5pct_of_best(tmp_path: Path) -> None:
 
     summary = json.loads((output_dir / "summary.json").read_text(encoding="utf-8"))
     rel_gap = summary["best_vs_default_gap"]["spearman_rho_relative"]
-    assert abs(rel_gap) < 0.05, (
-        f"default vs best Spearman relative gap exceeded 5%: {rel_gap:.4f}"
-    )
+    assert abs(rel_gap) < 0.05, f"default vs best Spearman relative gap exceeded 5%: {rel_gap:.4f}"
 
 
 def test_pareto_check_is_bool(tmp_path: Path) -> None:
@@ -156,9 +142,9 @@ def test_pareto_check_is_bool(tmp_path: Path) -> None:
 
     summary = json.loads((output_dir / "summary.json").read_text(encoding="utf-8"))
     val = summary["default_is_pareto_optimal"]
-    assert isinstance(val, bool), (
-        f"default_is_pareto_optimal must be bool, got {type(val).__name__}"
-    )
+    assert isinstance(
+        val, bool
+    ), f"default_is_pareto_optimal must be bool, got {type(val).__name__}"
 
 
 def test_skips_all_zero_weights(tmp_path: Path) -> None:
@@ -198,9 +184,7 @@ def test_skips_all_zero_weights(tmp_path: Path) -> None:
             row["coverage_weight"],
             row["unexpected_weight"],
         )
-        assert any(w > 0 for w in weights), (
-            f"degenerate (0,0,0,0) cell not skipped: {row}"
-        )
+        assert any(w > 0 for w in weights), f"degenerate (0,0,0,0) cell not skipped: {row}"
 
 
 def test_heatmap_has_six_pairs(tmp_path: Path) -> None:
@@ -218,9 +202,9 @@ def test_heatmap_has_six_pairs(tmp_path: Path) -> None:
         "loop__unexpected",
         "coverage__unexpected",
     }
-    assert set(heatmap.keys()) == expected_pairs, (
-        f"unexpected heatmap keys: {sorted(heatmap.keys())}"
-    )
+    assert (
+        set(heatmap.keys()) == expected_pairs
+    ), f"unexpected heatmap keys: {sorted(heatmap.keys())}"
     for pair, payload in heatmap.items():
         grid = payload["grid"]
         assert len(grid) == 5, f"{pair}: outer dim not 5 (got {len(grid)})"

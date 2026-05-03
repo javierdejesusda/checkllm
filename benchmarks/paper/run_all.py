@@ -30,15 +30,11 @@ from benchmarks.paper.agents import build_agent
 _SUPPORTED_BENCHMARKS = frozenset({"tau_bench"})
 
 
-def _load_benchmark_tasks(
-    benchmark: str, domain: str, limit: int | None
-) -> list[TauBenchTask]:
+def _load_benchmark_tasks(benchmark: str, domain: str, limit: int | None) -> list[TauBenchTask]:
     """Load tasks for one of the supported paper benchmarks."""
     if benchmark == "tau_bench":
         return load_tau_bench(domain, limit=limit)
-    raise ValueError(
-        f"Unknown benchmark {benchmark!r}; supported: {sorted(_SUPPORTED_BENCHMARKS)}"
-    )
+    raise ValueError(f"Unknown benchmark {benchmark!r}; supported: {sorted(_SUPPORTED_BENCHMARKS)}")
 
 
 def _expected_tool_names(reference_actions: list[dict[str, Any]]) -> list[str]:

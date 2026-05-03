@@ -229,9 +229,7 @@ def _score_deepeval(row: TrajectoryRow) -> tuple[float, float]:
     return score, dt_ms
 
 
-def _auroc_mann_whitney(
-    scores: np.ndarray, labels: np.ndarray
-) -> float:
+def _auroc_mann_whitney(scores: np.ndarray, labels: np.ndarray) -> float:
     """AUROC via the Mann-Whitney U statistic (no sklearn dependency).
 
     Args:
@@ -340,9 +338,7 @@ def _statistics_block(
         ("auroc", _auroc_mann_whitney),
     ):
         value = fn(scores, labels)
-        ci_lower, ci_upper = _bootstrap_ci(
-            scores, labels, fn, n_bootstrap=n_bootstrap, rng=rng
-        )
+        ci_lower, ci_upper = _bootstrap_ci(scores, labels, fn, n_bootstrap=n_bootstrap, rng=rng)
         block[name] = {
             "value": float(value),
             "ci_lower": float(ci_lower),
@@ -479,24 +475,12 @@ def _build_summary(
         Summary dict matching the spec's ``summary.json`` shape.
     """
     labels = np.asarray([r["label"] for r in per_trajectory_rows], dtype=int)
-    ck_scores = np.asarray(
-        [r["checkllm_score"] for r in per_trajectory_rows], dtype=float
-    )
-    de_scores = np.asarray(
-        [r["deepeval_score"] for r in per_trajectory_rows], dtype=float
-    )
-    ck_lat = np.asarray(
-        [r["checkllm_latency_ms"] for r in per_trajectory_rows], dtype=float
-    )
-    de_lat = np.asarray(
-        [r["deepeval_latency_ms"] for r in per_trajectory_rows], dtype=float
-    )
-    ck_abs = np.asarray(
-        [r["checkllm_abs_error"] for r in per_trajectory_rows], dtype=float
-    )
-    de_abs = np.asarray(
-        [r["deepeval_abs_error"] for r in per_trajectory_rows], dtype=float
-    )
+    ck_scores = np.asarray([r["checkllm_score"] for r in per_trajectory_rows], dtype=float)
+    de_scores = np.asarray([r["deepeval_score"] for r in per_trajectory_rows], dtype=float)
+    ck_lat = np.asarray([r["checkllm_latency_ms"] for r in per_trajectory_rows], dtype=float)
+    de_lat = np.asarray([r["deepeval_latency_ms"] for r in per_trajectory_rows], dtype=float)
+    ck_abs = np.asarray([r["checkllm_abs_error"] for r in per_trajectory_rows], dtype=float)
+    de_abs = np.asarray([r["deepeval_abs_error"] for r in per_trajectory_rows], dtype=float)
 
     ck_block = _statistics_block(ck_scores, labels, n_bootstrap, rng)
     de_block = _statistics_block(de_scores, labels, n_bootstrap, rng)
@@ -523,12 +507,20 @@ def _build_summary(
     )
 
     p_auroc = _bootstrap_diff_p_value(
-        ck_scores, de_scores, labels, _auroc_mann_whitney,
-        n_bootstrap=n_bootstrap, rng=rng,
+        ck_scores,
+        de_scores,
+        labels,
+        _auroc_mann_whitney,
+        n_bootstrap=n_bootstrap,
+        rng=rng,
     )
     p_spearman = _bootstrap_diff_p_value(
-        ck_scores, de_scores, labels, _spearman_rho,
-        n_bootstrap=n_bootstrap, rng=rng,
+        ck_scores,
+        de_scores,
+        labels,
+        _spearman_rho,
+        n_bootstrap=n_bootstrap,
+        rng=rng,
     )
     p_abs = _one_sided_paired_p(de_abs, ck_abs)
     p_lat = _one_sided_paired_p(de_lat, ck_lat)
@@ -654,12 +646,8 @@ def run_experiment(
         for r in per_trajectory_rows:
             fh.write(json.dumps(r) + "\n")
 
-    summary = _build_summary(
-        per_trajectory_rows, n_bootstrap=n_bootstrap, rng=rng
-    )
-    summary_path.write_text(
-        json.dumps(summary, indent=2, sort_keys=True), encoding="utf-8"
-    )
+    summary = _build_summary(per_trajectory_rows, n_bootstrap=n_bootstrap, rng=rng)
+    summary_path.write_text(json.dumps(summary, indent=2, sort_keys=True), encoding="utf-8")
 
     manifest = {
         "schema": "https://checkllm.dev/schemas/paper_manifest/v1",
@@ -671,9 +659,7 @@ def run_experiment(
         "n_bootstrap": n_bootstrap,
         "rows": manifest_rows,
     }
-    manifest_path.write_text(
-        json.dumps(manifest, indent=2), encoding="utf-8"
-    )
+    manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
 
     return {
         "n_trajectories": len(per_trajectory_rows),
@@ -682,8 +668,7 @@ def run_experiment(
         "checkllm_auroc": summary["checkllm"]["auroc"]["value"],
         "deepeval_auroc": summary["deepeval"]["auroc"]["value"],
         "claims_significant_after_correction": [
-            c["name"] for c in summary["head_to_head"]["claims"]
-            if c["significant_at_0_05"]
+            c["name"] for c in summary["head_to_head"]["claims"] if c["significant_at_0_05"]
         ],
     }
 
@@ -691,9 +676,7 @@ def run_experiment(
 def _parse_args(argv=None):
     """Build the argparse namespace for the CLI entry point."""
     parser = argparse.ArgumentParser(
-        description=(
-            "Head-to-head vs DeepEval ToolCorrectnessMetric (Task C4-zero)."
-        )
+        description=("Head-to-head vs DeepEval ToolCorrectnessMetric (Task C4-zero).")
     )
     parser.add_argument(
         "--input-file",
@@ -708,19 +691,13 @@ def _parse_args(argv=None):
         "--output-dir",
         required=True,
         type=Path,
-        help=(
-            "Directory to write per_trajectory.jsonl, summary.json, "
-            "manifest.json."
-        ),
+        help=("Directory to write per_trajectory.jsonl, summary.json, " "manifest.json."),
     )
     parser.add_argument(
         "--limit-trajectories",
         type=int,
         default=None,
-        help=(
-            "Truncate to the first N trajectories from the input file "
-            "(smoke testing)."
-        ),
+        help=("Truncate to the first N trajectories from the input file " "(smoke testing)."),
     )
     parser.add_argument(
         "--n-bootstrap",

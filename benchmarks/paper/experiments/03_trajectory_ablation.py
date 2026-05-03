@@ -204,12 +204,9 @@ def _build_trajectory_pool(
                             "task_id": task.task_id,
                             "seed": seed,
                             "noise_level": noise.name,
-                            "predicted_names": [
-                                str(a.get("name", "")) for a in predicted
-                            ],
+                            "predicted_names": [str(a.get("name", "")) for a in predicted],
                             "reference_names": [
-                                str(a.get("name", ""))
-                                for a in task.reference_actions
+                                str(a.get("name", "")) for a in task.reference_actions
                             ],
                             "label": 1 if noise.name == "clean" else 0,
                         }
@@ -342,9 +339,7 @@ def _build_heatmap(rows: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
                 vals = [
                     r["spearman_rho"]
                     for r in rows
-                    if r[key_a] == va
-                    and r[key_b] == vb
-                    and not np.isnan(r["spearman_rho"])
+                    if r[key_a] == va and r[key_b] == vb and not np.isnan(r["spearman_rho"])
                 ]
                 row.append(float(np.mean(vals)) if vals else None)
             grid.append(row)
@@ -386,9 +381,7 @@ def _weight_correlations(rows: list[dict[str, Any]]) -> dict[str, dict[str, floa
     return out
 
 
-def _is_pareto_optimal(
-    rows: list[dict[str, Any]], default_row: dict[str, Any]
-) -> bool:
+def _is_pareto_optimal(rows: list[dict[str, Any]], default_row: dict[str, Any]) -> bool:
     """True iff no other cell strictly dominates the default on both metrics.
 
     A cell strictly dominates iff its Spearman rho and its AUROC are
@@ -410,10 +403,7 @@ def _is_pareto_optimal(
             continue
         if np.isnan(r["spearman_rho"]) or np.isnan(r["auroc"]):
             continue
-        if (
-            r["spearman_rho"] > default_rho
-            and r["auroc"] > default_auc
-        ):
+        if r["spearman_rho"] > default_rho and r["auroc"] > default_auc:
             return False
     return True
 
@@ -448,9 +438,7 @@ def run_experiment(
     pool = _build_trajectory_pool(seeds, noise_levels, domains, limit_tasks)
 
     all_cells = list(_iter_grid_cells())
-    n_skipped_degenerate = sum(
-        1 for cell in all_cells if _is_degenerate(cell[:4])
-    )
+    n_skipped_degenerate = sum(1 for cell in all_cells if _is_degenerate(cell[:4]))
     valid_cells = [cell for cell in all_cells if not _is_degenerate(cell[:4])]
 
     if limit_cells is not None and limit_cells < len(valid_cells):
@@ -558,14 +546,10 @@ def run_experiment(
         "weight_correlations": _weight_correlations(rows),
         "wall_seconds": float(wall_seconds),
     }
-    summary_path.write_text(
-        json.dumps(summary, indent=2, sort_keys=True), encoding="utf-8"
-    )
+    summary_path.write_text(json.dumps(summary, indent=2, sort_keys=True), encoding="utf-8")
 
     heatmap = _build_heatmap(rows)
-    heatmap_path.write_text(
-        json.dumps(heatmap, indent=2, sort_keys=True), encoding="utf-8"
-    )
+    heatmap_path.write_text(json.dumps(heatmap, indent=2, sort_keys=True), encoding="utf-8")
 
     return {
         "n_cells": len(rows),

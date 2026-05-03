@@ -48,9 +48,7 @@ def test_runs_to_completion_on_smoke_subset(tmp_path: Path) -> None:
     """Smoke run with --limit-tasks=2 must produce a manifest with the expected row count."""
     module = _load_experiment_module()
     output_dir = tmp_path / "02_metric_vs_truth"
-    summary = module.run_experiment(
-        output_dir=output_dir, limit_tasks=2, n_bootstrap=50
-    )
+    summary = module.run_experiment(output_dir=output_dir, limit_tasks=2, n_bootstrap=50)
 
     manifest_path = output_dir / "manifest.json"
     assert manifest_path.exists(), "manifest.json was not written"
@@ -74,9 +72,9 @@ def test_summary_contains_required_statistics(tmp_path: Path) -> None:
         block = overall[key]
         for sub in ("value", "ci_lower", "ci_upper"):
             assert sub in block, f"missing overall.{key}.{sub}"
-            assert isinstance(block[sub], (int, float)), (
-                f"overall.{key}.{sub} must be numeric, got {type(block[sub]).__name__}"
-            )
+            assert isinstance(
+                block[sub], (int, float)
+            ), f"overall.{key}.{sub} must be numeric, got {type(block[sub]).__name__}"
 
 
 def test_synthetic_truth_yields_strong_auroc(tmp_path: Path) -> None:
@@ -104,9 +102,7 @@ def test_per_domain_breakdown_present(tmp_path: Path) -> None:
         for key in ("pearson_r", "spearman_rho", "auroc"):
             assert key in block, f"missing per_domain.{domain}.{key}"
             for sub in ("value", "ci_lower", "ci_upper"):
-                assert sub in block[key], (
-                    f"missing per_domain.{domain}.{key}.{sub}"
-                )
+                assert sub in block[key], f"missing per_domain.{domain}.{key}.{sub}"
 
 
 def test_per_metric_breakdown_present(tmp_path: Path) -> None:
@@ -123,9 +119,7 @@ def test_per_metric_breakdown_present(tmp_path: Path) -> None:
         for key in ("pearson_r", "spearman_rho", "auroc"):
             assert key in block, f"missing per_metric.{sub_metric}.{key}"
             for sub in ("value", "ci_lower", "ci_upper"):
-                assert sub in block[key], (
-                    f"missing per_metric.{sub_metric}.{key}.{sub}"
-                )
+                assert sub in block[key], f"missing per_metric.{sub_metric}.{key}.{sub}"
 
 
 def test_auroc_gate_evaluation(tmp_path: Path) -> None:
@@ -141,8 +135,7 @@ def test_auroc_gate_evaluation(tmp_path: Path) -> None:
         assert domain in gate, f"auroc_gate_passed missing {domain}"
         # Strict bool check: not just truthy.
         assert isinstance(gate[domain], bool), (
-            f"auroc_gate_passed[{domain}] must be a bool, got "
-            f"{type(gate[domain]).__name__}"
+            f"auroc_gate_passed[{domain}] must be a bool, got " f"{type(gate[domain]).__name__}"
         )
 
 

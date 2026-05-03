@@ -49,13 +49,9 @@ def test_to_checkllm_tool_calls_pairs_calls_and_returns_by_id():
         _msg([_return_part("weather", "sunny", "c2")]),
     ]
     calls = to_checkllm_tool_calls(messages)
-    assert calls[0] == ToolCall(
-        name="search", parameters={"q": "lisbon"}, result="results..."
-    )
+    assert calls[0] == ToolCall(name="search", parameters={"q": "lisbon"}, result="results...")
     # JSON-string args is parsed.
-    assert calls[1] == ToolCall(
-        name="weather", parameters={"city": "Lisbon"}, result="sunny"
-    )
+    assert calls[1] == ToolCall(name="weather", parameters={"city": "Lisbon"}, result="sunny")
 
 
 def test_to_checkllm_test_case_reads_run_result():

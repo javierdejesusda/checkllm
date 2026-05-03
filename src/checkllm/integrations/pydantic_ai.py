@@ -176,9 +176,7 @@ def _coerce_args(raw: Any) -> dict[str, Any]:
 def _is_tool_call_part(part: Any) -> bool:
     """Heuristic: a duck-typed pydantic-ai ToolCallPart has tool_name + args."""
     if isinstance(part, dict):
-        return part.get("part_kind") == "tool-call" or (
-            "tool_name" in part and "args" in part
-        )
+        return part.get("part_kind") == "tool-call" or ("tool_name" in part and "args" in part)
     kind = getattr(part, "part_kind", None)
     if kind == "tool-call":
         return True
@@ -194,11 +192,7 @@ def _is_tool_return_part(part: Any) -> bool:
     kind = getattr(part, "part_kind", None)
     if kind == "tool-return":
         return True
-    return (
-        hasattr(part, "tool_name")
-        and hasattr(part, "content")
-        and not hasattr(part, "args")
-    )
+    return hasattr(part, "tool_name") and hasattr(part, "content") and not hasattr(part, "args")
 
 
 def _iter_parts(messages: Any) -> list[Any]:
